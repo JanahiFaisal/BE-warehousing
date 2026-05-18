@@ -50,7 +50,7 @@
     const EQUIP   = ["Forklift","Crane","Pallet jack","Helpers"];
     const STORAGE = ["Open Yard","Covered store"];
     const SLOTS   = ["07:00","07:30","08:00","08:30","09:30","10:00","10:30","11:00","11:30","12:30","13:00","13:30"];
-    const ADMIN_PWD = "admin2026";
+    const ADMIN_PWD = "Bapco@123456";
 
     const fmtDate = ds => !ds ? "—" : new Date(ds+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
     const fmtTs   = iso => iso ? new Date(iso).toLocaleString("en-GB",{dateStyle:"short",timeStyle:"short"}) : "—";
@@ -71,15 +71,7 @@
       if (!r.ok) throw new Error("Email send failed");
     }
 
-    const SAMPLE = [
-      {id:"APT-001",supplierName:"Gulf Trading Co.",        supplierEmail:"ops@gulftrading.com",   date:"2026-05-20",time:"09:30",totalOrders:5,totalLines:23,poNumbers:["PO-2026-0041","PO-2026-0042","PO-2026-0043","PO-2026-0044","PO-2026-0045"],offloadingEquipment:["Forklift","Pallet jack"],storageLocation:["Open Yard"],              additionalNotes:"Handle with care.",    attachmentName:null,              status:"pending", managerComments:null,createdAt:"2026-05-15T08:30:00Z",updatedAt:"2026-05-15T08:30:00Z"},
-      {id:"APT-002",supplierName:"Al Rashid Supplies",      supplierEmail:"logistics@alrashid.com",date:"2026-05-21",time:"14:00",totalOrders:3,totalLines:15,poNumbers:["PO-2026-0100","PO-2026-0101","PO-2026-0102"],                            offloadingEquipment:["Crane"],                storageLocation:["Covered store"],          additionalNotes:"",                    attachmentName:"delivery-note.pdf",status:"pending", managerComments:null,createdAt:"2026-05-15T10:15:00Z",updatedAt:"2026-05-15T10:15:00Z"},
-      {id:"APT-003",supplierName:"Bahrain Industrial Ltd.", supplierEmail:"wh@bahrainind.com",     date:"2026-05-19",time:"11:00",totalOrders:4,totalLines:42,poNumbers:["PO-2026-0200","PO-2026-0201","PO-2026-0202","PO-2026-0203"],            offloadingEquipment:[],               storageLocation:["Open Yard","Covered store"],additionalNotes:"Split delivery — both warehouses.",attachmentName:"BIL-DN.pdf",status:"approved",managerComments:null,createdAt:"2026-05-14T09:00:00Z",updatedAt:"2026-05-14T11:30:00Z"},
-      {id:"APT-004",supplierName:"Eastern Logistics",       supplierEmail:"east@logistics.bh",     date:"2026-05-18",time:"08:00",totalOrders:2,totalLines:10,poNumbers:["PO-2026-0310","PO-2026-0311"],                                          offloadingEquipment:["Helpers"],              storageLocation:["Open Yard"],              additionalNotes:"Large truck.",        attachmentName:null,              status:"rejected",managerComments:"Slot fully booked. Rebook after May 22nd.",createdAt:"2026-05-13T14:00:00Z",updatedAt:"2026-05-13T16:00:00Z"},
-      {id:"APT-005",supplierName:"Arabian Freight Services",supplierEmail:"afs@arabianfreight.com",date:"2026-05-22",time:"10:00",totalOrders:6,totalLines:30,poNumbers:["PO-2026-0401","PO-2026-0402","PO-2026-0403","PO-2026-0404","PO-2026-0405","PO-2026-0406"],offloadingEquipment:["Forklift"],storageLocation:["Open Yard"],additionalNotes:"",attachmentName:"AFR-note.pdf",status:"approved",managerComments:null,createdAt:"2026-05-14T11:00:00Z",updatedAt:"2026-05-14T13:00:00Z"},
-      {id:"APT-006",supplierName:"Gulf Express Cargo",      supplierEmail:"cargo@gulfexpress.com", date:"2026-05-26",time:"08:30",totalOrders:4,totalLines:18,poNumbers:["PO-2026-0500","PO-2026-0501","PO-2026-0502","PO-2026-0503"],            offloadingEquipment:["Pallet jack","Helpers"],storageLocation:["Covered store"],  additionalNotes:"3 loads.",            attachmentName:null,              status:"approved",managerComments:null,createdAt:"2026-05-14T15:00:00Z",updatedAt:"2026-05-14T17:00:00Z"},
-      {id:"APT-007",supplierName:"Manama Trade Hub",        supplierEmail:"trade@manamatrade.bh",  date:"2026-05-22",time:"13:00",totalOrders:3,totalLines:35,poNumbers:["PO-2026-0600","PO-2026-0601","PO-2026-0602"],                           offloadingEquipment:["Forklift","Crane"],     storageLocation:["Open Yard","Covered store"],additionalNotes:"",         attachmentName:"MTH-DN.pdf",       status:"approved",managerComments:null,createdAt:"2026-05-14T16:00:00Z",updatedAt:"2026-05-14T18:00:00Z"},
-    ];
+    const SAMPLE = [];
 
     function POTagInput({ tags, onChange, hasError }) {
       const [val, setVal] = useState("");
@@ -200,7 +192,7 @@
             <div className="flex justify-center mb-6"><Logo large/></div>
             <div className="flex items-center justify-center gap-3 mb-3">
               <h1 style={{fontFamily:"'Syne',sans-serif"}} className="text-4xl font-extrabold text-white">BE – Warehouse Appointments</h1>
-              <span style={{background:"linear-gradient(135deg,#C8962A,#f0b84a)",color:"#07114C"}} className="text-xs font-extrabold px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg whitespace-nowrap">Coming Soon</span>
+
             </div>
             <p style={{color:"rgba(255,255,255,0.45)"}} className="text-sm">This platform is currently in preview. Full launch coming soon.</p>
           </div>
