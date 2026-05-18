@@ -864,4 +864,834 @@
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>
+</html>    const Package           = mkIcon('<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>');
+    const Shield            = mkIcon('<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>');
+    const Paperclip         = mkIcon('<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>');
+    const Search            = mkIcon('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>');
+    const Filter            = mkIcon('<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>');
+    const SlidersHorizontal = mkIcon('<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><circle cx="12" cy="4" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="16" cy="20" r="2"/>');
+    const RotateCcw         = mkIcon('<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>');
+    const Hash              = mkIcon('<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="14" y1="4" y2="20"/><line x1="16" x2="12" y1="4" y2="20"/>');
+
+    // ── App constants ─────────────────────────────────────────
+    const P  = "#07114C";
+    const A  = "#C8962A";
+    const BG = "linear-gradient(145deg,#07114C 0%,#1a0a5e 60%,#6434FA55 100%)";
+    const EQUIP   = ["Forklift","Crane","Pallet jack","Helpers"];
+    const STORAGE = ["Open Yard","Covered store"];
+    const SLOTS   = ["07:00","07:30","08:00","08:30","09:30","10:00","10:30","11:00","11:30","12:30","13:00","13:30"];
+    const ADMIN_PWD = "Bapco@123456";
+    const ADMIN_EMAIL = "janahifaisal2@gmail.com";
+
+    const fmtDate = ds => !ds ? "—" : new Date(ds+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
+    const fmtTs   = iso => iso ? new Date(iso).toLocaleString("en-GB",{dateStyle:"short",timeStyle:"short"}) : "—";
+    const fmtSize = b   => b < 1048576 ? `${(b/1024).toFixed(1)} KB` : `${(b/1048576).toFixed(1)} MB`;
+    const isWeekend = ds => { if (!ds) return false; const d = new Date(ds+"T00:00:00").getDay(); return d===5||d===6; };
+    const dsOf  = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    const addDays = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+n); return r; };
+    const toLocs = v => Array.isArray(v) ? v : (v ? [v] : []);
+    const locsLabel = v => { const l=toLocs(v); return l.length===2?"Both":l[0]||"—"; };
+    const todayStr = () => new Date().toISOString().split('T')[0];
+
+    async function sendEmail(cfg,{to,toName,subject,message}) {
+      const r = await fetch("https://api.emailjs.com/api/v1.0/email/send",{
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({service_id:cfg.serviceId,template_id:cfg.templateId,user_id:cfg.publicKey,
+          template_params:{to_email:to,to_name:toName,subject,message,from_name:"BE Warehouse Team",reply_to:cfg.adminEmail||"warehouse@bapcoenergies.com"}}),
+      });
+      if (!r.ok) throw new Error("Email send failed");
+    }
+
+    const SAMPLE = [];
+
+    function POTagInput({ tags, onChange, hasError }) {
+      const [val, setVal] = useState("");
+      const ref = useRef();
+      function clean(v) { return v.trim().toUpperCase().replace(/,/g,""); }
+      function addTag(raw) { const v=clean(raw); if (!v||tags.some(t=>t.toUpperCase()===v)){setVal("");return;} onChange([...tags,v]); setVal(""); }
+      function removeTag(t) { onChange(tags.filter(x=>x!==t)); }
+      function onKey(e) {
+        if (["Enter",",","Tab"].includes(e.key)) { e.preventDefault(); addTag(val); }
+        else if (e.key==="Backspace"&&val===""&&tags.length>0) removeTag(tags[tags.length-1]);
+      }
+      function onPaste(e) {
+        e.preventDefault();
+        const parts=e.clipboardData.getData("text").split(/[\n,\s]+/).map(clean).filter(Boolean);
+        const existing=new Set(tags.map(t=>t.toUpperCase()));
+        const fresh=parts.filter(p=>!existing.has(p));
+        if (fresh.length) onChange([...tags,...fresh]);
+      }
+      const borderCls=hasError?"border-red-400 bg-red-50":"border-gray-200 bg-gray-50";
+      return (
+        <div onClick={()=>ref.current&&ref.current.focus()} className={"min-h-[52px] border rounded-xl px-3 py-2.5 flex flex-wrap gap-2 items-center cursor-text transition-all focus-within:ring-2 "+borderCls}>
+          {tags.map(t=>(
+            <span key={t} className="flex items-center gap-1 bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-bold px-2.5 py-1.5 rounded-lg whitespace-nowrap">
+              <Hash size={10} className="text-indigo-400"/>{t}
+              <button type="button" onClick={e=>{e.stopPropagation();removeTag(t);}} className="ml-0.5 text-indigo-300 hover:text-indigo-700"><X size={11}/></button>
+            </span>
+          ))}
+          <input ref={ref} value={val} onChange={e=>setVal(e.target.value)} onKeyDown={onKey} onBlur={()=>addTag(val)} onPaste={onPaste}
+            placeholder={tags.length===0?"Type a PO number, then press Enter or comma…":"Add another PO…"}
+            className="flex-1 min-w-[180px] bg-transparent text-sm outline-none text-gray-800 placeholder-gray-400 py-0.5"/>
+        </div>
+      );
+    }
+
+    function POTagList({ tags, max, small }) {
+      if (!tags||!tags.length) return React.createElement("span",{className:"text-gray-300 text-xs"},"None");
+      const m=max||3, shown=tags.slice(0,m), rest=tags.length-m;
+      const cls=small?"text-xs px-1.5 py-0.5":"text-xs px-2 py-1";
+      return (
+        <div className="flex flex-wrap gap-1">
+          {shown.map(t=>(
+            <span key={t} className={"inline-flex items-center gap-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 font-semibold rounded-md whitespace-nowrap "+cls}>
+              <Hash size={9} className="text-indigo-400"/>{t}
+            </span>
+          ))}
+          {rest>0&&<span className={"inline-flex items-center bg-gray-100 border border-gray-200 text-gray-500 font-semibold rounded-md "+cls}>+{rest} more</span>}
+        </div>
+      );
+    }
+
+    function StoreBadge({ loc }) {
+      const locs=toLocs(loc); if (!locs.length) return null;
+      const cfg={"Open Yard":"bg-sky-100 text-sky-700 border-sky-200","Covered store":"bg-violet-100 text-violet-700 border-violet-200"};
+      return (<div className="flex flex-wrap gap-1">{locs.map(l=><span key={l} className={"inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold border "+(cfg[l]||"bg-gray-100 text-gray-600 border-gray-200")}>{l}</span>)}</div>);
+    }
+
+    function aptStyle(a) {
+      const locs=toLocs(a.storageLocation), hasYard=locs.includes("Open Yard"), hasCovered=locs.includes("Covered store");
+      if (hasYard&&hasCovered) return {cls:"bg-amber-50 border-amber-400 text-amber-900",sty:{}};
+      if (hasYard)             return {cls:"bg-red-50 border-red-300 text-red-900",sty:{}};
+      return {cls:"border",sty:{background:"rgba(28,54,100,0.07)",borderColor:"rgba(28,54,100,0.35)",color:P}};
+    }
+
+    function Logo({ large }) {
+      const w=large?96:48, h=large?90:46;
+      return (
+        <div className="flex items-center gap-2.5 shrink-0">
+          <svg width={w} height={h} viewBox="0 0 120 112" fill="none">
+            <defs>
+              <linearGradient id="lg1" x1="0.5" y1="0" x2="0.3" y2="1"><stop offset="0%" stopColor="#00e2f5"/><stop offset="45%" stopColor="#2860f5"/><stop offset="100%" stopColor="#4025d0"/></linearGradient>
+              <linearGradient id="lg2" x1="0.5" y1="0" x2="0.7" y2="1"><stop offset="0%" stopColor="#6020c8"/><stop offset="50%" stopColor="#b82858"/><stop offset="100%" stopColor="#e01e10"/></linearGradient>
+              <linearGradient id="lg3" x1="0" y1="0" x2="1" y2="0.3"><stop offset="0%" stopColor="#00e2f5"/><stop offset="100%" stopColor="#2860f5"/></linearGradient>
+            </defs>
+            <ellipse cx="68" cy="60" rx="24" ry="38" transform="rotate(24 68 60)"  fill="none" stroke="url(#lg2)" strokeWidth="8" strokeLinecap="round"/>
+            <ellipse cx="52" cy="60" rx="24" ry="38" transform="rotate(-24 52 60)" fill="none" stroke="url(#lg1)" strokeWidth="8" strokeLinecap="round"/>
+            <path d="M22 42C36 10 80 8 98 34" fill="none" stroke="url(#lg3)" strokeWidth="3" strokeLinecap="round"/>
+          </svg>
+          <div className="leading-none">
+            <div style={{fontFamily:"'DM Sans',sans-serif",color:"#fff",fontWeight:800,fontSize:large?"22px":"14px",lineHeight:1.2}}>Bapco</div>
+            <div style={{fontFamily:"'DM Sans',sans-serif",color:"rgba(255,255,255,0.6)",fontWeight:400,fontSize:large?"16px":"11.5px",lineHeight:1.2}}>Energies</div>
+          </div>
+        </div>
+      );
+    }
+
+    function StatusBadge({ status }) {
+      const cfg={pending:{cls:"bg-amber-100 text-amber-800 border-amber-200",label:"⏳ Pending"},approved:{cls:"bg-emerald-100 text-emerald-800 border-emerald-200",label:"✓ Approved"},rejected:{cls:"bg-red-100 text-red-800 border-red-200",label:"✕ Rejected"}}[status];
+      return <span className={"inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border "+cfg.cls}>{cfg.label}</span>;
+    }
+
+    function NavItem({ Icon, label, badge, active, collapsed, onClick }) {
+      const [hov,setHov]=useState(false);
+      return (
+        <button onClick={onClick} title={collapsed?label:undefined} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+          style={{background:active?A:hov?"rgba(255,255,255,0.09)":"transparent",color:active||hov?"#fff":"rgba(255,255,255,0.45)"}}
+          className={"w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all relative "+(collapsed?"justify-center":"justify-between")}>
+          <span className="flex items-center gap-3"><Icon size={16}/>{!collapsed&&label}</span>
+          {!collapsed&&badge>0&&<span className="bg-white/20 text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center">{badge}</span>}
+          {collapsed&&badge>0&&<span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-400 rounded-full border border-slate-900"/>}
+        </button>
+      );
+    }
+
+    function TopBar({ onBack }) {
+      return (
+        <header style={{background:BG}} className="px-8 py-4 flex items-center justify-between border-b border-white/10">
+          <div className="flex items-center gap-4"><Logo/><div className="h-5 w-px bg-white/20"/><span style={{fontFamily:"'Syne',sans-serif",color:"#fff"}} className="font-extrabold text-sm">BE – Warehouse Appointments</span></div>
+          {onBack&&<button onClick={onBack} className="text-xs font-medium text-white/50 hover:text-white transition-colors">← Back to Home</button>}
+        </header>
+      );
+    }
+
+    function Landing({ onSupplier, onAdmin, onTracker }) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{background:BG}}>
+          <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');`}</style>
+          <div className="text-center mb-12">
+            <div className="flex justify-center mb-6"><Logo large/></div>
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <h1 style={{fontFamily:"'Syne',sans-serif"}} className="text-4xl font-extrabold text-white">BE – Warehouse Appointments</h1>
+
+            </div>
+            <p style={{color:"rgba(255,255,255,0.45)"}} className="text-sm">This platform is currently in preview. Full launch coming soon.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-6 w-full max-w-2xl mb-6">
+            <button onClick={onSupplier} className="bg-white/5 border border-white/10 rounded-2xl p-8 text-left hover:bg-white/10 hover:border-white/20 transition-all hover:shadow-2xl group">
+              <div className="flex items-center justify-between mb-5">
+                <div style={{background:A}} className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg"><Package size={26} className="text-white"/></div>
+                <span style={{background:"rgba(200,150,42,0.15)",color:A,borderColor:"rgba(200,150,42,0.35)"}} className="text-xs font-bold px-3 py-1 rounded-full border uppercase tracking-widest">Suppliers</span>
+              </div>
+              <div style={{fontFamily:"'Syne',sans-serif"}} className="font-extrabold text-white text-xl mb-1">Book a Delivery</div>
+              <div className="text-xs font-semibold mb-3" style={{color:A}}>Are you a supplier delivering to BE Warehouse?</div>
+              <div className="text-sm mb-6" style={{color:"rgba(255,255,255,0.45)"}}>Use this portal to request a delivery appointment — select your date, time slot, storage location, and submit your PO details for warehouse review.</div>
+              <ul className="text-xs space-y-1.5 mb-6" style={{color:"rgba(255,255,255,0.4)"}}>
+                {["No account or login required","Receive email confirmation instantly","Track your request via appointment ID"].map(t=>(
+                  <li key={t} className="flex items-center gap-2"><span style={{color:A}}>✓</span>{t}</li>
+                ))}
+              </ul>
+              <div className="flex items-center gap-2 text-xs font-bold" style={{color:A}}>Access as Supplier <span className="group-hover:translate-x-1 transition-transform inline-block">→</span></div>
+            </button>
+            <button onClick={onAdmin} className="bg-white/5 border border-white/10 rounded-2xl p-8 text-left hover:bg-white/10 hover:border-white/20 transition-all hover:shadow-2xl group">
+              <div className="flex items-center justify-between mb-5">
+                <div style={{background:"#2a5298"}} className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg"><Shield size={26} className="text-white"/></div>
+                <span style={{background:"rgba(122,175,255,0.12)",color:"#7aafff",borderColor:"rgba(122,175,255,0.3)"}} className="text-xs font-bold px-3 py-1 rounded-full border uppercase tracking-widest">Staff Only</span>
+              </div>
+              <div style={{fontFamily:"'Syne',sans-serif"}} className="font-extrabold text-white text-xl mb-1">Warehouse Admin Portal</div>
+              <div className="text-xs font-semibold mb-3" style={{color:"#7aafff"}}>Are you a BE Warehouse team member?</div>
+              <div className="text-sm mb-6" style={{color:"rgba(255,255,255,0.45)"}}>Access the admin dashboard to review incoming delivery requests, approve or reject appointments, manage the warehouse calendar, and send supplier notifications.</div>
+              <ul className="text-xs space-y-1.5 mb-6" style={{color:"rgba(255,255,255,0.4)"}}>
+                {["Requires authorised staff login","Full appointment management tools","Live warehouse calendar & email log"].map(t=>(
+                  <li key={t} className="flex items-center gap-2"><span style={{color:"#7aafff"}}>✓</span>{t}</li>
+                ))}
+              </ul>
+              <div className="flex items-center gap-2 text-xs font-bold" style={{color:"#7aafff"}}>Access as Admin <span className="group-hover:translate-x-1 transition-transform inline-block">→</span></div>
+            </button>
+          </div>
+          <div className="w-full max-w-2xl mb-16">
+            <button onClick={onTracker} className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center gap-5 hover:bg-white/10 hover:border-white/20 transition-all hover:shadow-xl group text-left">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{background:"rgba(52,211,153,0.2)"}}><Search size={22} className="text-emerald-300"/></div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span style={{fontFamily:"'Syne',sans-serif"}} className="font-extrabold text-white text-base">Track Your Appointment</span>
+                  <span style={{background:"rgba(52,211,153,0.15)",color:"#34d399",borderColor:"rgba(52,211,153,0.3)"}} className="text-xs font-bold px-2.5 py-0.5 rounded-full border uppercase tracking-widest">New</span>
+                </div>
+                <p className="text-xs" style={{color:"rgba(255,255,255,0.55)"}}>Search by Appointment ID, email, supplier name, or PO number to instantly look up status, delivery details, and warehouse feedback.</p>
+              </div>
+              <div className="text-xs font-bold group-hover:translate-x-1 transition-transform shrink-0" style={{color:"#34d399"}}>Track →</div>
+            </button>
+          </div>
+          <footer className="w-full max-w-5xl border-t border-white/10 pt-12 pb-8">
+            <div className="grid grid-cols-4 gap-10 mb-12">
+              {[["Our Vision","To be the most reliable and efficient refining logistics hub in the region, setting the benchmark for warehouse operations across the energy sector."],["Our Mission","Delivering safe, timely, and transparent supply chain management that supports Bapco Energies' operational excellence and national energy goals."],["Suppliers Care","We are committed to building long-term partnerships with our suppliers — ensuring fair scheduling, clear communication, and prompt feedback on every delivery request."]].map(([h,t])=>(
+                <div key={h}><div style={{color:A}} className="text-xs font-bold uppercase tracking-widest mb-3">{h}</div><p style={{color:"rgba(255,255,255,0.55)"}} className="text-sm leading-relaxed">{t}</p></div>
+              ))}
+              <div>
+                <div style={{color:A}} className="text-xs font-bold uppercase tracking-widest mb-3">Contact Us</div>
+                <ul className="text-sm space-y-2.5">
+                  {[["📍","Bapco Energies, Awali, Kingdom of Bahrain"],["📧","warehouse@bapcoenergies.com"],["👤","faisal.janahi@bapcoenergies.com"],["🕐","Sun – Thu, 07:00 – 13:30"]].map(([i,t])=>(
+                    <li key={t} className="flex items-start gap-2"><span style={{color:A}}>{i}</span><span style={{color:"rgba(255,255,255,0.55)"}}>{t}</span></li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-6 border-t border-white/10">
+              <Logo/>
+              <p style={{color:"rgba(255,255,255,0.25)"}} className="text-xs">© {new Date().getFullYear()} Bapco Energies. All rights reserved.</p>
+              <p style={{color:"rgba(255,255,255,0.25)"}} className="text-xs">BE Warehouse Appointments System</p>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    function AdminLogin({ onLogin, onBack }) {
+      const [email,setEmail]=useState(""); const [pwd,setPwd]=useState(""); const [err,setErr]=useState("");
+      const inp="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 bg-gray-50";
+      function submit() {
+        if (!email.trim()){setErr("Please enter your email.");return;}
+        if (email.trim().toLowerCase()!==ADMIN_EMAIL){setErr("Unauthorised email address.");return;}
+        if (pwd!==ADMIN_PWD){setErr("Incorrect password.");return;}
+        onLogin(email.trim());
+      }
+      return (
+        <div className="min-h-screen flex items-center justify-center p-6" style={{background:BG}}>
+          <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');`}</style>
+          <div className="w-full max-w-sm">
+            <div className="flex justify-center mb-8"><Logo/></div>
+            <div className="text-center mb-8"><h2 style={{fontFamily:"'Syne',sans-serif"}} className="text-2xl font-extrabold text-white">Admin Login</h2><p className="text-sm mt-1" style={{color:"rgba(255,255,255,0.45)"}}>BE – Warehouse Appointments</p></div>
+            <div className="bg-white rounded-2xl p-8 shadow-2xl space-y-4">
+              <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Email</label><input type="email" className={inp} value={email} placeholder="admin@bapcoenergies.com" onChange={e=>{setEmail(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()}/></div>
+              <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Password</label><input type="password" className={inp} value={pwd} placeholder="••••••••" onChange={e=>{setPwd(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()}/></div>
+              {err&&<p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{err}</p>}
+
+              <button onClick={submit} style={{background:P}} className="w-full py-3 text-white rounded-xl text-sm font-semibold hover:opacity-90">Log In</button>
+              <button onClick={onBack} className="w-full py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">← Back</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const BLANK = {
+      supplierName:"", supplierEmail:"", date:"", time:"",
+      totalOrders:"", totalLines:"", poNumbers:[],
+      needsEquipment:null, offloadingEquipment:[],
+      storageLocation:[], additionalNotes:"", attachmentFile:null,
+    };
+
+    function SupplierForm({ onSubmit, onBack, appointments }) {
+      const [f,setF]=useState(BLANK); const [done,setDone]=useState(false); const [dateErr,setDateErr]=useState(""); const fileRef=useRef();
+      function set(k) { return v=>setF(p=>({...p,[k]:v})); }
+      function setE(k) { return e=>set(k)(e.target.value); }
+      function toggleStorage(loc) { setF(p=>{const c=p.storageLocation; return {...p,storageLocation:c.includes(loc)?c.filter(x=>x!==loc):[...c,loc]};}); }
+      function toggleEq(eq) { setF(p=>({...p,offloadingEquipment:p.offloadingEquipment.includes(eq)?p.offloadingEquipment.filter(x=>x!==eq):[...p.offloadingEquipment,eq]})); }
+      const today = todayStr();
+      function isSlotPast(slot, dateVal) {
+        const d = dateVal !== undefined ? dateVal : f.date;
+        if (!d || d > today) return false; if (d < today) return true;
+        const now = new Date(), parts = slot.split(":");
+        const slotMins = parseInt(parts[0],10)*60 + parseInt(parts[1],10);
+        return slotMins <= now.getHours()*60 + now.getMinutes();
+      }
+      function slotCount(slot) { if (!f.date) return 0; return (appointments||[]).filter(a=>a.date===f.date&&a.time===slot&&a.status!=="rejected").length; }
+      const slotFull = f.time && slotCount(f.time) >= 2;
+      const slotPast = f.time && isSlotPast(f.time);
+      const declared=parseInt(f.totalOrders,10), tagCount=f.poNumbers.length, hasDeclared=f.totalOrders!==""&&!isNaN(declared), mismatch=hasDeclared&&declared!==tagCount, poEmpty=tagCount===0;
+      const valid=(f.supplierName&&f.supplierEmail&&f.date&&!dateErr&&f.time&&!slotFull&&!slotPast&&hasDeclared&&!mismatch&&!poEmpty&&f.totalLines&&f.storageLocation.length>0&&f.needsEquipment!==null&&(!f.needsEquipment||f.offloadingEquipment.length>0));
+      function handleDate(e) {
+        const v=e.target.value; set("date")(v);
+        if (v < today) setDateErr("⛔ Cannot book a past date.");
+        else if (isWeekend(v)) setDateErr("⛔ Friday and Saturday are non-working days.");
+        else setDateErr("");
+        if (f.time && isSlotPast(f.time, v)) set("time")("");
+      }
+      function handleFile(e) { const file=e.target.files[0]; if (!file) return; if (!["application/pdf","image/jpeg","image/png","image/jpg"].includes(file.type)){alert("Only PDF, JPG or PNG accepted.");return;} if (file.size>10485760){alert("File must be under 10 MB.");return;} set("attachmentFile")(file); }
+      const inp="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 bg-gray-50";
+      if (done) return (
+        <div className="min-h-screen flex flex-col" style={{background:BG}}>
+          <TopBar onBack={onBack}/>
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center max-w-md">
+              <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle2 className="text-emerald-600" size={36}/></div>
+              <h2 style={{fontFamily:"'Syne',sans-serif"}} className="text-2xl font-extrabold text-white mb-3">Request Submitted!</h2>
+              <p style={{color:"rgba(255,255,255,0.55)"}} className="text-sm mb-3">Your appointment has been submitted for review.</p>
+              <div className="bg-white/10 border border-white/20 rounded-2xl px-5 py-4 mb-8 text-left">
+                <div className="flex items-start gap-3"><Mail size={18} className="text-amber-300 shrink-0 mt-0.5"/><p style={{color:"rgba(255,255,255,0.75)"}} className="text-sm leading-relaxed">A confirmation email will be sent to your registered address with your <strong className="text-white">appointment number</strong> for tracking purposes.</p></div>
+              </div>
+              <div className="flex gap-3 justify-center">
+                <button onClick={()=>{setDone(false);setF(BLANK);setDateErr("");}} style={{background:A}} className="px-6 py-3 text-white rounded-xl text-sm font-semibold hover:opacity-90">Submit Another</button>
+                <button onClick={onBack} className="px-6 py-3 bg-white/10 border border-white/20 rounded-xl text-sm font-semibold text-white hover:bg-white/20">Back to Home</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+      return (
+        <div className="min-h-screen flex flex-col" style={{background:BG}}>
+          <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');`}</style>
+          <TopBar onBack={onBack}/>
+          <div className="max-w-2xl w-full mx-auto py-10 px-6">
+            <div className="mb-8"><h1 style={{fontFamily:"'Syne',sans-serif",color:"#fff"}} className="text-3xl font-extrabold mb-2">Book a Delivery Appointment</h1><p style={{color:"rgba(255,255,255,0.5)"}} className="text-sm">All requests are subject to warehouse approval. You will be notified by email.</p></div>
+            <div className="bg-white rounded-2xl shadow-sm p-8 space-y-6">
+              <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Supplier / Company Name <span className="text-red-400">*</span></label><input className={inp} value={f.supplierName} onChange={setE("supplierName")} placeholder="e.g. Gulf Trading Co."/></div>
+              <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Email Address <span className="text-red-400">*</span></label><input type="email" className={inp} value={f.supplierEmail} onChange={setE("supplierEmail")} placeholder="dispatch@company.com"/></div>
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Delivery Date <span className="text-red-400">*</span></label>
+                  <input type="date" min={today} value={f.date} onChange={handleDate} className={"w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 bg-gray-50 "+(dateErr?"border-red-400":"border-gray-200")}/>
+                  {dateErr?<p className="text-xs text-red-600 mt-1.5">{dateErr}</p>:<p className="text-xs text-gray-400 mt-1.5">Today or later · Working days: Sun – Thu only</p>}
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Delivery Time <span className="text-red-400">*</span></label>
+                  <select className={inp} value={f.time} onChange={setE("time")}>
+                    <option value="">Select a slot…</option>
+                    {SLOTS.map(t=>{const taken=slotCount(t),full=taken>=2,past=isSlotPast(t);return <option key={t} value={t} disabled={full||past}>{t+(full?"  —  Full":past?"  —  Passed":taken===1?"  (1 remaining)":"")}</option>;})}
+                  </select>
+                  {slotFull&&<p className="text-xs text-red-600 mt-1.5">⚠ This time slot is fully booked.</p>}
+                  {slotPast&&!slotFull&&<p className="text-xs text-red-600 mt-1.5">⚠ This time slot has already passed.</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Total Orders <span className="text-red-400">*</span></label>
+                  <input type="number" min="1" value={f.totalOrders} onChange={setE("totalOrders")} placeholder="e.g. 5" className={"w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 bg-gray-50 "+(mismatch?"border-red-400":"border-gray-200")}/>
+                  {mismatch&&<p className="text-xs text-red-600 font-semibold mt-1.5">{"⚠ Declared "+declared+" order"+(declared!==1?"s":"")+" but "+tagCount+" PO tag"+(tagCount!==1?"s":"")+" added."}</p>}
+                </div>
+                <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Total Lines <span className="text-red-400">*</span></label><input type="number" min="1" className={inp} value={f.totalLines} onChange={setE("totalLines")} placeholder="e.g. 23"/></div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">PO Numbers <span className="text-red-400">*</span></label>
+                <p className="text-xs text-gray-400 mb-2">Type a PO number and press Enter or comma to add it as a tag. Count must equal Total Orders.</p>
+                <POTagInput tags={f.poNumbers} onChange={set("poNumbers")} hasError={mismatch||(poEmpty&&hasDeclared)}/>
+                {tagCount===0&&hasDeclared&&<p className="mt-1.5 text-xs font-semibold text-red-600">{"⚠ Please add "+declared+" PO number"+(declared!==1?"s":"")+"."}</p>}
+                {tagCount>0&&!mismatch&&hasDeclared&&<p className="mt-1.5 text-xs font-semibold text-emerald-600">{"✓ "+tagCount+" PO"+(tagCount!==1?"s":"")+" added — matches Total Orders."}</p>}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Storage Location <span className="text-red-400">*</span><span className="ml-2 text-gray-400 font-normal normal-case">Select one or both</span></label>
+                <div className="grid grid-cols-2 gap-3">
+                  {STORAGE.map(loc=>{const on=f.storageLocation.includes(loc); return (
+                    <button key={loc} type="button" onClick={()=>toggleStorage(loc)} className={"flex items-center gap-3 py-4 px-4 rounded-xl border-2 text-sm font-semibold text-left transition-all "+(on?"border-indigo-400 bg-indigo-50 text-indigo-900":"border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300")}>
+                      <div className={"w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 "+(on?"border-indigo-500 bg-indigo-500":"border-gray-300 bg-white")}>{on&&<CheckCircle2 size={12} className="text-white"/>}</div>
+                      <div><div className="font-semibold">{loc}</div><div className="text-xs font-normal opacity-60">{loc==="Open Yard"?"External yard area":"Indoor covered warehouse"}</div></div>
+                    </button>
+                  );})}
+                </div>
+                {f.storageLocation.length===0&&<p className="text-xs text-red-500 mt-1.5">Please select at least one storage location.</p>}
+                {f.storageLocation.length===2&&<div className="mt-2 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5"><span className="text-amber-600">📦</span><p className="text-xs text-amber-800 font-medium">Both warehouses selected — the warehouse team will coordinate accordingly.</p></div>}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Off-loading Equipment Required? <span className="text-red-400">*</span></label>
+                <div className="space-y-3">
+                  <div className="flex gap-3">
+                    {[false,true].map(opt=>{const on=f.needsEquipment===opt; return (
+                      <button key={String(opt)} type="button" onClick={()=>{set("needsEquipment")(opt);if(!opt)set("offloadingEquipment")([]);}}
+                        className="flex-1 py-3 rounded-xl border text-sm font-semibold transition-all"
+                        style={on?{borderColor:P,background:P+"14",color:P}:{borderColor:"#e5e7eb",background:"#f9fafb",color:"#6b7280"}}>{opt?"Yes":"No"}</button>
+                    );})}
+                  </div>
+                  {f.needsEquipment&&(
+                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 grid grid-cols-2 gap-2">
+                      {EQUIP.map(eq=>{const on=f.offloadingEquipment.includes(eq); return (
+                        <button key={eq} type="button" onClick={()=>toggleEq(eq)} className={"flex items-center gap-2.5 py-2.5 px-3 rounded-lg border text-sm font-medium text-left transition-all "+(on?"border-amber-300 bg-amber-50 text-amber-900":"border-gray-200 bg-white text-gray-600 hover:bg-gray-100")}>
+                          <div className={"w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 "+(on?"border-amber-500 bg-amber-500":"border-gray-300")}>{on&&<CheckCircle2 size={10} className="text-white"/>}</div>{eq}
+                        </button>
+                      );})}
+                      {f.offloadingEquipment.length===0&&<p className="col-span-2 text-xs text-red-500 pt-1">Please select at least one equipment type.</p>}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Additional Notes</label><textarea className={inp+" resize-none h-20"} value={f.additionalNotes} onChange={setE("additionalNotes")} placeholder="Special requirements or handling instructions (optional)"/></div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Delivery Note <span className="text-gray-400 font-normal normal-case">(optional)</span></label>
+                {!f.attachmentFile
+                  ?<button type="button" onClick={()=>fileRef.current.click()} className="w-full border-2 border-dashed border-gray-200 rounded-xl py-8 flex flex-col items-center gap-2 hover:border-gray-300 hover:bg-gray-50 transition-all group">
+                    <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center"><Paperclip size={18} className="text-gray-400"/></div>
+                    <div className="text-sm font-semibold text-gray-500">Click to attach a file</div>
+                    <div className="text-xs text-gray-400">PDF, JPG or PNG · Max 10 MB</div>
+                   </button>
+                  :<div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3.5">
+                    <div className="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center shrink-0"><Paperclip size={16} className="text-amber-600"/></div>
+                    <div className="flex-1 min-w-0"><div className="text-sm font-semibold text-amber-900 truncate">{f.attachmentFile.name}</div><div className="text-xs text-amber-600">{fmtSize(f.attachmentFile.size)}</div></div>
+                    <button type="button" onClick={()=>{set("attachmentFile")(null);if(fileRef.current)fileRef.current.value="";}} className="text-amber-500 hover:text-amber-800"><X size={16}/></button>
+                   </div>
+                }
+                <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleFile}/>
+              </div>
+              <button type="button" disabled={!valid} onClick={()=>{onSubmit({...f,attachmentName:f.attachmentFile?f.attachmentFile.name:null});setDone(true);}}
+                style={{background:P}} className="px-8 py-3 text-white rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 hover:opacity-90">
+                <Send size={15}/> Submit for Approval
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function SupplierTracker({ appointments, onBack }) {
+      const [query,setQuery]=useState(""); const [results,setResults]=useState([]); const [searched,setSearched]=useState(false);
+      function doSearch() {
+        const q=query.trim().toLowerCase(); if (!q) return;
+        const found=appointments.filter(a=>a.id.toLowerCase()===q||a.supplierEmail.toLowerCase()===q||a.supplierName.toLowerCase().includes(q)||(a.poNumbers||[]).some(p=>p.toLowerCase().includes(q)));
+        setResults(found.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))); setSearched(true);
+      }
+      const sCfg={
+        pending:  {icon:"⏳",hBg:"bg-amber-50",   hBd:"border-amber-200",   tc:"text-amber-800",   label:"Pending Review", desc:"Your appointment is awaiting warehouse team review."},
+        approved: {icon:"✅",hBg:"bg-emerald-50",  hBd:"border-emerald-200", tc:"text-emerald-800", label:"Approved",       desc:"Your delivery appointment has been confirmed."},
+        rejected: {icon:"❌",hBg:"bg-red-50",      hBd:"border-red-200",     tc:"text-red-800",     label:"Rejected",       desc:"Your appointment was not approved. See the reason below."},
+      };
+      const inp="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 bg-gray-50";
+      return (
+        <div className="min-h-screen flex flex-col" style={{background:BG}}>
+          <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');`}</style>
+          <TopBar onBack={onBack}/>
+          <div className="max-w-2xl w-full mx-auto py-10 px-6">
+            <div className="mb-8"><h1 style={{fontFamily:"'Syne',sans-serif",color:"#fff"}} className="text-3xl font-extrabold mb-2">Track Your Appointment</h1><p style={{color:"rgba(255,255,255,0.5)"}} className="text-sm">Search by Appointment ID, email, supplier name, or PO number.</p></div>
+            <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Appointment ID, Email, Supplier Name, or PO Number</label>
+              <div className="flex gap-3 mb-2">
+                <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder="e.g. APT-001, dispatch@company.com, or PO-2026-0041" className={inp}/>
+                <button onClick={doSearch} style={{background:P}} className="px-5 py-3 text-white rounded-xl text-sm font-semibold hover:opacity-90 flex items-center gap-2 whitespace-nowrap"><Search size={15}/> Search</button>
+              </div>
+              <p className="text-xs text-gray-400">Search by Appointment ID, email, supplier name, or PO number.</p>
+            </div>
+            {searched&&results.length===0&&(
+              <div className="bg-white/10 border border-white/15 rounded-2xl p-16 text-center">
+                <div className="text-5xl mb-4">🔍</div>
+                <h3 className="font-semibold text-white mb-2">No appointments found</h3>
+                <p style={{color:"rgba(255,255,255,0.5)"}} className="text-sm">No appointments match that search. Please double-check and try again.</p>
+              </div>
+            )}
+            {results.length>0&&(
+              <div className="space-y-5">
+                <p style={{color:"rgba(255,255,255,0.55)"}} className="text-xs font-semibold uppercase tracking-wide">{results.length} appointment{results.length!==1?"s":""} found</p>
+                {results.map(a=>{
+                  const s=sCfg[a.status];
+                  return (
+                    <div key={a.id} className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+                      <div className={"px-6 py-4 border-b flex items-center justify-between "+s.hBg+" "+s.hBd}>
+                        <div className="flex items-center gap-3"><span className="text-2xl">{s.icon}</span><div><div className={"font-bold text-base "+s.tc}>{s.label}</div><div className={"text-xs opacity-70 "+s.tc}>{s.desc}</div></div></div>
+                        <span className="font-mono text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{a.id}</span>
+                      </div>
+                      <div className="p-6 space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          {[["Supplier",a.supplierName],["Date",fmtDate(a.date)],["Time",a.time],["Orders / Lines",a.totalOrders+" / "+a.totalLines]].map(([k,v])=>(
+                            <div key={k} className="bg-gray-50 rounded-xl p-3 border border-gray-100"><div className="text-xs text-gray-400 mb-1">{k}</div><div className="font-semibold text-gray-900 text-sm">{v}</div></div>
+                          ))}
+                          <div className="col-span-2 bg-gray-50 rounded-xl p-3 border border-gray-100"><div className="text-xs text-gray-400 mb-1.5">Storage Location</div><StoreBadge loc={a.storageLocation}/></div>
+                        </div>
+                        {(a.poNumbers||[]).length>0&&(<div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100"><div className="text-xs text-indigo-600 font-semibold mb-2 flex items-center gap-1"><Hash size={11}/>PO Numbers ({a.poNumbers.length})</div><POTagList tags={a.poNumbers} max={a.poNumbers.length}/></div>)}
+                        {a.status==="approved"&&(<div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3"><span className="text-lg shrink-0">📋</span><p className="text-sm text-emerald-800"><strong>Next steps:</strong> Please arrive at least 15 minutes before your slot and report to warehouse reception with your delivery documents.</p></div>)}
+                        {a.status==="rejected"&&a.managerComments&&(<div className="bg-red-50 border border-red-200 rounded-xl p-4"><div className="text-xs font-semibold text-red-500 uppercase tracking-wide mb-1.5">Rejection Reason</div><p className="text-sm text-red-800">{a.managerComments}</p></div>)}
+                        <div className="flex items-center justify-between text-xs text-gray-400 pt-3 border-t border-gray-100"><span>Submitted: {fmtTs(a.createdAt)}</span><span>Last updated: {fmtTs(a.updatedAt)}</span></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function Dashboard({ appointments, setView }) {
+      const recent=[...appointments].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6);
+      const counts={pending:appointments.filter(a=>a.status==="pending").length,approved:appointments.filter(a=>a.status==="approved").length,rejected:appointments.filter(a=>a.status==="rejected").length};
+      return (
+        <div className="p-8">
+          <div className="mb-8"><h1 style={{fontFamily:"'Syne',sans-serif",color:"#fff"}} className="text-3xl font-extrabold">Dashboard</h1><p style={{color:"rgba(255,255,255,0.5)"}} className="text-sm mt-1">Warehouse delivery appointments overview</p></div>
+          <div className="grid grid-cols-3 gap-5 mb-8">
+            {[{label:"Pending Review",key:"pending",bg:"rgba(245,158,11,0.15)",bd:"rgba(245,158,11,0.3)",ib:"bg-amber-400/20",ic:"text-amber-300",vc:"text-amber-300",Icon:Clock3},{label:"Approved",key:"approved",bg:"rgba(16,185,129,0.15)",bd:"rgba(16,185,129,0.3)",ib:"bg-emerald-400/20",ic:"text-emerald-300",vc:"text-emerald-300",Icon:CheckCircle2},{label:"Rejected",key:"rejected",bg:"rgba(239,68,68,0.15)",bd:"rgba(239,68,68,0.3)",ib:"bg-red-400/20",ic:"text-red-300",vc:"text-red-300",Icon:XCircle}].map(({label,key,bg,bd,ib,ic,vc,Icon})=>(
+              <div key={key} className="rounded-2xl p-6" style={{background:bg,border:"1px solid "+bd}}>
+                <div className="flex items-center justify-between mb-4"><div className={"w-10 h-10 rounded-xl flex items-center justify-center "+ib}><Icon className={ic} size={20}/></div><span className={"text-3xl font-bold "+vc}>{counts[key]}</span></div>
+                <div className="text-sm font-semibold text-white/80">{label}</div>
+              </div>
+            ))}
+          </div>
+          <div className="bg-white/10 rounded-2xl border border-white/15">
+            <div className="p-6 border-b border-white/10 flex justify-between items-center"><h2 className="font-semibold text-white">Recent Appointments</h2><button onClick={()=>setView("admin")} style={{color:A}} className="text-xs font-semibold hover:underline">View all →</button></div>
+            <div className="divide-y divide-white/10">
+              {recent.map(a=>(
+                <div key={a.id} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className={"w-2 h-9 rounded-full shrink-0 "+(toLocs(a.storageLocation).length===2?"bg-amber-400":toLocs(a.storageLocation).includes("Open Yard")?"bg-sky-400":"bg-violet-400")}/>
+                    <div><div className="font-medium text-sm text-white">{a.supplierName}</div><div className="text-xs text-white/40">{fmtDate(a.date)} · {a.time} · {locsLabel(a.storageLocation)} · {a.totalOrders} orders / {a.totalLines} lines</div></div>
+                  </div>
+                  <StatusBadge status={a.status}/>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function AdminPanel({ appointments, onApprove, onReject, onView, loading }) {
+      const [showF,setShowF]=useState(true);
+      const [searchQ,setSearchQ]=useState(""); const [poQ,setPoQ]=useState(""); const [statFs,setStatFs]=useState([]); const [dFrom,setDFrom]=useState(""); const [dTo,setDTo]=useState(""); const [stoF,setStoF]=useState("");
+      const hasFilters=searchQ||poQ||statFs.length||dFrom||dTo||stoF;
+      function clearAll(){setSearchQ("");setPoQ("");setStatFs([]);setDFrom("");setDTo("");setStoF("");}
+      function togStat(s){setStatFs(p=>p.includes(s)?p.filter(x=>x!==s):[...p,s]);}
+      const rows=useMemo(()=>{
+        const pq=poQ.trim().toUpperCase();
+        return appointments.filter(a=>{
+          if (searchQ&&!a.supplierName.toLowerCase().includes(searchQ.toLowerCase())&&!a.supplierEmail.toLowerCase().includes(searchQ.toLowerCase())) return false;
+          if (pq&&!(a.poNumbers||[]).some(p=>p.toUpperCase().includes(pq))) return false;
+          if (statFs.length&&!statFs.includes(a.status)) return false;
+          if (dFrom&&a.date<dFrom) return false; if (dTo&&a.date>dTo) return false;
+          if (stoF&&!toLocs(a.storageLocation).includes(stoF)) return false;
+          return true;
+        }).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+      },[appointments,searchQ,poQ,statFs,dFrom,dTo,stoF]);
+      const stats=useMemo(()=>({total:rows.length,pending:rows.filter(a=>a.status==="pending").length,approved:rows.filter(a=>a.status==="approved").length,rejected:rows.filter(a=>a.status==="rejected").length,orders:rows.reduce((s,a)=>s+Number(a.totalOrders),0),lines:rows.reduce((s,a)=>s+Number(a.totalLines),0)}),[rows]);
+      const sc={pending:"#f59e0b",approved:"#10b981",rejected:"#ef4444"};
+      const headers=["ID","Supplier","Date","Time","Total Orders","Lines","PO Numbers","Equipment","Station","Attachment","Status","Comments","Created","Actions"];
+      return (
+        <div className="p-8">
+          <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
+            <div><h1 style={{fontFamily:"'Syne',sans-serif",color:"#fff"}} className="text-3xl font-extrabold">Admin Panel</h1><p style={{color:"rgba(255,255,255,0.5)"}} className="text-sm mt-1">Review, action, and search delivery appointment requests</p></div>
+            <button onClick={()=>setShowF(v=>!v)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-colors" style={showF?{background:A,color:"#fff",borderColor:A}:{background:"rgba(255,255,255,0.1)",borderColor:"rgba(255,255,255,0.15)",color:"rgba(255,255,255,0.8)"}}>
+              <SlidersHorizontal size={15}/>{showF?"Hide Filters":"Show Filters"}{hasFilters&&<span className="w-2 h-2 rounded-full bg-white ml-1"/>}
+            </button>
+          </div>
+          {showF&&(
+            <div className="bg-white/10 border border-white/15 rounded-2xl p-5 mb-5 space-y-4">
+              <div className="flex items-center justify-between"><span className="text-sm font-semibold text-white flex items-center gap-2"><Filter size={14}/> Search &amp; Filter</span>{hasFilters&&<button onClick={clearAll} className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white"><RotateCcw size={12}/> Clear all</button>}</div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="relative"><Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none"/><input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search supplier name or email…" className="w-full bg-white/10 border border-white/15 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-white/35 focus:outline-none"/></div>
+                <div className="relative"><Hash size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-indigo-300 pointer-events-none"/><input value={poQ} onChange={e=>setPoQ(e.target.value)} placeholder="Search by PO number…" className="w-full bg-indigo-500/15 border border-indigo-400/30 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-indigo-300/50 focus:outline-none"/></div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div><label className="block text-xs font-semibold text-white/50 uppercase tracking-wide mb-1.5">Date From</label><input type="date" value={dFrom} onChange={e=>setDFrom(e.target.value)} className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none" style={{colorScheme:"dark"}}/></div>
+                <div><label className="block text-xs font-semibold text-white/50 uppercase tracking-wide mb-1.5">Date To</label><input type="date" value={dTo} onChange={e=>setDTo(e.target.value)} className="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none" style={{colorScheme:"dark"}}/></div>
+                <div><label className="block text-xs font-semibold text-white/50 uppercase tracking-wide mb-1.5">Status</label><div className="flex gap-2">{["pending","approved","rejected"].map(s=>{const on=statFs.includes(s);return(<button key={s} onClick={()=>togStat(s)} className="flex-1 py-2 rounded-xl text-xs font-semibold capitalize border transition-all" style={on?{background:sc[s],color:"#fff",borderColor:sc[s]}:{background:"rgba(255,255,255,0.07)",borderColor:"rgba(255,255,255,0.15)",color:"rgba(255,255,255,0.6)"}}>{s}</button>);})}</div></div>
+              </div>
+              <select value={stoF} onChange={e=>setStoF(e.target.value)} className="bg-white/10 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none w-64" style={{colorScheme:"dark"}}>
+                <option value="">All Storage Locations</option>{STORAGE.map(s=><option key={s} value={s}>{s}</option>)}
+              </select>
+              <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-white/10">
+                <span className="text-xs font-bold text-white/60 uppercase tracking-wide">Results:</span>
+                <span className="bg-white/15 text-white text-xs font-bold px-3 py-1 rounded-full">{stats.total} appointment{stats.total!==1?"s":""}</span>
+                <span className="bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full">{stats.pending} pending</span>
+                <span className="bg-emerald-500/20 text-emerald-300 text-xs font-bold px-3 py-1 rounded-full">{stats.approved} approved</span>
+                <span className="bg-red-500/20 text-red-300 text-xs font-bold px-3 py-1 rounded-full">{stats.rejected} rejected</span>
+                <div className="ml-auto flex gap-4 text-xs text-white/50"><span>Orders: <strong className="text-white/80">{stats.orders}</strong></span><span>Lines: <strong className="text-white/80">{stats.lines}</strong></span></div>
+              </div>
+            </div>
+          )}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="text-sm" style={{minWidth:"1280px",width:"100%"}}>
+                <thead><tr className="border-b border-gray-100 bg-gray-50/60">{headers.map(h=><th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-4 whitespace-nowrap">{h}</th>)}</tr></thead>
+                <tbody className="divide-y divide-gray-50">
+                  {rows.map(a=>(
+                    <tr key={a.id} className="hover:bg-gray-50/60 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs text-gray-400 whitespace-nowrap">{a.id}</td>
+                      <td className="px-4 py-3"><div className="font-semibold text-gray-900 whitespace-nowrap">{a.supplierName}</div><div className="text-xs text-gray-400">{a.supplierEmail}</div></td>
+                      <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-800">{fmtDate(a.date)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-700">{a.time}</td>
+                      <td className="px-4 py-3 text-center font-semibold text-gray-800">{a.totalOrders}</td>
+                      <td className="px-4 py-3 text-center font-semibold text-gray-800">{a.totalLines}</td>
+                      <td className="px-4 py-3 max-w-[200px]"><POTagList tags={a.poNumbers||[]} max={2} small={true}/></td>
+                      <td className="px-4 py-3 max-w-[130px]"><div className="text-xs text-gray-600">{a.offloadingEquipment.length?a.offloadingEquipment.join(", "):<span className="text-gray-300">None</span>}</div></td>
+                      <td className="px-4 py-3"><StoreBadge loc={a.storageLocation}/></td>
+                      <td className="px-4 py-3 whitespace-nowrap">{a.attachmentName?<div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 max-w-[130px]"><Paperclip size={11} className="text-amber-600 shrink-0"/><span className="text-xs text-amber-800 truncate font-medium">{a.attachmentName}</span></div>:<span className="text-gray-300 text-xs">None</span>}</td>
+                      <td className="px-4 py-3 whitespace-nowrap"><StatusBadge status={a.status}/></td>
+                      <td className="px-4 py-3 max-w-[150px]"><div className="text-xs text-gray-500 truncate">{a.managerComments||<span className="text-gray-300">—</span>}</div></td>
+                      <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-400">{fmtTs(a.createdAt)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <button onClick={()=>onView(a.id)} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><Eye size={14}/></button>
+                          {a.status==="pending"&&(<div className="flex gap-1">
+                            <button onClick={()=>onApprove(a)} disabled={!!loading} className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 whitespace-nowrap">{loading===a.id+"-a"?"…":"✓ Approve"}</button>
+                            <button onClick={()=>onReject(a.id)} disabled={!!loading} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 disabled:opacity-50 whitespace-nowrap">{loading===a.id+"-r"?"…":"✕ Reject"}</button>
+                          </div>)}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {rows.length===0&&<tr><td colSpan={14} className="px-4 py-16 text-center text-gray-400 text-sm">No appointments match your filters.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function CalendarView({ appointments }) {
+      const TODAY=new Date(2026,4,16);
+      const [view,setView]=useState("monthly"); const [cur,setCur]=useState(new Date(2026,4,16)); const [sel,setSel]=useState(null); const [locFs,setLocFs]=useState([]);
+      const LOC_FILTERS=[{key:"yard",label:"Open Yard",dot:"bg-red-400"},{key:"covered",label:"Covered Store",dot:"bg-indigo-400"},{key:"both",label:"Both",dot:"bg-amber-400"}];
+      function toggleLocF(key){setLocFs(p=>p.includes(key)?p.filter(x=>x!==key):[...p,key]);}
+      function matchLoc(a){const locs=toLocs(a.storageLocation);if(!locFs.length)return true;return locFs.some(f=>{if(f==="yard")return locs.length===1&&locs.includes("Open Yard");if(f==="covered")return locs.length===1&&locs.includes("Covered store");return locs.includes("Open Yard")&&locs.includes("Covered store");});}
+      const allApproved=appointments.filter(a=>a.status==="approved");
+      const approved=allApproved.filter(matchLoc);
+      function navigate(dir){setCur(c=>{if(view==="daily")return addDays(c,dir);if(view==="weekly")return addDays(c,dir*7);return new Date(c.getFullYear(),c.getMonth()+dir,1);});}
+      function forDate(d){return approved.filter(a=>a.date===dsOf(d)).sort((a,b)=>a.time.localeCompare(b.time));}
+      function isToday(d){return dsOf(d)===dsOf(TODAY);}
+      function weekStart(d){const r=new Date(d);r.setDate(r.getDate()-((r.getDay()+6)%7));return r;}
+      function calTitle(){
+        if(view==="monthly")return cur.toLocaleString("default",{month:"long",year:"numeric"});
+        if(view==="daily")return cur.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+        const ws=weekStart(cur),we=addDays(ws,6);
+        return ws.getMonth()===we.getMonth()?ws.getDate()+"–"+we.getDate()+" "+ws.toLocaleString("default",{month:"long",year:"numeric"}):ws.getDate()+" "+ws.toLocaleString("default",{month:"short"})+" – "+we.getDate()+" "+we.toLocaleString("default",{month:"short",year:"numeric"});
+      }
+      function AptCard({ a, onClick }) {
+        const s=aptStyle(a);
+        return (<button onClick={onClick} className={"w-full text-left px-2.5 py-2 rounded-xl border text-xs font-medium leading-snug transition-all hover:shadow-md "+s.cls} style={s.sty}><div className="font-bold truncate">{a.time}</div><div className="truncate font-semibold">{a.supplierName}</div><div className="truncate opacity-70">{locsLabel(a.storageLocation)} · {a.totalOrders} orders</div></button>);
+      }
+      function renderMonthly() {
+        const yr=cur.getFullYear(),mo=cur.getMonth(),daysInMonth=new Date(yr,mo+1,0).getDate(),sc=(new Date(yr,mo,1).getDay()+6)%7,total=Math.ceil((sc+daysInMonth)/7)*7;
+        return (
+          <div className="flex-1 bg-white rounded-2xl border border-white/20 shadow-sm overflow-hidden flex flex-col min-h-0">
+            <div className="grid grid-cols-7 border-b border-gray-100" style={{background:P}}>
+              {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>(
+                <div key={d} className={"text-center py-3 text-sm font-bold uppercase tracking-widest "+(i>=4?"text-white/25":"text-white/80")}>{d}{i>=4&&<span className="text-xs font-normal opacity-60 ml-1">Off</span>}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 flex-1 overflow-auto" style={{gridAutoRows:"minmax(110px,1fr)"}}>
+              {Array.from({length:total},(_,i)=>{
+                const dayNum=i-sc+1,valid=dayNum>=1&&dayNum<=daysInMonth,date=valid?new Date(yr,mo,dayNum):null,apts=date?forDate(date):[],isOff=i%7===4||i%7===5,today=date&&isToday(date);
+                return (
+                  <div key={i} className={"border-r border-b border-gray-50 p-2 flex flex-col "+(isOff?"bg-gray-100/60":"")}>
+                    {valid&&(<div className="flex flex-col flex-1"><div className="flex items-center justify-between mb-2"><div className={"text-sm font-bold w-8 h-8 flex items-center justify-center rounded-full "+(!today?(isOff?"text-gray-300":"text-gray-600"):"")} style={today?{background:A,color:"#fff"}:{}}>{dayNum}</div>{isOff&&<span className="text-xs text-gray-300">Off</span>}</div><div className="space-y-1.5 flex-1">{apts.map(a=><AptCard key={a.id} a={a} onClick={()=>setSel(a)}/>)}</div></div>)}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      }
+      function renderWeekly() {
+        const ws=weekStart(cur),days=Array.from({length:7},(_,i)=>addDays(ws,i));
+        return (
+          <div className="flex-1 bg-white rounded-2xl border border-white/20 shadow-sm overflow-hidden flex flex-col min-h-0">
+            <div className="grid grid-cols-7 border-b border-gray-100" style={{background:P}}>
+              {days.map((d,i)=>{const today=isToday(d),isOff=i===4||i===5;return(<div key={i} className={"text-center py-4 "+(isOff?"opacity-30":"")}><div className="text-xs font-bold uppercase tracking-widest text-white/60 mb-1">{d.toLocaleDateString("en-GB",{weekday:"short"})}</div><div className="text-xl font-extrabold mx-auto w-10 h-10 flex items-center justify-center rounded-full text-white" style={today?{background:A}:{}}>{d.getDate()}</div><div className="text-xs text-white/40 mt-0.5">{isOff?"Off":d.toLocaleDateString("en-GB",{month:"short"})}</div></div>);})}
+            </div>
+            <div className="grid grid-cols-7 flex-1 overflow-auto divide-x divide-gray-50">
+              {days.map((d,i)=>{const apts=forDate(d),isOff=i===4||i===5;return(<div key={i} className={"p-3 space-y-2 overflow-y-auto "+(isOff?"bg-gray-100/60":"bg-white")}>{isOff?<div className="flex items-center justify-center h-full"><span className="text-xs text-gray-300">Day Off</span></div>:apts.length===0?<div className="text-xs text-gray-300 text-center pt-6">No deliveries</div>:apts.map(a=><AptCard key={a.id} a={a} onClick={()=>setSel(a)}/>)}</div>);})}
+            </div>
+          </div>
+        );
+      }
+      function renderDaily() {
+        const apts=forDate(cur);
+        return (
+          <div className="flex-1 bg-white rounded-2xl border border-white/20 shadow-sm overflow-hidden flex flex-col min-h-0">
+            <div style={{background:P}} className="px-6 py-5 flex items-center gap-4">
+              <div><div className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-0.5">{cur.toLocaleDateString("en-GB",{weekday:"long"})}</div><div style={{fontFamily:"'Syne',sans-serif"}} className="text-white font-extrabold text-2xl">{cur.toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})}</div></div>
+              <input type="date" value={dsOf(cur)} onChange={e=>e.target.value&&setCur(new Date(e.target.value+"T00:00:00"))} className="ml-4 bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white text-sm focus:outline-none cursor-pointer hover:bg-white/20 transition-colors" style={{colorScheme:"dark"}}/>
+              <div className="ml-auto"><span className="bg-white/20 text-white text-sm font-bold px-4 py-1.5 rounded-full">{apts.length} appointment{apts.length!==1?"s":""}</span></div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              {apts.length===0?<div className="flex flex-col items-center justify-center h-full text-gray-300 gap-3"><Calendar size={48}/><p className="text-sm">No approved deliveries on this day.</p></div>
+                :<div className="space-y-4 max-w-xl mx-auto">{apts.map(a=>{const s=aptStyle(a);return(<button key={a.id} onClick={()=>setSel(a)} className={"w-full text-left p-5 rounded-2xl border-2 transition-all hover:shadow-lg "+s.cls} style={s.sty}><div className="flex items-center justify-between mb-3"><span style={{fontFamily:"'Syne',sans-serif"}} className="text-2xl font-extrabold">{a.time}</span><StoreBadge loc={a.storageLocation}/></div><div className="font-bold text-base mb-1">{a.supplierName}</div><div className="text-sm opacity-60 mb-3">{a.supplierEmail}</div>{(a.poNumbers||[]).length>0&&<div className="mb-2"><POTagList tags={a.poNumbers} max={4} small={true}/></div>}<div className="flex gap-4 text-xs font-semibold opacity-60"><span>{a.totalOrders} orders</span><span>{a.totalLines} lines</span>{a.offloadingEquipment.length>0&&<span>{a.offloadingEquipment.join(", ")}</span>}</div></button>);})}</div>}
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div className="p-6 flex flex-col" style={{height:"100vh"}}>
+          <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+            <div><h1 style={{fontFamily:"'Syne',sans-serif",color:"#fff"}} className="text-3xl font-extrabold">{calTitle()}</h1><p style={{color:"rgba(255,255,255,0.5)"}} className="text-sm mt-0.5">{approved.length} approved · Fri &amp; Sat are non-working days</p></div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-1 bg-white/10 border border-white/15 rounded-2xl p-1.5">
+                {LOC_FILTERS.map(({key,label,dot})=>{const on=locFs.includes(key);const count=allApproved.filter(a=>{const locs=toLocs(a.storageLocation);if(key==="yard")return locs.length===1&&locs.includes("Open Yard");if(key==="covered")return locs.length===1&&locs.includes("Covered store");return locs.includes("Open Yard")&&locs.includes("Covered store");}).length;return(<button key={key} onClick={()=>toggleLocF(key)} className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl transition-all" style={on?{background:A,color:"#fff"}:{color:"rgba(255,255,255,0.5)"}}><div className={"w-2.5 h-2.5 rounded-full shrink-0 "+dot+(on?"":" opacity-50")}/>{label}<span className={"text-xs font-bold rounded-full px-1.5 py-0.5 leading-none "+(on?"bg-white/20 text-white":"bg-white/10 text-white/40")}>{count}</span></button>);})}
+                {locFs.length>0&&<button onClick={()=>setLocFs([])} className="ml-1 flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold text-white/40 hover:text-white hover:bg-white/10 border-l border-white/10 pl-3"><X size={11}/>Clear</button>}
+              </div>
+              <div className="flex bg-white/10 border border-white/15 rounded-xl overflow-hidden">{["daily","weekly","monthly"].map(v=><button key={v} onClick={()=>setView(v)} className="px-4 py-2.5 text-sm font-semibold capitalize transition-colors" style={view===v?{background:A,color:"#fff"}:{color:"rgba(255,255,255,0.6)"}}>{v}</button>)}</div>
+              <button onClick={()=>setCur(new Date(TODAY))} style={{borderColor:"rgba(255,255,255,0.2)",color:"#fff"}} className="px-4 py-2.5 border rounded-xl text-sm font-semibold hover:bg-white/10 bg-white/5">Today</button>
+              <div className="flex items-center gap-1 bg-white/10 border border-white/15 rounded-xl overflow-hidden"><button onClick={()=>navigate(-1)} className="p-2.5 hover:bg-white/10"><ChevronLeft size={18} className="text-white/70"/></button><div className="w-px h-5 bg-white/20"/><button onClick={()=>navigate(1)} className="p-2.5 hover:bg-white/10"><ChevronRight size={18} className="text-white/70"/></button></div>
+            </div>
+          </div>
+          {view==="monthly"&&renderMonthly()}
+          {view==="weekly" &&renderWeekly()}
+          {view==="daily"  &&renderDaily()}
+          {sel&&(
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-7 max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-start mb-5"><div><StoreBadge loc={sel.storageLocation}/><h3 style={{fontFamily:"'Syne',sans-serif",color:P}} className="font-extrabold text-xl mt-2">{sel.supplierName}</h3><p className="text-sm text-gray-500">{sel.supplierEmail}</p></div><button onClick={()=>setSel(null)} className="text-gray-400 hover:text-gray-700"><X size={20}/></button></div>
+                <div className="grid grid-cols-2 gap-3 mb-3">{[["Date",fmtDate(sel.date)],["Time",sel.time],["Total Orders",sel.totalOrders],["Total Lines",sel.totalLines]].map(([k,v])=>(<div key={k} className={"bg-gray-50 rounded-xl p-3 border border-gray-100 "+(k==="Date"?"col-span-2":"")}><div className="text-xs text-gray-400 mb-1">{k}</div><div className="font-semibold text-gray-900">{v}</div></div>))}</div>
+                {(sel.poNumbers||[]).length>0&&<div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100 mb-3"><div className="text-xs text-indigo-600 font-semibold mb-2 flex items-center gap-1"><Hash size={11}/>PO Numbers ({sel.poNumbers.length})</div><POTagList tags={sel.poNumbers} max={sel.poNumbers.length}/></div>}
+                {sel.offloadingEquipment.length>0&&<div className="bg-amber-50 rounded-xl p-3 border border-amber-100 mb-3"><div className="text-xs text-amber-600 mb-1">Off-loading Equipment</div><div className="text-sm font-semibold text-amber-900">{sel.offloadingEquipment.join(", ")}</div></div>}
+                {sel.attachmentName&&<div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3"><Paperclip size={14} className="text-amber-600 shrink-0"/><div><div className="text-xs text-amber-600">Delivery Note</div><div className="text-sm font-semibold text-amber-900">{sel.attachmentName}</div></div></div>}
+                {sel.additionalNotes&&<div className="bg-gray-50 rounded-xl p-3 border border-gray-100 mb-3"><div className="text-xs text-gray-400 mb-1">Notes</div><div className="text-sm text-gray-700">{sel.additionalNotes}</div></div>}
+                <button onClick={()=>setSel(null)} className="mt-2 w-full py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50">Close</button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function EmailLog({ emailLog }) {
+      return (
+        <div className="p-8">
+          <div className="mb-8"><h1 style={{fontFamily:"'Syne',sans-serif",color:"#fff"}} className="text-3xl font-extrabold">Email Log</h1><p style={{color:"rgba(255,255,255,0.5)"}} className="text-sm mt-1">All notification emails generated this session</p></div>
+          {emailLog.length===0?<div className="bg-white/10 border border-white/15 rounded-2xl p-20 text-center"><Mail className="text-white/20 mx-auto mb-4" size={48}/><p style={{color:"rgba(255,255,255,0.4)"}} className="text-sm">No emails yet. Approve or reject appointments to see logs here.</p></div>
+            :<div className="space-y-4">{emailLog.map(log=>(<div key={log.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6"><div className="flex items-start justify-between mb-4"><div className="flex items-center gap-3"><div className={"w-9 h-9 rounded-xl flex items-center justify-center "+(log.status==="sent"?"bg-emerald-100":"bg-red-100")}>{log.status==="sent"?<CheckCircle2 className="text-emerald-600" size={16}/>:<XCircle className="text-red-600" size={16}/>}</div><div><div className="font-semibold text-gray-900 text-sm">{log.subject}</div><div className="text-xs text-gray-400">To: {log.to}</div></div></div><div className="flex items-center gap-3 shrink-0"><span className={"text-xs font-semibold px-2.5 py-1 rounded-full "+(log.status==="sent"?"bg-emerald-100 text-emerald-700":"bg-red-100 text-red-700")}>{log.status==="sent"?"Sent":"Failed"}</span><span className="text-xs text-gray-400">{new Date(log.sentAt).toLocaleString()}</span></div></div><pre className="text-xs text-gray-500 bg-gray-50 p-4 rounded-xl whitespace-pre-wrap font-mono leading-relaxed border border-gray-100">{log.body}</pre></div>))}</div>}
+        </div>
+      );
+    }
+
+    function SettingsPanel({ config, onChange }) {
+      function set(k){return e=>onChange(c=>({...c,[k]:e.target.value}));}
+      const inp="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 bg-gray-50";
+      const ok=config.serviceId&&config.templateId&&config.publicKey;
+      return (
+        <div className="p-8">
+          <div className="mb-8"><h1 style={{fontFamily:"'Syne',sans-serif",color:"#fff"}} className="text-3xl font-extrabold">Settings</h1><p style={{color:"rgba(255,255,255,0.5)"}} className="text-sm mt-1">Configure EmailJS for real email notifications</p></div>
+          <div className="max-w-xl space-y-6">
+            <div className="bg-white/10 border border-white/15 rounded-2xl p-6"><div className="font-semibold text-white mb-3 flex items-center gap-2"><Mail size={16}/> EmailJS Setup (free)</div><ol className="text-xs text-white/60 space-y-1.5 list-decimal ml-5 leading-relaxed"><li>Create a free account at <strong className="text-white/80">emailjs.com</strong></li><li>Add an Email Service → copy <strong className="text-white/80">Service ID</strong></li><li>Create a Template with variables → copy <strong className="text-white/80">Template ID</strong></li><li>Account → API Keys → copy <strong className="text-white/80">Public Key</strong></li></ol></div>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+              {[["Public Key","publicKey","your_public_key","password"],["Service ID","serviceId","service_xxxxxxx","text"],["Template ID","templateId","template_xxxxxxx","text"],["Admin Reply-To Email","adminEmail","warehouse@bapcoenergies.com","email"]].map(([lbl,k,ph,t])=>(<div key={k}><label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">{lbl}</label><input type={t} className={inp} value={config[k]} onChange={set(k)} placeholder={ph}/></div>))}
+              <div className={"flex items-start gap-2.5 text-xs p-4 rounded-xl border "+(ok?"bg-emerald-50 border-emerald-200 text-emerald-800":"bg-amber-50 border-amber-200 text-amber-800")}><span className="text-base">{ok?"✅":"⚠️"}</span><div>{ok?<span><strong>EmailJS configured.</strong> Real emails will be sent.</span>:<span><strong>Not configured.</strong> Complete all three required fields.</span>}</div></div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [page,setPage]=useState("landing"); const [view,setView]=useState("dashboard"); const [collapsed,setCollapsed]=useState(true); const [adminEmail,setAdminEmail]=useState(""); const [appts,setAppts]=useState(SAMPLE); const [emailLog,setEmailLog]=useState([]); const [config,setConfig]=useState({serviceId:"",templateId:"",publicKey:"",adminEmail:""}); const [toast,setToast]=useState(null); const [rejectId,setRejectId]=useState(null); const [rejReason,setRejReason]=useState(""); const [viewId,setViewId]=useState(null); const [loading,setLoading]=useState(null);
+      function showToast(msg,type){setToast({msg,type:type||"success"});setTimeout(()=>setToast(null),5000);}
+      function addLog(to,subject,body,status){setEmailLog(p=>[{id:Date.now(),to,subject,body,status,sentAt:new Date().toISOString()},...p]);}
+      async function handleApprove(a) {
+        setLoading(a.id+"-a");
+        const equip=a.offloadingEquipment.length?a.offloadingEquipment.join(", "):"None", locs=toLocs(a.storageLocation).join(" & ")||"—", pos=(a.poNumbers||[]).length?"\n  • PO Numbers:     "+a.poNumbers.join(", "):"";
+        const subject="✅ Delivery Appointment Approved – "+a.id;
+        const body="Dear "+a.supplierName+",\n\nYour delivery appointment has been APPROVED.\n\nDetails:\n  • Appointment ID: "+a.id+"\n  • Date:           "+fmtDate(a.date)+"\n  • Time:           "+a.time+"\n  • Storage:        "+locs+"\n  • Equipment:      "+equip+"\n  • Total Orders:   "+a.totalOrders+"\n  • Total Lines:    "+a.totalLines+pos+"\n\nPlease arrive 15 minutes early and report to warehouse reception.\n\nBest regards,\nBE Warehouse Team";
+        try { if (config.serviceId&&config.templateId&&config.publicKey) await sendEmail(config,{to:a.supplierEmail,toName:a.supplierName,subject,message:body}); addLog(a.supplierEmail,subject,body,"sent"); setAppts(p=>p.map(x=>x.id===a.id?{...x,status:"approved",updatedAt:new Date().toISOString()}:x)); showToast("✅ Approved — "+(config.publicKey?"email sent":"configure EmailJS in Settings for real emails")); }
+        catch(e) { addLog(a.supplierEmail,subject,body,"failed"); setAppts(p=>p.map(x=>x.id===a.id?{...x,status:"approved",updatedAt:new Date().toISOString()}:x)); showToast("Approved but email failed: "+e.message,"error"); }
+        setLoading(null);
+      }
+      async function handleRejectSubmit() {
+        if (!rejReason.trim()) return;
+        const a=appts.find(x=>x.id===rejectId); setLoading(a.id+"-r");
+        const subject="❌ Delivery Appointment Rejected – "+a.id;
+        const body="Dear "+a.supplierName+",\n\nYour delivery appointment request has been rejected.\n\nReason:\n"+rejReason+"\n\nFor further clarification contact:\n📧 faisal.janahi@bapcoenergies.com\n\nBest regards,\nBE Warehouse Team";
+        try { if (config.serviceId&&config.templateId&&config.publicKey) await sendEmail(config,{to:a.supplierEmail,toName:a.supplierName,subject,message:body}); addLog(a.supplierEmail,subject,body,"sent"); setAppts(p=>p.map(x=>x.id===a.id?{...x,status:"rejected",managerComments:rejReason,updatedAt:new Date().toISOString()}:x)); showToast("❌ Rejected — "+(config.publicKey?"email sent":"configure EmailJS in Settings for real emails")); }
+        catch(e) { addLog(a.supplierEmail,subject,body,"failed"); setAppts(p=>p.map(x=>x.id===a.id?{...x,status:"rejected",managerComments:rejReason,updatedAt:new Date().toISOString()}:x)); showToast("Rejected but email failed: "+e.message,"error"); }
+        setRejectId(null); setRejReason(""); setLoading(null);
+      }
+      function handleBook(data) {
+        setAppts(p=>[{id:"APT-"+String(p.length+1).padStart(3,"0"),supplierName:data.supplierName,supplierEmail:data.supplierEmail,date:data.date,time:data.time,totalOrders:Number(data.totalOrders),totalLines:Number(data.totalLines),poNumbers:data.poNumbers||[],offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],storageLocation:data.storageLocation,additionalNotes:data.additionalNotes,attachmentName:data.attachmentName||null,status:"pending",managerComments:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()},...p]);
+      }
+      if (page==="landing")     return <Landing onSupplier={()=>setPage("supplier")} onAdmin={()=>setPage("admin-login")} onTracker={()=>setPage("tracker")}/>;
+      if (page==="supplier")    return <SupplierForm onSubmit={d=>{handleBook(d);}} onBack={()=>setPage("landing")} appointments={appts}/>;
+      if (page==="tracker")     return <SupplierTracker appointments={appts} onBack={()=>setPage("landing")}/>;
+      if (page==="admin-login") return <AdminLogin onLogin={e=>{setAdminEmail(e);setPage("admin");setView("dashboard");}} onBack={()=>setPage("landing")}/>;
+      const pending=appts.filter(a=>a.status==="pending"), viewApt=appts.find(a=>a.id===viewId);
+      const nav=[{id:"dashboard",Icon:LayoutDashboard,label:"Dashboard"},{id:"admin",Icon:ClipboardList,label:"Admin Panel",badge:pending.length},{id:"calendar",Icon:Calendar,label:"Warehouse Calendar"},{id:"emails",Icon:Mail,label:"Email Log",badge:emailLog.length},{id:"settings",Icon:Settings,label:"Settings"}];
+      return (
+        <div style={{fontFamily:"'DM Sans',system-ui,sans-serif"}} className="min-h-screen flex flex-col">
+          <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');`}</style>
+          <header style={{background:BG}} className="h-16 flex items-center justify-between px-6 shrink-0 z-10 border-b border-white/10">
+            <div className="flex items-center gap-4"><Logo/><div className="h-5 w-px bg-white/20"/><span style={{fontFamily:"'Syne',sans-serif"}} className="text-white font-extrabold text-sm tracking-wide">BE – Warehouse Appointments</span></div>
+            <div className="flex items-center gap-4"><span className="text-white/50 text-xs">{adminEmail}</span><button onClick={()=>{setPage("landing");setView("dashboard");}} className="flex items-center gap-1.5 text-white/60 hover:text-white text-xs font-medium transition-colors"><LogOut size={14}/> Logout</button></div>
+          </header>
+          <div className="flex flex-1 overflow-hidden">
+            <aside style={{background:"rgba(7,17,76,0.95)",minHeight:"calc(100vh - 64px)"}} className={"shrink-0 transition-all duration-300 flex flex-col border-r border-white/10 "+(collapsed?"w-16":"w-60")}>
+              <div className={"flex p-3 border-b border-white/5 "+(collapsed?"justify-center":"justify-end")}><button onClick={()=>setCollapsed(c=>!c)} className="p-1.5 rounded-lg text-white/30 hover:text-white hover:bg-white/10 transition-colors">{collapsed?<ChevronRight size={15}/>:<ChevronLeft size={15}/>}</button></div>
+              <nav className="flex-1 p-3 space-y-1">{nav.map(item=><NavItem key={item.id} {...item} active={view===item.id} collapsed={collapsed} onClick={()=>setView(item.id)}/>)}</nav>
+              {!collapsed&&<div className="p-3 border-t border-white/5"><div className={"flex items-center gap-2 text-xs px-3 py-2 rounded-xl "+(config.publicKey?"bg-emerald-900/30 text-emerald-400":"bg-white/5 text-white/30")}><div className={"w-1.5 h-1.5 rounded-full shrink-0 "+(config.publicKey?"bg-emerald-400":"bg-white/20")}/>{config.publicKey?"EmailJS Connected":"EmailJS Not Configured"}</div></div>}
+            </aside>
+            <main className="flex-1 overflow-auto" style={{background:BG}}>
+              {view==="dashboard"&&<Dashboard appointments={appts} setView={setView}/>}
+              {view==="admin"    &&<AdminPanel appointments={appts} onApprove={handleApprove} onReject={id=>{setRejectId(id);setRejReason("");}} onView={setViewId} loading={loading}/>}
+              {view==="calendar" &&<CalendarView appointments={appts}/>}
+              {view==="emails"   &&<EmailLog emailLog={emailLog}/>}
+              {view==="settings" &&<SettingsPanel config={config} onChange={setConfig}/>}
+            </main>
+          </div>
+          {toast&&(<div style={{background:toast.type==="error"?"#dc2626":P}} className="fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-white text-sm max-w-sm"><span className="flex-1 leading-snug">{toast.msg}</span><button onClick={()=>setToast(null)}><X size={14}/></button></div>)}
+          {rejectId&&(
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-40 p-4">
+              <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-7">
+                <div className="flex items-center gap-4 mb-6"><div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center shrink-0"><XCircle className="text-red-600" size={24}/></div><div><h3 style={{fontFamily:"'Syne',sans-serif",color:P}} className="font-extrabold text-xl">Reject Appointment</h3><p className="text-sm text-gray-500">Supplier will be notified with this reason</p></div></div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Manager Comments <span className="text-red-500">*</span></label>
+                <textarea value={rejReason} onChange={e=>setRejReason(e.target.value)} placeholder="e.g. The requested time slot is fully booked." className="w-full border border-gray-200 rounded-xl p-4 text-sm resize-none h-32 focus:outline-none focus:ring-2 bg-gray-50 leading-relaxed" autoFocus/>
+                <div className="flex gap-3 mt-5">
+                  <button onClick={()=>setRejectId(null)} className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
+                  <button onClick={handleRejectSubmit} disabled={!rejReason.trim()||!!loading} className="flex-1 py-3 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 disabled:opacity-40 flex items-center justify-center gap-2"><Send size={14}/>{loading?"Sending…":"Reject & Notify"}</button>
+                </div>
+              </div>
+            </div>
+          )}
+          {viewApt&&(
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-40 p-4">
+              <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-7 max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-start mb-6"><div><div className="text-xs font-mono text-gray-400 mb-1">{viewApt.id}</div><h3 style={{fontFamily:"'Syne',sans-serif",color:P}} className="font-extrabold text-xl">{viewApt.supplierName}</h3><p className="text-sm text-gray-500">{viewApt.supplierEmail}</p></div><div className="flex items-center gap-3"><StatusBadge status={viewApt.status}/><button onClick={()=>setViewId(null)} className="text-gray-400 hover:text-gray-700"><X size={20}/></button></div></div>
+                <div className="grid grid-cols-2 gap-3 mb-3">{[["Date",fmtDate(viewApt.date)],["Time",viewApt.time],["Total Orders",viewApt.totalOrders],["Total Lines",viewApt.totalLines]].map(([k,v])=>(<div key={k} className="bg-gray-50 rounded-xl p-3 border border-gray-100"><div className="text-xs text-gray-400 mb-1">{k}</div><div className="font-semibold text-gray-900 text-sm">{v}</div></div>))}<div className="col-span-2 bg-gray-50 rounded-xl p-3 border border-gray-100"><div className="text-xs text-gray-400 mb-1.5">Storage Location</div><StoreBadge loc={viewApt.storageLocation}/></div></div>
+                {(viewApt.poNumbers||[]).length>0&&<div className="bg-indigo-50 rounded-xl p-3 border border-indigo-100 mb-3"><div className="text-xs text-indigo-600 font-semibold mb-2 flex items-center gap-1"><Hash size={11}/>PO Numbers ({viewApt.poNumbers.length})</div><POTagList tags={viewApt.poNumbers} max={viewApt.poNumbers.length}/></div>}
+                {viewApt.offloadingEquipment.length>0&&<div className="bg-amber-50 rounded-xl p-3 border border-amber-100 mb-3"><div className="text-xs text-amber-600 mb-1">Off-loading Equipment</div><div className="text-sm font-semibold text-amber-900">{viewApt.offloadingEquipment.join(", ")}</div></div>}
+                {viewApt.attachmentName&&<div className="flex items-center gap-2.5 bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3"><Paperclip size={14} className="text-amber-600 shrink-0"/><div><div className="text-xs text-amber-600 font-semibold">Delivery Note</div><div className="text-sm font-semibold text-amber-900">{viewApt.attachmentName}</div></div></div>}
+                {viewApt.additionalNotes&&<div className="bg-gray-50 rounded-xl p-3 border border-gray-100 mb-3"><div className="text-xs text-gray-400 mb-1">Notes</div><div className="text-sm text-gray-700">{viewApt.additionalNotes}</div></div>}
+                {viewApt.managerComments&&<div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-3"><div className="text-xs text-red-500 font-semibold mb-1 uppercase tracking-wide">Manager Comments</div><div className="text-sm text-red-800">{viewApt.managerComments}</div></div>}
+                <button onClick={()=>setViewId(null)} className="mt-2 w-full py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50">Close</button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
 </html>
