@@ -727,6 +727,212 @@ function SettingsPanel({ config, onChange, isMobile }) {
   );
 }
 
+function DonutChart({ segments, size=120, stroke=18 }) {
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const total = segments.reduce((s, x) => s + x.value, 0) || 1;
+  let offset = 0;
+  return (
+    <svg width={size} height={size} viewBox={"0 0 "+size+" "+size} style={{transform:"rotate(-90deg)"}}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke}/>
+      {segments.map((seg, i) => {
+        const dash = (seg.value / total) * circ;
+        const gap = circ - dash;
+        const el = (
+          <circle key={i} cx={size/2} cy={size/2} r={r} fill="none"
+            stroke={seg.color} strokeWidth={stroke}
+            strokeDasharray={dash+" "+gap}
+            strokeDashoffset={-offset}
+            strokeLinecap="round"/>
+        );
+        offset += dash;
+        return el;
+      })}
+    </svg>
+  );
+}
+
+function BarRow({ label, count, max, color, sublabel }) {
+  const pct = max > 0 ? (count / max) * 100 : 0;
+  return (
+    <div style={{marginBottom:10}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <span style={{fontSize:12,color:"rgba(255,255,255,0.75)",fontWeight:500,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",paddingRight:8}}>{label}</span>
+        {sublabel && <span style={{fontSize:10,color:"rgba(255,255,255,0.3)",marginRight:8,flexShrink:0}}>{sublabel}</span>}
+        <span style={{fontSize:12,fontWeight:700,color:"#fff",flexShrink:0}}>{count}</span>
+      </div>
+      <div style={{height:8,background:"rgba(255,255,255,0.07)",borderRadius:99,overflow:"hidden"}}>
+        <div style={{height:"100%",width:pct+"%",background:color,borderRadius:99,transition:"width 0.4s ease"}}/>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value, sub, color }) {
+  return (
+    <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:"18px 20px"}}>
+      <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>{label}</div>
+      <div style={{fontSize:28,fontWeight:800,color:color||"#fff",marginBottom:4,lineHeight:1}}>{value}</div>
+      {sub && <div style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>{sub}</div>}
+    </div>
+  );
+}
+
+function StatisticsPanel({ appointments, isMobile }) {
+  const [dFrom,setDFrom]=useState("");
+  const [dTo,setDTo]=useState("");
+
+  const filtered = appointments.filter(a=>{
+    if(dFrom && a.date < dFrom) return false;
+    if(dTo && a.date > dTo) return false;
+    return true;
+  });
+
+  const total = filtered.length;
+  const approved = filtered.filter(a=>a.status==="approved").length;
+  const pending = filtered.filter(a=>a.status==="pending").length;
+  const rejected = filtered.filter(a=>a.status==="rejected").length;
+  const totalOrders = filtered.reduce((s,a)=>s+Number(a.totalOrders||0),0);
+
+  const slotCounts = {};
+  SLOTS.forEach(s=>slotCounts[s]=0);
+  filtered.forEach(a=>{if(slotCounts[a.time]!==undefined)slotCounts[a.time]++;});
+  const slotData = SLOTS.map(s=>({label:s,count:slotCounts[s]})).sort((a,b)=>b.count-a.count);
+  const maxSlot = Math.max(...slotData.map(d=>d.count),1);
+  const busiestSlot = slotData[0];
+
+  const DAY_NAMES=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const dayCounts={0:0,1:0,2:0,3:0,4:0,5:0,6:0};
+  filtered.forEach(a=>{if(a.date){const d=new Date(a.date+"T00:00:00").getDay();dayCounts[d]++;}});
+  const dayData=[0,1,2,3,4,5,6].map(i=>({label:DAY_NAMES[i],count:dayCounts[i],isOff:i===5||i===6}));
+  const maxDay=Math.max(...dayData.map(d=>d.count),1);
+  const busiestDay=dayData.filter(d=>!d.isOff).sort((a,b)=>b.count-a.count)[0];
+
+  const supplierMap={};
+  filtered.forEach(a=>{supplierMap[a.supplierName]=(supplierMap[a.supplierName]||0)+1;});
+  const supplierData=Object.entries(supplierMap).map(([name,count])=>({label:name,count})).sort((a,b)=>b.count-a.count).slice(0,8);
+  const maxSupplier=Math.max(...supplierData.map(d=>d.count),1);
+
+  const locMap={"Open Yard":0,"Covered store":0,"Both":0};
+  filtered.forEach(a=>{
+    const locs=toLocs(a.storageLocation);
+    if(locs.length===2)locMap["Both"]++;
+    else if(locs[0])locMap[locs[0]]=(locMap[locs[0]]||0)+1;
+  });
+
+  const slotColors=["#6366f1","#8b5cf6","#a78bfa","#c4b5fd","#ddd6fe"];
+  const dayColors=["#f59e0b","#10b981","#3b82f6","#6366f1","#ec4899"];
+
+  const inp={background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none",colorScheme:"dark"};
+
+  return(
+    <div style={{padding:isMobile?16:28,overflowY:"auto"}}>
+      <div style={{marginBottom:24}}>
+        <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:26,margin:"0 0 4px"}}>Statistics</h1>
+        <p style={{color:"rgba(255,255,255,0.45)",fontSize:13,margin:0}}>Advanced delivery insights to support warehouse decisions</p>
+      </div>
+
+      <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:14,padding:16,marginBottom:24,display:"flex",flexWrap:"wrap",gap:12,alignItems:"center"}}>
+        <span style={{color:"rgba(255,255,255,0.5)",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>Filter by date</span>
+        <div style={{display:"flex",flexWrap:"wrap",gap:10,alignItems:"center",flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>From</span>
+            <input type="date" value={dFrom} onChange={e=>setDFrom(e.target.value)} style={inp}/>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>To</span>
+            <input type="date" value={dTo} onChange={e=>setDTo(e.target.value)} style={inp}/>
+          </div>
+          {(dFrom||dTo)&&<button onClick={()=>{setDFrom("");setDTo("");}} style={{padding:"8px 14px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:12,cursor:"pointer"}}>Clear</button>}
+        </div>
+        <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{total} appointment{total!==1?"s":""}</span>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(5,1fr)",gap:12,marginBottom:24}}>
+        <StatCard label="Total" value={total} sub="all appointments"/>
+        <StatCard label="Approved" value={approved} sub={total?Math.round(approved/total*100)+"%":"-"} color="#6ee7b7"/>
+        <StatCard label="Pending" value={pending} sub="awaiting review" color="#fcd34d"/>
+        <StatCard label="Rejected" value={rejected} sub={total?Math.round(rejected/total*100)+"%":"-"} color="#fca5a5"/>
+        <StatCard label="Total Orders" value={totalOrders} sub="across all apts" color="#a5b4fc"/>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:20,marginBottom:20}}>
+        <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:18,padding:20}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
+            <div>
+              <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Busiest Time Slots</div>
+              <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{busiestSlot&&busiestSlot.count>0?"Peak: "+busiestSlot.label:"No data yet"}</div>
+            </div>
+            {total>0&&(
+              <DonutChart size={80} stroke={14} segments={slotData.filter(d=>d.count>0).slice(0,5).map((d,i)=>({value:d.count,color:slotColors[i]||"#6366f1"}))}/>
+            )}
+          </div>
+          {slotData.map((d,i)=>(
+            <BarRow key={d.label} label={d.label} count={d.count} max={maxSlot} color={slotColors[Math.min(i,4)]}/>
+          ))}
+          {total===0&&<div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.2)",fontSize:13}}>No appointments in range</div>}
+        </div>
+
+        <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:18,padding:20}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
+            <div>
+              <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Busiest Days of Week</div>
+              <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{busiestDay&&busiestDay.count>0?"Peak: "+busiestDay.label:"No data yet"}</div>
+            </div>
+            {total>0&&(
+              <DonutChart size={80} stroke={14} segments={dayData.filter(d=>d.count>0&&!d.isOff).map((d,i)=>({value:d.count,color:dayColors[i]||"#6366f1"}))}/>
+            )}
+          </div>
+          {dayData.map((d,i)=>(
+            <BarRow key={d.label} label={d.label} count={d.count} max={maxDay} color={d.isOff?"rgba(255,255,255,0.1)":dayColors[Math.min(i,4)]} sublabel={d.isOff?"Off":""}/>
+          ))}
+          {total===0&&<div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.2)",fontSize:13}}>No appointments in range</div>}
+        </div>
+      </div>
+
+      <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:18,padding:20,marginBottom:20}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,flexWrap:"wrap",gap:10}}>
+          <div>
+            <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Most Active Suppliers</div>
+            <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{supplierData.length>0?"Top "+supplierData.length+" supplier"+(supplierData.length!==1?"s":"")+" by appointment count":"No data yet"}</div>
+          </div>
+          {total>0&&supplierData.length>0&&(
+            <DonutChart size={80} stroke={14} segments={supplierData.slice(0,6).map((d,i)=>({value:d.count,color:["#f59e0b","#6366f1","#10b981","#ec4899","#3b82f6","#a78bfa"][i]||"#6366f1"}))}/>
+          )}
+        </div>
+        {supplierData.length===0&&<div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.2)",fontSize:13}}>No appointments in range</div>}
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"0 32px"}}>
+          {supplierData.map((d,i)=>(
+            <BarRow key={d.label} label={d.label} count={d.count} max={maxSupplier} color={["#f59e0b","#6366f1","#10b981","#ec4899","#3b82f6","#a78bfa","#f472b6","#34d399"][i]||"#6366f1"} sublabel={"#"+(i+1)}/>
+          ))}
+        </div>
+      </div>
+
+      <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:18,padding:20}}>
+        <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:4}}>Storage Location Breakdown</div>
+        <div style={{color:"rgba(255,255,255,0.4)",fontSize:11,marginBottom:20}}>How deliveries are split across warehouse areas</div>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:12}}>
+          {[{key:"Open Yard",color:"#38bdf8",icon:"🏗️"},{key:"Covered store",color:"#a78bfa",icon:"🏭"},{key:"Both",color:"#fbbf24",icon:"📦"}].map(({key,color,icon})=>{
+            const count=locMap[key]||0;
+            const pct=total>0?Math.round(count/total*100):0;
+            return(
+              <div key={key} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:16,textAlign:"center"}}>
+                <div style={{fontSize:28,marginBottom:8}}>{icon}</div>
+                <div style={{fontSize:24,fontWeight:800,color,marginBottom:4}}>{count}</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,0.6)",marginBottom:6}}>{key}</div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>{pct}% of total</div>
+                <div style={{marginTop:10,height:6,background:"rgba(255,255,255,0.07)",borderRadius:99}}>
+                  <div style={{height:"100%",width:pct+"%",background:color,borderRadius:99}}/>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const { isMobile, isTablet } = useWindowSize();
   const [page,setPage]=useState("landing");
@@ -771,6 +977,7 @@ function App() {
   const nav = [
     {id:"dashboard",label:"Dashboard",icon:"📊"},
     {id:"admin",label:"Admin Panel",badge:pending.length,icon:"📋"},
+    {id:"statistics",label:"Statistics",icon:"📈"},
     {id:"calendar",label:"Calendar",icon:"📅"},
     {id:"emails",label:"Email Log",icon:"✉️"},
     {id:"settings",label:"Settings",icon:"⚙️"},
@@ -838,6 +1045,7 @@ function App() {
           <div style={{flex:1}}>
             {view==="dashboard" && <Dashboard appointments={appts} setView={setView} isMobile={isMobile}/>}
             {view==="admin" && <AdminPanel appointments={appts} onApprove={handleApprove} onReject={id=>{setRejectId(id);setRejReason("");}} onView={setViewId} loading={loading} isMobile={isMobile}/>}
+            {view==="statistics" && <StatisticsPanel appointments={appts} isMobile={isMobile}/>}
             {view==="calendar" && <CalendarView appointments={appts} isMobile={isMobile}/>}
             {view==="emails" && <EmailLog isMobile={isMobile}/>}
             {view==="settings" && <SettingsPanel config={config} onChange={setConfig} isMobile={isMobile}/>}
