@@ -22,6 +22,14 @@ const A  = "#C8962A";
 const BG = "linear-gradient(145deg,#07114C 0%,#1a0a5e 60%,#6434FA55 100%)";
 const EQUIP   = ["Forklift","Crane","Pallet jack","Helpers"];
 const STORAGE = ["Open Yard","Covered store"];
+const SBUS = [
+  {code:"BR",name:"Bapco Refining"},
+  {code:"BU",name:"Bapco Upstream"},
+  {code:"BG",name:"Bapco Gas"},
+  {code:"BT",name:"Bapco Tazweed"},
+];
+const ORG_OPTIONS = [{code:"BE",name:"Bapco Energies (All)"},...SBUS];
+const sbuName = code => { const s = SBUS.find(x=>x.code===code); return s?s.name:code; };
 const SLOTS   = ["07:00","07:30","08:00","08:30","09:30","10:00","10:30","11:00","11:30","12:30","13:00","13:30"];
 const ADMIN_PWD   = "Bapco@123456";
 const ADMIN_EMAIL = "janahifaisal2@gmail.com";
@@ -57,24 +65,7 @@ function useWindowSize() {
 }
 
 function Logo({ large }) {
-  return (
-    <div style={{display:"flex",alignItems:"center",gap:10}}>
-      <svg width={large?64:36} height={large?60:34} viewBox="0 0 120 112" fill="none">
-        <defs>
-          <linearGradient id="lg1" x1="0.5" y1="0" x2="0.3" y2="1"><stop offset="0%" stopColor="#00e2f5"/><stop offset="45%" stopColor="#2860f5"/><stop offset="100%" stopColor="#4025d0"/></linearGradient>
-          <linearGradient id="lg2" x1="0.5" y1="0" x2="0.7" y2="1"><stop offset="0%" stopColor="#6020c8"/><stop offset="50%" stopColor="#b82858"/><stop offset="100%" stopColor="#e01e10"/></linearGradient>
-          <linearGradient id="lg3" x1="0" y1="0" x2="1" y2="0.3"><stop offset="0%" stopColor="#00e2f5"/><stop offset="100%" stopColor="#2860f5"/></linearGradient>
-        </defs>
-        <ellipse cx="68" cy="60" rx="24" ry="38" transform="rotate(24 68 60)" fill="none" stroke="url(#lg2)" strokeWidth="8" strokeLinecap="round"/>
-        <ellipse cx="52" cy="60" rx="24" ry="38" transform="rotate(-24 52 60)" fill="none" stroke="url(#lg1)" strokeWidth="8" strokeLinecap="round"/>
-        <path d="M22 42C36 10 80 8 98 34" fill="none" stroke="url(#lg3)" strokeWidth="3" strokeLinecap="round"/>
-      </svg>
-      <div>
-        <div style={{color:"#fff",fontWeight:800,fontSize:large?18:13,lineHeight:1.2}}>Bapco</div>
-        <div style={{color:"rgba(255,255,255,0.6)",fontWeight:400,fontSize:large?13:10,lineHeight:1.2}}>Energies</div>
-      </div>
-    </div>
-  );
+  return null;
 }
 
 function StatusBadge({ status }) {
@@ -103,7 +94,7 @@ function StoreBadge({ loc }) {
 function TopBar({ onBack }) {
   return (
     <div style={{background:BG,padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid rgba(255,255,255,0.1)",flexWrap:"wrap",gap:8}}>
-      <div style={{display:"flex",alignItems:"center",gap:10}}><Logo/><span style={{color:"#fff",fontWeight:800,fontSize:12}}>BE – Warehouse</span></div>
+      <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{color:"#fff",fontWeight:800,fontSize:13}}>BE – Warehouse</span></div>
       <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
         <a href="mailto:Faisal.Janahi@Bapcoenergies.com" style={{color:"rgba(255,255,255,0.45)",fontSize:11,textDecoration:"none",display:"flex",alignItems:"center",gap:5}}>
           <span>📧</span>
@@ -122,7 +113,6 @@ function Landing({ onSupplier, onAdmin, onTracker }) {
   return (
     <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",padding:isMobile?"24px 16px":"40px 20px",fontFamily:"system-ui,sans-serif"}}>
       <div style={{textAlign:"center",marginBottom:isMobile?28:40}}>
-        <div style={{display:"flex",justifyContent:"center",marginBottom:16}}><Logo large/></div>
         <h1 style={{color:"#fff",fontSize:isMobile?22:28,fontWeight:800,margin:0,lineHeight:1.2}}>BE – Warehouse Appointments</h1>
         <p style={{color:"rgba(255,255,255,0.45)",fontSize:12,marginTop:8}}>Currently in preview. Full launch coming soon.</p>
       </div>
@@ -181,12 +171,11 @@ function Landing({ onSupplier, onAdmin, onTracker }) {
             ))}
           </div>
         </div>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
-          <Logo/>
-          <div style={{background:"linear-gradient(135deg,rgba(200,150,42,0.3),rgba(200,150,42,0.1))",border:"1px solid rgba(200,150,42,0.6)",borderRadius:99,padding:"5px 14px",display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:6,height:6,borderRadius:"50%",background:"#C8962A"}}/>
-            <span style={{color:"rgba(255,255,255,0.65)",fontSize:11,fontWeight:600}}>Made by</span>
-            <span style={{color:"#C8962A",fontSize:12,fontWeight:800}}>Faisal Janahi</span>
+        <div style={{display:"flex",justifyContent:"center",alignItems:"center",flexWrap:"wrap",gap:12}}>
+          <div style={{background:"#ffffff",borderRadius:99,padding:"7px 18px",display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 12px rgba(0,0,0,0.2)"}}>
+            <div style={{width:7,height:7,borderRadius:"50%",background:"#10b981"}}/>
+            <span style={{color:"#374151",fontSize:12,fontWeight:600}}>Made by</span>
+            <span style={{color:"#07114C",fontSize:13,fontWeight:800}}>Faisal Janahi</span>
           </div>
         </div>
       </div>
@@ -233,7 +222,7 @@ function AdminLogin({ onLogin, onBack }) {
   );
 }
 
-const BLANK = {supplierName:"",supplierEmail:"",date:"",time:"",totalOrders:"",totalLines:"",poNumbers:[],needsEquipment:null,offloadingEquipment:[],storageLocation:[],additionalNotes:"",attachments:[]};
+const BLANK = {supplierName:"",supplierEmail:"",deliveryTo:"",date:"",time:"",totalOrders:"",totalLines:"",poNumbers:[],needsEquipment:null,offloadingEquipment:[],storageLocation:[],additionalNotes:"",attachments:[]};
 
 function SupplierForm({ onSubmit, onBack, appointments }) {
   const { isMobile } = useWindowSize();
@@ -266,7 +255,7 @@ function SupplierForm({ onSubmit, onBack, appointments }) {
   const tagCount = f.poNumbers.length;
   const hasDeclared = f.totalOrders!==""&&!isNaN(declared);
   const mismatch = hasDeclared&&declared!==tagCount;
-  const valid = (f.supplierName&&f.supplierEmail&&f.date&&!dateErr&&f.time&&!slotFull&&hasDeclared&&!mismatch&&tagCount>0&&f.totalLines&&f.storageLocation.length>0&&f.needsEquipment!==null&&(!f.needsEquipment||f.offloadingEquipment.length>0));
+  const valid = (f.supplierName&&f.supplierEmail&&f.deliveryTo&&f.date&&!dateErr&&f.time&&!slotFull&&hasDeclared&&!mismatch&&tagCount>0&&f.totalLines&&f.storageLocation.length>0&&f.needsEquipment!==null&&(!f.needsEquipment||f.offloadingEquipment.length>0));
 
   function handleDate(e){const v=e.target.value;set("date")(v);if(v<today)setDateErr("Cannot book a past date.");else if(isWeekend(v))setDateErr("Friday and Saturday are non-working days.");else setDateErr("");if(f.time&&isSlotPast(f.time,v))set("time")("");}
   function addPO(raw){const v=raw.trim().toUpperCase().replace(/,/g,"");if(!v||f.poNumbers.some(t=>t.toUpperCase()===v)){setPoVal("");return;}set("poNumbers")([...f.poNumbers,v]);setPoVal("");}
@@ -324,6 +313,15 @@ function SupplierForm({ onSubmit, onBack, appointments }) {
           <div>
             <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Email Address *</label>
             <input type="email" style={inp} value={f.supplierEmail} onChange={setE("supplierEmail")} placeholder="dispatch@company.com"/>
+          </div>
+
+          <div>
+            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Delivery To * <span style={{fontWeight:400,textTransform:"none",fontSize:12,color:"#9ca3af"}}>(Sub-organisation)</span></label>
+            <select style={inp} value={f.deliveryTo} onChange={setE("deliveryTo")}>
+              <option value="">Select an SBU…</option>
+              {SBUS.map(s=><option key={s.code} value={s.code}>{s.code} – {s.name}</option>)}
+            </select>
+            {!f.deliveryTo && <p style={{fontSize:11,color:"#9ca3af",margin:"5px 0 0"}}>Choose the receiving sub-organisation</p>}
           </div>
 
           <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:14}}>
@@ -557,6 +555,13 @@ function SupplierTracker({ appointments, onBack }) {
                     ))}
                   </div>
                   {a.storageLocation&&a.storageLocation.length>0&&<div style={{marginBottom:10}}><StoreBadge loc={a.storageLocation}/></div>}
+                  {a.deliveryTo&&(
+                    <div style={{background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:10,padding:"8px 12px",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{fontSize:10,fontWeight:700,color:"#4f46e5",textTransform:"uppercase",letterSpacing:1}}>Delivery to</span>
+                      <span style={{fontSize:13,fontWeight:700,color:"#312e81",fontFamily:"monospace"}}>{a.deliveryTo}</span>
+                      <span style={{fontSize:12,color:"#6366f1"}}>{(SBUS.find(s=>s.code===a.deliveryTo)||{}).name||""}</span>
+                    </div>
+                  )}
                   {a.attachments&&a.attachments.length>0&&(
                     <div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}>
                       <div style={{fontSize:11,color:"#9ca3af",marginBottom:6}}>Attachments</div>
@@ -1225,6 +1230,19 @@ function StatisticsPanel({ appointments, isMobile }) {
   );
 }
 
+function OrgFilter({ value, onChange, isMobile }) {
+  const opts = [{code:"BE",label:"All (BE)"},...SBUS.map(s=>({code:s.code,label:s.code}))];
+  return (
+    <div style={{display:"flex",gap:6,padding:isMobile?"10px 16px 0":"14px 28px 0",flexWrap:"wrap"}}>
+      <span style={{color:"rgba(255,255,255,0.4)",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,alignSelf:"center",marginRight:4}}>Org:</span>
+      {opts.map(o=>{
+        const on = value===o.code;
+        return <button key={o.code} onClick={()=>onChange(o.code)} title={o.code==="BE"?"All sub-organisations":SBUS.find(s=>s.code===o.code)?.name} style={{padding:"5px 11px",borderRadius:99,border:`1px solid ${on?A:"rgba(255,255,255,0.18)"}`,background:on?A:"rgba(255,255,255,0.06)",color:on?"#fff":"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"monospace"}}>{o.label}</button>;
+      })}
+    </div>
+  );
+}
+
 function App() {
   const { isMobile, isTablet } = useWindowSize();
   const [page,setPage]=useState("landing");
@@ -1251,6 +1269,9 @@ function App() {
   const [rejReason,setRejReason]=useState("");
   const [viewId,setViewId]=useState(null);
   const [loading,setLoading]=useState(null);
+  const [orgFilter,setOrgFilter]=useState("BE");
+
+  const filteredAppts = useMemo(()=>orgFilter==="BE"?appts:appts.filter(a=>a.deliveryTo===orgFilter),[appts,orgFilter]);
 
   function showToast(msg){setToast(msg);setTimeout(()=>setToast(null),4000);}
 
@@ -1277,6 +1298,7 @@ function App() {
       id,pin,
       supplierName:data.supplierName,
       supplierEmail:data.supplierEmail,
+      deliveryTo:data.deliveryTo,
       date:data.date,
       time:data.time,
       totalOrders:Number(data.totalOrders),
@@ -1336,13 +1358,7 @@ function App() {
           {isMobile && (
             <button onClick={()=>setNavOpen(o=>!o)} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.7)",fontSize:20,padding:"4px 6px",marginRight:4}}>☰</button>
           )}
-          <Logo/>
-          {!isMobile && (
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <div style={{width:1,height:18,background:"rgba(255,255,255,0.2)"}}/>
-              <span style={{color:"#fff",fontWeight:800,fontSize:12}}>BE – Warehouse Appointments</span>
-            </div>
-          )}
+          <span style={{color:"#fff",fontWeight:800,fontSize:13}}>BE – Warehouse Appointments</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           {!isMobile && <span style={{color:"rgba(255,255,255,0.5)",fontSize:12}}>{adminEmail}</span>}
@@ -1388,11 +1404,12 @@ function App() {
         )}
 
         <main style={{flex:1,overflowY:"auto",background:BG,display:"flex",flexDirection:"column"}}>
+          <OrgFilter value={orgFilter} onChange={setOrgFilter} isMobile={isMobile}/>
           <div style={{flex:1}}>
-            {view==="dashboard" && <Dashboard appointments={appts} setView={setView} isMobile={isMobile}/>}
-            {view==="admin" && <AdminPanel appointments={appts} onApprove={handleApprove} onReject={id=>{setRejectId(id);setRejReason("");}} onView={setViewId} loading={loading} isMobile={isMobile}/>}
-            {view==="statistics" && <StatisticsPanel appointments={appts} isMobile={isMobile}/>}
-            {view==="calendar" && <CalendarView appointments={appts} isMobile={isMobile}/>}
+            {view==="dashboard" && <Dashboard appointments={filteredAppts} setView={setView} isMobile={isMobile}/>}
+            {view==="admin" && <AdminPanel appointments={filteredAppts} onApprove={handleApprove} onReject={id=>{setRejectId(id);setRejReason("");}} onView={setViewId} loading={loading} isMobile={isMobile}/>}
+            {view==="statistics" && <StatisticsPanel appointments={filteredAppts} isMobile={isMobile}/>}
+            {view==="calendar" && <CalendarView appointments={filteredAppts} isMobile={isMobile}/>}
             {view==="emails" && <EmailLog emailLog={emailLog} isMobile={isMobile}/>}
             {view==="settings" && <SettingsPanel config={config} onChange={setConfig} isMobile={isMobile}/>}
           </div>
@@ -1459,6 +1476,12 @@ function App() {
               <div style={{fontSize:11,color:"#9ca3af",marginBottom:6}}>Storage Location</div>
               <StoreBadge loc={viewApt.storageLocation}/>
             </div>
+            {viewApt.deliveryTo && (
+              <div style={{background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:10,padding:"10px 12px",marginBottom:10}}>
+                <div style={{fontSize:11,color:"#4f46e5",fontWeight:600,marginBottom:3}}>Delivery To (SBU)</div>
+                <div style={{fontSize:13,fontWeight:700,color:"#312e81"}}>{viewApt.deliveryTo} – {(SBUS.find(s=>s.code===viewApt.deliveryTo)||{}).name||"Unknown"}</div>
+              </div>
+            )}
             {viewApt.poNumbers&&viewApt.poNumbers.length>0&&(
               <div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}>
                 <div style={{fontSize:11,color:"#9ca3af",marginBottom:6}}>PO Numbers</div>
