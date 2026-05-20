@@ -25,6 +25,9 @@ const STORAGE = ["Open Yard","Covered store"];
 const SLOTS   = ["07:00","07:30","08:00","08:30","09:30","10:00","10:30","11:00","11:30","12:30","13:00","13:30"];
 const ADMIN_PWD   = "Bapco@123456";
 const ADMIN_EMAIL = "janahifaisal2@gmail.com";
+const LS_APPTS  = "be_wh_appts_v3";
+const LS_EMAILS = "be_wh_emails_v3";
+const LS_CONFIG = "be_wh_config_v3";
 
 const fmtDate = ds => !ds ? "—" : new Date(ds+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
 const fmtTs   = iso => iso ? new Date(iso).toLocaleString("en-GB",{dateStyle:"short",timeStyle:"short"}) : "—";
@@ -33,6 +36,15 @@ const dsOf  = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}
 const addDays = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+n); return r; };
 const toLocs = v => Array.isArray(v) ? v : (v ? [v] : []);
 const todayStr = () => new Date().toISOString().split("T")[0];
+const genPin = () => String(Math.floor(1000 + Math.random() * 9000));
+const nextAptId = existing => {
+  const max = (existing||[]).reduce((m,a) => {
+    const n = parseInt((a.id||"").replace(/^BE-/,""), 10);
+    return isNaN(n) ? m : Math.max(m, n);
+  }, 0);
+  return "BE-" + String(max+1).padStart(4,"0");
+};
+const fmtBytes = b => b < 1024 ? b+"B" : b < 1048576 ? (b/1024).toFixed(1)+"KB" : (b/1048576).toFixed(1)+"MB";
 
 function useWindowSize() {
   const [width, setWidth] = useState(window.innerWidth);
@@ -94,7 +106,7 @@ function TopBar({ onBack }) {
       <div style={{display:"flex",alignItems:"center",gap:10}}><Logo/><span style={{color:"#fff",fontWeight:800,fontSize:12}}>BE – Warehouse</span></div>
       <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
         <a href="mailto:Faisal.Janahi@Bapcoenergies.com" style={{color:"rgba(255,255,255,0.45)",fontSize:11,textDecoration:"none",display:"flex",alignItems:"center",gap:5}}>
-          <span>📧</span><span style={{display:"none"}}>Faisal.Janahi@Bapcoenergies.com</span>
+          <span>📧</span>
         </a>
         <a href="tel:+97366676797" style={{color:"rgba(255,255,255,0.45)",fontSize:11,textDecoration:"none",display:"flex",alignItems:"center",gap:5}}>
           <span>📞</span><span>Need help?</span>
@@ -144,7 +156,7 @@ function Landing({ onSupplier, onAdmin, onTracker }) {
           <div style={{background:"rgba(52,211,153,0.2)",width:42,height:42,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:20}}>🔍</div>
           <div style={{flex:1}}>
             <div style={{color:"#fff",fontWeight:800,fontSize:13,marginBottom:3}}>Track Your Appointment</div>
-            <p style={{color:"rgba(255,255,255,0.55)",fontSize:12,margin:0}}>Search by ID, email, supplier name, or PO number.</p>
+            <p style={{color:"rgba(255,255,255,0.55)",fontSize:12,margin:0}}>Search by ID, email or PO number — PIN required to view details.</p>
           </div>
           <span style={{color:"#34d399",fontSize:11,fontWeight:700,flexShrink:0}}>Track →</span>
         </button>
@@ -221,21 +233,29 @@ function AdminLogin({ onLogin, onBack }) {
   );
 }
 
-const BLANK = {supplierName:"",supplierEmail:"",date:"",time:"",totalOrders:"",totalLines:"",poNumbers:[],needsEquipment:null,offloadingEquipment:[],storageLocation:[],additionalNotes:""};
+const BLANK = {supplierName:"",supplierEmail:"",date:"",time:"",totalOrders:"",totalLines:"",poNumbers:[],needsEquipment:null,offloadingEquipment:[],storageLocation:[],additionalNotes:"",attachments:[]};
 
 function SupplierForm({ onSubmit, onBack, appointments }) {
   const { isMobile } = useWindowSize();
   const [f,setF]=useState(BLANK);
-  const [done,setDone]=useState(false);
+  const [result,setResult]=useState(null);
   const [dateErr,setDateErr]=useState("");
   const [poVal,setPoVal]=useState("");
   const poRef=useRef();
+  const fileRef=useRef();
   const inp = {width:"100%",border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,background:"#f9fafb",outline:"none",boxSizing:"border-box"};
 
   function set(k){return v=>setF(p=>({...p,[k]:v}));}
   function setE(k){return e=>set(k)(e.target.value);}
   function toggleStorage(loc){setF(p=>{const c=p.storageLocation;return{...p,storageLocation:c.includes(loc)?c.filter(x=>x!==loc):[...c,loc]};});}
   function toggleEq(eq){setF(p=>({...p,offloadingEquipment:p.offloadingEquipment.includes(eq)?p.offloadingEquipment.filter(x=>x!==eq):[...p.offloadingEquipment,eq]}));}
+
+  function handleFiles(e) {
+    const files = Array.from(e.target.files).map(file=>({name:file.name,size:file.size,type:file.type}));
+    setF(p=>({...p,attachments:[...p.attachments,...files.filter(nf=>!p.attachments.some(ef=>ef.name===nf.name))]}));
+    e.target.value="";
+  }
+  function removeAttachment(name){setF(p=>({...p,attachments:p.attachments.filter(f=>f.name!==name)}));}
 
   const today = todayStr();
   function isSlotPast(slot,dateVal){const d=dateVal!==undefined?dateVal:f.date;if(!d||d>today)return false;if(d<today)return true;const now=new Date(),parts=slot.split(":");const slotMins=parseInt(parts[0],10)*60+parseInt(parts[1],10);return slotMins<=now.getHours()*60+now.getMinutes();}
@@ -253,16 +273,34 @@ function SupplierForm({ onSubmit, onBack, appointments }) {
   function removePO(t){set("poNumbers")(f.poNumbers.filter(x=>x!==t));}
   function onPoKey(e){if(["Enter",",","Tab"].includes(e.key)){e.preventDefault();addPO(poVal);}else if(e.key==="Backspace"&&poVal===""&&f.poNumbers.length>0)removePO(f.poNumbers[f.poNumbers.length-1]);}
 
-  if(done) return (
+  if(result) return (
     <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",fontFamily:"system-ui,sans-serif"}}>
       <TopBar onBack={onBack}/>
       <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-        <div style={{textAlign:"center",maxWidth:380}}>
+        <div style={{textAlign:"center",maxWidth:440,width:"100%"}}>
           <div style={{width:72,height:72,background:"#d1fae5",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:36}}>✅</div>
           <h2 style={{color:"#fff",fontWeight:800,fontSize:22,margin:"0 0 8px"}}>Request Submitted!</h2>
-          <p style={{color:"rgba(255,255,255,0.55)",fontSize:13,marginBottom:24}}>Your appointment has been submitted for review. A confirmation will be sent to your email.</p>
+          <p style={{color:"rgba(255,255,255,0.55)",fontSize:13,marginBottom:24}}>Save your Appointment ID and PIN — you will need both to track your request.</p>
+
+          <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.18)",borderRadius:20,padding:isMobile?18:24,marginBottom:20}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+              <div style={{background:"rgba(255,255,255,0.1)",borderRadius:14,padding:"16px 12px",textAlign:"center"}}>
+                <div style={{color:"rgba(255,255,255,0.5)",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Appointment ID</div>
+                <div style={{color:"#fff",fontWeight:800,fontSize:22,fontFamily:"monospace",letterSpacing:2}}>{result.id}</div>
+              </div>
+              <div style={{background:"rgba(200,150,42,0.18)",border:"1px solid rgba(200,150,42,0.45)",borderRadius:14,padding:"16px 12px",textAlign:"center"}}>
+                <div style={{color:A,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Your PIN</div>
+                <div style={{color:A,fontWeight:800,fontSize:30,fontFamily:"monospace",letterSpacing:8}}>{result.pin}</div>
+              </div>
+            </div>
+            <div style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:12,padding:"10px 14px",display:"flex",gap:10,alignItems:"flex-start",textAlign:"left"}}>
+              <span style={{fontSize:16,flexShrink:0}}>⚠️</span>
+              <p style={{fontSize:12,color:"rgba(255,255,255,0.7)",margin:0,lineHeight:1.6}}>Keep this PIN safe. You will need it to view your appointment details in the tracker. It has also been sent to your email address.</p>
+            </div>
+          </div>
+
           <div style={{display:"flex",flexDirection:isMobile?"column":"row",gap:12,justifyContent:"center"}}>
-            <button onClick={()=>{setDone(false);setF(BLANK);setDateErr("");setPoVal("");}} style={{padding:"12px 22px",background:A,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer"}}>Submit Another</button>
+            <button onClick={()=>{setResult(null);setF(BLANK);setDateErr("");setPoVal("");}} style={{padding:"12px 22px",background:A,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer"}}>Submit Another</button>
             <button onClick={onBack} style={{padding:"12px 22px",background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer"}}>Back to Home</button>
           </div>
         </div>
@@ -370,11 +408,36 @@ function SupplierForm({ onSubmit, onBack, appointments }) {
           </div>
 
           <div>
+            <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
+              Attachments <span style={{fontWeight:400,textTransform:"none",fontSize:12,color:"#9ca3af"}}>(Delivery notes, supporting documents)</span>
+            </label>
+            <div style={{border:"2px dashed #e5e7eb",borderRadius:12,padding:16,background:"#f9fafb",textAlign:"center"}}>
+              <input ref={fileRef} type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx" onChange={handleFiles} style={{display:"none"}}/>
+              <button onClick={()=>fileRef.current&&fileRef.current.click()} style={{padding:"9px 18px",background:"#fff",border:"1px solid #e5e7eb",borderRadius:9,cursor:"pointer",color:"#374151",fontSize:13,fontWeight:500}}>
+                📎 Choose Files
+              </button>
+              {f.attachments.length===0&&<p style={{fontSize:12,color:"#9ca3af",margin:"8px 0 0"}}>PDF, Word, Excel or images • Optional</p>}
+            </div>
+            {f.attachments.length>0&&(
+              <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:6}}>
+                {f.attachments.map(file=>(
+                  <div key={file.name} style={{display:"flex",alignItems:"center",gap:10,background:"#f3f4f6",borderRadius:9,padding:"8px 12px",border:"1px solid #e5e7eb"}}>
+                    <span style={{fontSize:16,flexShrink:0}}>{file.type&&file.type.includes("pdf")?"📄":file.type&&file.type.includes("image")?"🖼️":"📎"}</span>
+                    <span style={{flex:1,fontSize:13,color:"#374151",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{file.name}</span>
+                    <span style={{fontSize:11,color:"#9ca3af",flexShrink:0}}>{fmtBytes(file.size)}</span>
+                    <button onClick={()=>removeAttachment(file.name)} style={{background:"none",border:"none",cursor:"pointer",color:"#9ca3af",fontSize:18,padding:0,lineHeight:1,flexShrink:0}}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
             <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Additional Notes</label>
             <textarea style={{...inp,height:80,resize:"none"}} value={f.additionalNotes} onChange={setE("additionalNotes")} placeholder="Special requirements (optional)"/>
           </div>
 
-          <button disabled={!valid} onClick={()=>{onSubmit({...f});setDone(true);}} style={{padding:"14px 24px",background:valid?P:"#9ca3af",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:valid?"pointer":"not-allowed",width:"100%"}}>
+          <button disabled={!valid} onClick={()=>{const r=onSubmit({...f});if(r)setResult(r);}} style={{padding:"14px 24px",background:valid?P:"#9ca3af",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:valid?"pointer":"not-allowed",width:"100%"}}>
             Submit for Approval
           </button>
         </div>
@@ -388,53 +451,135 @@ function SupplierTracker({ appointments, onBack }) {
   const [query,setQuery]=useState("");
   const [results,setResults]=useState([]);
   const [searched,setSearched]=useState(false);
-  function doSearch(){const q=query.trim().toLowerCase();if(!q)return;const found=appointments.filter(a=>a.id.toLowerCase()===q||a.supplierEmail.toLowerCase()===q||a.supplierName.toLowerCase().includes(q)||(a.poNumbers||[]).some(p=>p.toLowerCase().includes(q)));setResults(found.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)));setSearched(true);}
-  return(
+  const [pinInputs,setPinInputs]=useState({});
+  const [pinErrors,setPinErrors]=useState({});
+  const [unlocked,setUnlocked]=useState({});
+
+  function doSearch(){
+    const q=query.trim().toLowerCase();
+    if(!q)return;
+    const found=appointments.filter(a=>
+      a.id.toLowerCase()===q||
+      a.supplierEmail.toLowerCase()===q||
+      a.supplierName.toLowerCase().includes(q)||
+      (a.poNumbers||[]).some(p=>p.toLowerCase().includes(q))
+    ).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    setResults(found);
+    setSearched(true);
+    setPinInputs({});setPinErrors({});setUnlocked({});
+  }
+
+  function handlePinInput(id,val){
+    if(val.length<=4&&/^\d*$/.test(val)){
+      setPinInputs(p=>({...p,[id]:val}));
+      setPinErrors(p=>({...p,[id]:""}));
+    }
+  }
+
+  function verifyPin(a){
+    const entered=(pinInputs[a.id]||"").trim();
+    if(entered===a.pin){
+      setUnlocked(p=>({...p,[a.id]:true}));
+      setPinErrors(p=>({...p,[a.id]:""}));
+    } else {
+      setPinErrors(p=>({...p,[a.id]:"Incorrect PIN. Please check and try again."}));
+    }
+  }
+
+  return (
     <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",fontFamily:"system-ui,sans-serif"}}>
       <TopBar onBack={onBack}/>
       <div style={{maxWidth:640,width:"100%",margin:"0 auto",padding:isMobile?"20px 16px":"28px 20px"}}>
         <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,marginBottom:4}}>Track Your Appointment</h1>
-        <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,marginBottom:20}}>Search by ID, email, supplier name, or PO number.</p>
+        <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,marginBottom:20}}>Search by Appointment ID, email, supplier name, or PO number — then enter your 4-digit PIN to view details.</p>
+
         <div style={{background:"#fff",borderRadius:20,padding:isMobile?16:20,marginBottom:20}}>
           <div style={{display:"flex",flexDirection:isMobile?"column":"row",gap:10}}>
-            <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder="e.g. APT-001 or dispatch@company.com" style={{flex:1,border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,background:"#f9fafb",outline:"none"}}/>
+            <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder="e.g. BE-0001 or dispatch@company.com" style={{flex:1,border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,background:"#f9fafb",outline:"none"}}/>
             <button onClick={doSearch} style={{padding:"11px 20px",background:P,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer"}}>Search</button>
           </div>
         </div>
-        {searched&&results.length===0 && (
+
+        {searched&&results.length===0&&(
           <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
             <div style={{fontSize:36,marginBottom:10}}>🔍</div>
             <h3 style={{color:"#fff",fontWeight:600,margin:"0 0 6px"}}>No appointments found</h3>
-            <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:0}}>Please check and try again.</p>
+            <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:0}}>Please check your search term and try again.</p>
           </div>
         )}
-        {results.map(a=>(
-          <div key={a.id} style={{background:"#fff",borderRadius:20,marginBottom:16,overflow:"hidden",border:"1px solid #f3f4f6"}}>
-            <div style={{padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",background:a.status==="approved"?"#d1fae5":a.status==="rejected"?"#fee2e2":"#fef3c7",borderBottom:`1px solid ${a.status==="approved"?"#6ee7b7":a.status==="rejected"?"#fca5a5":"#fcd34d"}`}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <span style={{fontSize:20}}>{a.status==="approved"?"✅":a.status==="rejected"?"❌":"⏳"}</span>
-                <div style={{fontWeight:700,fontSize:14,color:a.status==="approved"?"#065f46":a.status==="rejected"?"#991b1b":"#92400e"}}>{a.status==="approved"?"Approved":a.status==="rejected"?"Rejected":"Pending Review"}</div>
+
+        {results.map(a=>{
+          const isUnlocked=unlocked[a.id];
+          const statusColor=a.status==="approved"?"#065f46":a.status==="rejected"?"#991b1b":"#92400e";
+          const statusBg=a.status==="approved"?"#d1fae5":a.status==="rejected"?"#fee2e2":"#fef3c7";
+          const statusBorder=a.status==="approved"?"#6ee7b7":a.status==="rejected"?"#fca5a5":"#fcd34d";
+          return (
+            <div key={a.id} style={{background:"#fff",borderRadius:20,marginBottom:16,overflow:"hidden",border:"1px solid #f3f4f6"}}>
+              <div style={{padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",background:statusBg,borderBottom:`1px solid ${statusBorder}`}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{fontSize:20}}>{a.status==="approved"?"✅":a.status==="rejected"?"❌":"⏳"}</span>
+                  <div style={{fontWeight:700,fontSize:14,color:statusColor}}>{a.status==="approved"?"Approved":a.status==="rejected"?"Rejected":"Pending Review"}</div>
+                </div>
+                <span style={{fontFamily:"monospace",fontSize:12,fontWeight:800,color:P}}>{a.id}</span>
               </div>
-              <span style={{fontFamily:"monospace",fontSize:11,color:"#6b7280",background:"#f3f4f6",padding:"3px 8px",borderRadius:99}}>{a.id}</span>
-            </div>
-            <div style={{padding:18}}>
-              <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr",gap:10,marginBottom:12}}>
-                {[["Supplier",a.supplierName],["Date",fmtDate(a.date)],["Time",a.time],["Orders / Lines",`${a.totalOrders} / ${a.totalLines}`]].map(([k,v])=>(
-                  <div key={k} style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6"}}>
-                    <div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>{k}</div>
-                    <div style={{fontWeight:600,fontSize:13,color:"#111827"}}>{v}</div>
+
+              {!isUnlocked ? (
+                <div style={{padding:24}}>
+                  <div style={{textAlign:"center",marginBottom:18}}>
+                    <div style={{fontSize:36,marginBottom:10}}>🔒</div>
+                    <p style={{fontSize:13,color:"#6b7280",margin:0}}>Enter your 4-digit PIN to view appointment details</p>
                   </div>
-                ))}
-              </div>
-              {a.status==="rejected"&&a.managerComments && (
-                <div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:12,padding:"12px 14px"}}>
-                  <div style={{fontSize:10,fontWeight:700,color:"#ef4444",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Rejection Reason</div>
-                  <p style={{fontSize:13,color:"#991b1b",margin:0}}>{a.managerComments}</p>
+                  <div style={{display:"flex",gap:10,maxWidth:300,margin:"0 auto"}}>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={4}
+                      placeholder="• • • •"
+                      value={pinInputs[a.id]||""}
+                      onChange={e=>handlePinInput(a.id,e.target.value)}
+                      onKeyDown={e=>e.key==="Enter"&&verifyPin(a)}
+                      style={{flex:1,border:`2px solid ${pinErrors[a.id]?"#f87171":"#d1d5db"}`,borderRadius:12,padding:"13px",fontSize:22,textAlign:"center",outline:"none",letterSpacing:10,fontWeight:800,color:P,background:"#f9fafb"}}
+                    />
+                    <button onClick={()=>verifyPin(a)} style={{padding:"13px 18px",background:P,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer",flexShrink:0}}>
+                      Unlock
+                    </button>
+                  </div>
+                  {pinErrors[a.id]&&<p style={{fontSize:12,color:"#dc2626",textAlign:"center",margin:"10px 0 0"}}>⛔ {pinErrors[a.id]}</p>}
+                </div>
+              ) : (
+                <div style={{padding:18}}>
+                  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr",gap:10,marginBottom:12}}>
+                    {[["Supplier",a.supplierName],["Date",fmtDate(a.date)],["Time",a.time],["Orders / Lines",`${a.totalOrders} / ${a.totalLines}`]].map(([k,v])=>(
+                      <div key={k} style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6"}}>
+                        <div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>{k}</div>
+                        <div style={{fontWeight:600,fontSize:13,color:"#111827"}}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {a.storageLocation&&a.storageLocation.length>0&&<div style={{marginBottom:10}}><StoreBadge loc={a.storageLocation}/></div>}
+                  {a.attachments&&a.attachments.length>0&&(
+                    <div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}>
+                      <div style={{fontSize:11,color:"#9ca3af",marginBottom:6}}>Attachments</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {a.attachments.map(file=>(
+                          <span key={file.name} style={{display:"inline-flex",alignItems:"center",gap:4,background:"#e0e7ff",color:"#3730a3",fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:8,border:"1px solid #c7d2fe"}}>
+                            📎 {file.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {a.status==="rejected"&&a.managerComments&&(
+                    <div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:12,padding:"12px 14px"}}>
+                      <div style={{fontSize:10,fontWeight:700,color:"#ef4444",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Rejection Reason</div>
+                      <p style={{fontSize:13,color:"#991b1b",margin:0}}>{a.managerComments}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -466,7 +611,7 @@ function Dashboard({ appointments, setView, isMobile }) {
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
                 <div style={{minWidth:0}}>
                   <div style={{color:"#fff",fontWeight:500,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.supplierName}</div>
-                  <div style={{color:"rgba(255,255,255,0.4)",fontSize:11,marginTop:2}}>{fmtDate(a.date)} · {a.time}</div>
+                  <div style={{color:"rgba(255,255,255,0.4)",fontSize:11,marginTop:2}}>{a.id} · {fmtDate(a.date)} · {a.time}</div>
                 </div>
                 <StatusBadge status={a.status}/>
               </div>
@@ -482,14 +627,14 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
   const [searchQ,setSearchQ]=useState("");
   const [statFs,setStatFs]=useState([]);
   function togStat(s){setStatFs(p=>p.includes(s)?p.filter(x=>x!==s):[...p,s]);}
-  const rows=useMemo(()=>appointments.filter(a=>{if(searchQ&&!a.supplierName.toLowerCase().includes(searchQ.toLowerCase())&&!a.supplierEmail.toLowerCase().includes(searchQ.toLowerCase()))return false;if(statFs.length&&!statFs.includes(a.status))return false;return true;}).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)),[appointments,searchQ,statFs]);
+  const rows=useMemo(()=>appointments.filter(a=>{if(searchQ&&!a.supplierName.toLowerCase().includes(searchQ.toLowerCase())&&!a.supplierEmail.toLowerCase().includes(searchQ.toLowerCase())&&!a.id.toLowerCase().includes(searchQ.toLowerCase()))return false;if(statFs.length&&!statFs.includes(a.status))return false;return true;}).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)),[appointments,searchQ,statFs]);
   const sc={pending:"#f59e0b",approved:"#10b981",rejected:"#ef4444"};
   return(
     <div style={{padding:isMobile?16:28}}>
       <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Admin Panel</h1>
       <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Review and action delivery appointment requests</p>
       <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:14,padding:14,marginBottom:14,display:"flex",flexDirection:isMobile?"column":"row",gap:10,alignItems:isMobile?"stretch":"center"}}>
-        <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search supplier name or email…" style={{flex:1,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
+        <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by ID, supplier name or email…" style={{flex:1,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
         <div style={{display:"flex",gap:8}}>
           {["pending","approved","rejected"].map(s=>{const on=statFs.includes(s);return(<button key={s} onClick={()=>togStat(s)} style={{flex:isMobile?1:undefined,padding:"8px 12px",borderRadius:10,border:`1px solid ${on?sc[s]:"rgba(255,255,255,0.15)"}`,background:on?sc[s]:"rgba(255,255,255,0.07)",color:on?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600,cursor:"pointer",textTransform:"capitalize"}}>{s}</button>);})}
         </div>
@@ -503,7 +648,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
               <div style={{padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid #f3f4f6"}}>
                 <div>
                   <div style={{fontWeight:700,fontSize:14,color:"#111827"}}>{a.supplierName}</div>
-                  <div style={{fontSize:11,color:"#9ca3af",fontFamily:"monospace"}}>{a.id}</div>
+                  <div style={{fontSize:11,color:"#9ca3af",fontFamily:"monospace",fontWeight:700}}>{a.id}</div>
                 </div>
                 <StatusBadge status={a.status}/>
               </div>
@@ -544,7 +689,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
               <tbody>
                 {rows.map(a=>(
                   <tr key={a.id} style={{borderBottom:"1px solid #f9fafb"}}>
-                    <td style={{padding:"12px 14px",fontFamily:"monospace",fontSize:11,color:"#9ca3af",whiteSpace:"nowrap"}}>{a.id}</td>
+                    <td style={{padding:"12px 14px",fontFamily:"monospace",fontSize:12,color:"#374151",fontWeight:700,whiteSpace:"nowrap"}}>{a.id}</td>
                     <td style={{padding:"12px 14px"}}><div style={{fontWeight:600,color:"#111827",whiteSpace:"nowrap"}}>{a.supplierName}</div><div style={{fontSize:11,color:"#9ca3af"}}>{a.supplierEmail}</div></td>
                     <td style={{padding:"12px 14px",whiteSpace:"nowrap",fontWeight:500,color:"#374151"}}>{fmtDate(a.date)}</td>
                     <td style={{padding:"12px 14px",color:"#374151"}}>{a.time}</td>
@@ -581,20 +726,13 @@ function CalendarView({ appointments, isMobile }) {
   const [cur,setCur]=useState(new Date());
   const [sel,setSel]=useState(null);
   const approved = appointments.filter(a=>a.status==="approved");
-
-  // Week starts Sunday: Sun=0, Mon=1, ..., Fri=5, Sat=6
   const DAY_FULL = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   const DAY_SHORT = ["S","M","T","W","T","F","S"];
 
   function isFriSat(d){ const day=d.getDay(); return day===5||day===6; }
   function isToday(d){ return dsOf(d)===dsOf(TODAY); }
   function forDate(d){ return approved.filter(a=>a.date===dsOf(d)).sort((a,b)=>a.time.localeCompare(b.time)); }
-
-  function weekStart(d){
-    const r=new Date(d);
-    r.setDate(r.getDate()-r.getDay()); // back to Sunday
-    return r;
-  }
+  function weekStart(d){const r=new Date(d);r.setDate(r.getDate()-r.getDay());return r;}
 
   function navigate(dir){
     setCur(c=>{
@@ -625,7 +763,7 @@ function CalendarView({ appointments, isMobile }) {
   function renderMonthly(){
     const yr=cur.getFullYear(), mo=cur.getMonth();
     const daysInMonth=new Date(yr,mo+1,0).getDate();
-    const sc=new Date(yr,mo,1).getDay(); // 0=Sun, week starts Sunday
+    const sc=new Date(yr,mo,1).getDay();
     const total=Math.ceil((sc+daysInMonth)/7)*7;
     return(
       <div style={{background:"#fff",borderRadius:16,overflow:"hidden",flex:1,display:"flex",flexDirection:"column"}}>
@@ -820,12 +958,45 @@ function CalendarView({ appointments, isMobile }) {
   );
 }
 
-function EmailLog({ isMobile }) {
-  return(
+function EmailLog({ emailLog, isMobile }) {
+  const typeCfg = {
+    submission: {bg:"#eff6ff",color:"#1d4ed8",border:"#bfdbfe",label:"📨 Submission"},
+    approval:   {bg:"#f0fdf4",color:"#15803d",border:"#bbf7d0",label:"✅ Approval"},
+    rejection:  {bg:"#fef2f2",color:"#b91c1c",border:"#fecaca",label:"❌ Rejection"},
+  };
+  return (
     <div style={{padding:isMobile?16:28}}>
-      <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Email Log</h1>
-      <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 24px"}}>Notification emails this session</p>
-      <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:20,padding:isMobile?40:60,textAlign:"center",color:"rgba(255,255,255,0.3)",fontSize:13}}>No emails yet. Approve or reject appointments to see logs here.</div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10,marginBottom:4}}>
+        <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:0}}>Email Log</h1>
+        <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,padding:"4px 12px",borderRadius:99}}>{emailLog.length} email{emailLog.length!==1?"s":""}</span>
+      </div>
+      <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 20px"}}>All notification emails triggered by submission, approval, and rejection events</p>
+
+      {emailLog.length===0 ? (
+        <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
+          <div style={{fontSize:40,marginBottom:12}}>✉️</div>
+          <div style={{color:"rgba(255,255,255,0.4)",fontSize:13}}>No emails yet. Approve or reject appointments to see logs here.</div>
+        </div>
+      ) : (
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {emailLog.map(e=>{
+            const cfg=typeCfg[e.type]||typeCfg.submission;
+            return (
+              <div key={e.id} style={{background:"#fff",borderRadius:16,padding:"14px 18px",border:"1px solid #f3f4f6",display:"flex",flexDirection:isMobile?"column":"row",gap:isMobile?10:14,alignItems:isMobile?"flex-start":"center"}}>
+                <span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,padding:"4px 11px",borderRadius:99,fontSize:11,fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>{cfg.label}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:600,fontSize:13,color:"#111827",marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subject}</div>
+                  <div style={{fontSize:11,color:"#9ca3af"}}>To: <span style={{color:"#6b7280"}}>{e.recipient}</span>{e.pin?<span style={{marginLeft:10,background:"#fef3c7",color:"#92400e",border:"1px solid #fcd34d",padding:"1px 8px",borderRadius:99,fontWeight:700,fontFamily:"monospace",fontSize:11}}>PIN: {e.pin}</span>:""}</div>
+                </div>
+                <div style={{flexShrink:0,textAlign:isMobile?"left":"right"}}>
+                  <div style={{fontFamily:"monospace",fontSize:12,color:P,fontWeight:800}}>{e.appointmentId}</div>
+                  <div style={{fontSize:11,color:"#9ca3af",marginTop:2}}>{fmtTs(e.timestamp)}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -957,7 +1128,6 @@ function StatisticsPanel({ appointments, isMobile }) {
 
   const slotColors=["#6366f1","#8b5cf6","#a78bfa","#c4b5fd","#ddd6fe"];
   const dayColors=["#f59e0b","#10b981","#3b82f6","#6366f1","#ec4899"];
-
   const inp={background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none",colorScheme:"dark"};
 
   return(
@@ -998,29 +1168,20 @@ function StatisticsPanel({ appointments, isMobile }) {
               <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Busiest Time Slots</div>
               <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{busiestSlot&&busiestSlot.count>0?"Peak: "+busiestSlot.label:"No data yet"}</div>
             </div>
-            {total>0&&(
-              <DonutChart size={80} stroke={14} segments={slotData.filter(d=>d.count>0).slice(0,5).map((d,i)=>({value:d.count,color:slotColors[i]||"#6366f1"}))}/>
-            )}
+            {total>0&&<DonutChart size={80} stroke={14} segments={slotData.filter(d=>d.count>0).slice(0,5).map((d,i)=>({value:d.count,color:slotColors[i]||"#6366f1"}))}/>}
           </div>
-          {slotData.map((d,i)=>(
-            <BarRow key={d.label} label={d.label} count={d.count} max={maxSlot} color={slotColors[Math.min(i,4)]}/>
-          ))}
+          {slotData.map((d,i)=><BarRow key={d.label} label={d.label} count={d.count} max={maxSlot} color={slotColors[Math.min(i,4)]}/>)}
           {total===0&&<div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.2)",fontSize:13}}>No appointments in range</div>}
         </div>
-
         <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:18,padding:20}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
             <div>
               <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Busiest Days of Week</div>
               <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{busiestDay&&busiestDay.count>0?"Peak: "+busiestDay.label:"No data yet"}</div>
             </div>
-            {total>0&&(
-              <DonutChart size={80} stroke={14} segments={dayData.filter(d=>d.count>0&&!d.isOff).map((d,i)=>({value:d.count,color:dayColors[i]||"#6366f1"}))}/>
-            )}
+            {total>0&&<DonutChart size={80} stroke={14} segments={dayData.filter(d=>d.count>0&&!d.isOff).map((d,i)=>({value:d.count,color:dayColors[i]||"#6366f1"}))}/>}
           </div>
-          {dayData.map((d,i)=>(
-            <BarRow key={d.label} label={d.label} count={d.count} max={maxDay} color={d.isOff?"rgba(255,255,255,0.1)":dayColors[Math.min(i,4)]} sublabel={d.isOff?"Off":""}/>
-          ))}
+          {dayData.map((d,i)=><BarRow key={d.label} label={d.label} count={d.count} max={maxDay} color={d.isOff?"rgba(255,255,255,0.1)":dayColors[Math.min(i,4)]} sublabel={d.isOff?"Off":""}/>)}
           {total===0&&<div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.2)",fontSize:13}}>No appointments in range</div>}
         </div>
       </div>
@@ -1031,15 +1192,11 @@ function StatisticsPanel({ appointments, isMobile }) {
             <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Most Active Suppliers</div>
             <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{supplierData.length>0?"Top "+supplierData.length+" supplier"+(supplierData.length!==1?"s":"")+" by appointment count":"No data yet"}</div>
           </div>
-          {total>0&&supplierData.length>0&&(
-            <DonutChart size={80} stroke={14} segments={supplierData.slice(0,6).map((d,i)=>({value:d.count,color:["#f59e0b","#6366f1","#10b981","#ec4899","#3b82f6","#a78bfa"][i]||"#6366f1"}))}/>
-          )}
+          {total>0&&supplierData.length>0&&<DonutChart size={80} stroke={14} segments={supplierData.slice(0,6).map((d,i)=>({value:d.count,color:["#f59e0b","#6366f1","#10b981","#ec4899","#3b82f6","#a78bfa"][i]||"#6366f1"}))}/>}
         </div>
         {supplierData.length===0&&<div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.2)",fontSize:13}}>No appointments in range</div>}
         <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"0 32px"}}>
-          {supplierData.map((d,i)=>(
-            <BarRow key={d.label} label={d.label} count={d.count} max={maxSupplier} color={["#f59e0b","#6366f1","#10b981","#ec4899","#3b82f6","#a78bfa","#f472b6","#34d399"][i]||"#6366f1"} sublabel={"#"+(i+1)}/>
-          ))}
+          {supplierData.map((d,i)=><BarRow key={d.label} label={d.label} count={d.count} max={maxSupplier} color={["#f59e0b","#6366f1","#10b981","#ec4899","#3b82f6","#a78bfa","#f472b6","#34d399"][i]||"#6366f1"} sublabel={"#"+(i+1)}/>)}
         </div>
       </div>
 
@@ -1074,8 +1231,21 @@ function App() {
   const [view,setView]=useState("dashboard");
   const [navOpen,setNavOpen]=useState(false);
   const [adminEmail,setAdminEmail]=useState("");
-  const [appts,setAppts]=useState([]);
-  const [config,setConfig]=useState({serviceId:"",templateId:"",publicKey:"",adminEmail:""});
+
+  const [appts,setAppts]=useState(()=>{
+    try{const s=localStorage.getItem(LS_APPTS);return s?JSON.parse(s):[];}catch{return [];}
+  });
+  const [emailLog,setEmailLog]=useState(()=>{
+    try{const s=localStorage.getItem(LS_EMAILS);return s?JSON.parse(s):[];}catch{return [];}
+  });
+  const [config,setConfig]=useState(()=>{
+    try{const s=localStorage.getItem(LS_CONFIG);return s?JSON.parse(s):{serviceId:"",templateId:"",publicKey:"",adminEmail:""};}catch{return {serviceId:"",templateId:"",publicKey:"",adminEmail:""};}
+  });
+
+  useEffect(()=>{try{localStorage.setItem(LS_APPTS,JSON.stringify(appts));}catch(e){console.warn("localStorage full:",e);}},[appts]);
+  useEffect(()=>{try{localStorage.setItem(LS_EMAILS,JSON.stringify(emailLog));}catch(e){console.warn("localStorage full:",e);}},[emailLog]);
+  useEffect(()=>{try{localStorage.setItem(LS_CONFIG,JSON.stringify(config));}catch(e){console.warn("localStorage full:",e);}},[config]);
+
   const [toast,setToast]=useState(null);
   const [rejectId,setRejectId]=useState(null);
   const [rejReason,setRejReason]=useState("");
@@ -1084,8 +1254,51 @@ function App() {
 
   function showToast(msg){setToast(msg);setTimeout(()=>setToast(null),4000);}
 
+  function logEmail(type, recipient, appointmentId, extra={}) {
+    const subjects={
+      submission:`Appointment Received – ${appointmentId}`,
+      approval:`Your Appointment Has Been Approved – ${appointmentId}`,
+      rejection:`Appointment Status Update – ${appointmentId}`,
+    };
+    setEmailLog(p=>[{
+      id:Date.now()+Math.random(),
+      timestamp:new Date().toISOString(),
+      type,recipient,appointmentId,
+      subject:subjects[type]||`Notification – ${appointmentId}`,
+      status:"sent",
+      ...extra
+    },...p]);
+  }
+
+  function handleBook(data){
+    const id=nextAptId(appts);
+    const pin=genPin();
+    const newAppt={
+      id,pin,
+      supplierName:data.supplierName,
+      supplierEmail:data.supplierEmail,
+      date:data.date,
+      time:data.time,
+      totalOrders:Number(data.totalOrders),
+      totalLines:Number(data.totalLines),
+      poNumbers:data.poNumbers||[],
+      offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],
+      storageLocation:data.storageLocation,
+      additionalNotes:data.additionalNotes,
+      attachments:data.attachments||[],
+      status:"pending",
+      managerComments:null,
+      createdAt:new Date().toISOString(),
+      updatedAt:new Date().toISOString()
+    };
+    setAppts(p=>[newAppt,...p]);
+    logEmail("submission",data.supplierEmail,id,{pin});
+    return {id,pin};
+  }
+
   function handleApprove(a){
     setAppts(p=>p.map(x=>x.id===a.id?{...x,status:"approved",updatedAt:new Date().toISOString()}:x));
+    logEmail("approval",a.supplierEmail,a.id);
     showToast("✅ Appointment approved");
     setLoading(null);
   }
@@ -1093,17 +1306,15 @@ function App() {
   function handleRejectSubmit(){
     if(!rejReason.trim())return;
     const a=appts.find(x=>x.id===rejectId);
+    if(!a)return;
     setAppts(p=>p.map(x=>x.id===a.id?{...x,status:"rejected",managerComments:rejReason,updatedAt:new Date().toISOString()}:x));
+    logEmail("rejection",a.supplierEmail,a.id,{reason:rejReason});
     showToast("Appointment rejected");
     setRejectId(null);setRejReason("");setLoading(null);
   }
 
-  function handleBook(data){
-    setAppts(p=>[{id:"APT-"+String(p.length+1).padStart(3,"0"),supplierName:data.supplierName,supplierEmail:data.supplierEmail,date:data.date,time:data.time,totalOrders:Number(data.totalOrders),totalLines:Number(data.totalLines),poNumbers:data.poNumbers||[],offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],storageLocation:data.storageLocation,additionalNotes:data.additionalNotes,status:"pending",managerComments:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()},...p]);
-  }
-
   if(page==="landing") return <Landing onSupplier={()=>setPage("supplier")} onAdmin={()=>setPage("admin-login")} onTracker={()=>setPage("tracker")}/>;
-  if(page==="supplier") return <SupplierForm onSubmit={d=>{handleBook(d);}} onBack={()=>setPage("landing")} appointments={appts}/>;
+  if(page==="supplier") return <SupplierForm onSubmit={handleBook} onBack={()=>setPage("landing")} appointments={appts}/>;
   if(page==="tracker") return <SupplierTracker appointments={appts} onBack={()=>setPage("landing")}/>;
   if(page==="admin-login") return <AdminLogin onLogin={e=>{setAdminEmail(e);setPage("admin");setView("dashboard");}} onBack={()=>setPage("landing")}/>;
 
@@ -1114,7 +1325,7 @@ function App() {
     {id:"admin",label:"Admin Panel",badge:pending.length,icon:"📋"},
     {id:"statistics",label:"Statistics",icon:"📈"},
     {id:"calendar",label:"Calendar",icon:"📅"},
-    {id:"emails",label:"Email Log",icon:"✉️"},
+    {id:"emails",label:"Email Log",badge:emailLog.length,icon:"✉️"},
     {id:"settings",label:"Settings",icon:"⚙️"},
   ];
 
@@ -1182,7 +1393,7 @@ function App() {
             {view==="admin" && <AdminPanel appointments={appts} onApprove={handleApprove} onReject={id=>{setRejectId(id);setRejReason("");}} onView={setViewId} loading={loading} isMobile={isMobile}/>}
             {view==="statistics" && <StatisticsPanel appointments={appts} isMobile={isMobile}/>}
             {view==="calendar" && <CalendarView appointments={appts} isMobile={isMobile}/>}
-            {view==="emails" && <EmailLog isMobile={isMobile}/>}
+            {view==="emails" && <EmailLog emailLog={emailLog} isMobile={isMobile}/>}
             {view==="settings" && <SettingsPanel config={config} onChange={setConfig} isMobile={isMobile}/>}
           </div>
           <div style={{borderTop:"1px solid rgba(255,255,255,0.08)",padding:isMobile?"12px 16px":"12px 28px",display:"flex",alignItems:"center",flexWrap:"wrap",gap:isMobile?10:24,justifyContent:"space-between"}}>
@@ -1230,7 +1441,7 @@ function App() {
           <div style={{background:"#fff",borderRadius:isMobile?"24px 24px 0 0":"24px",padding:22,width:"100%",maxWidth:isMobile?"100%":460,maxHeight:isMobile?"85vh":"85vh",overflowY:"auto"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
               <div>
-                <div style={{fontFamily:"monospace",fontSize:11,color:"#9ca3af",marginBottom:4}}>{viewApt.id}</div>
+                <div style={{fontFamily:"monospace",fontSize:12,color:P,fontWeight:800,marginBottom:4}}>{viewApt.id}</div>
                 <h3 style={{fontWeight:800,fontSize:17,color:P,margin:"0 0 2px"}}>{viewApt.supplierName}</h3>
                 <p style={{fontSize:12,color:"#6b7280",margin:0}}>{viewApt.supplierEmail}</p>
               </div>
@@ -1248,9 +1459,36 @@ function App() {
               <div style={{fontSize:11,color:"#9ca3af",marginBottom:6}}>Storage Location</div>
               <StoreBadge loc={viewApt.storageLocation}/>
             </div>
-            {viewApt.offloadingEquipment&&viewApt.offloadingEquipment.length>0 && <div style={{background:"#fffbeb",borderRadius:10,padding:"10px 12px",border:"1px solid #fde68a",marginBottom:10}}><div style={{fontSize:11,color:"#d97706",marginBottom:3}}>Equipment</div><div style={{fontSize:13,fontWeight:600,color:"#92400e"}}>{viewApt.offloadingEquipment.join(", ")}</div></div>}
-            {viewApt.additionalNotes && <div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}><div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>Notes</div><div style={{fontSize:13,color:"#374151"}}>{viewApt.additionalNotes}</div></div>}
-            {viewApt.managerComments && <div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:10,padding:"10px 12px",marginBottom:10}}><div style={{fontSize:10,fontWeight:700,color:"#ef4444",textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Manager Comments</div><div style={{fontSize:13,color:"#991b1b"}}>{viewApt.managerComments}</div></div>}
+            {viewApt.poNumbers&&viewApt.poNumbers.length>0&&(
+              <div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}>
+                <div style={{fontSize:11,color:"#9ca3af",marginBottom:6}}>PO Numbers</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {viewApt.poNumbers.map(p=><span key={p} style={{background:"#eef2ff",border:"1px solid #c7d2fe",color:"#3730a3",fontSize:12,fontWeight:700,padding:"3px 9px",borderRadius:8}}>#{p}</span>)}
+                </div>
+              </div>
+            )}
+            {viewApt.offloadingEquipment&&viewApt.offloadingEquipment.length>0&&(
+              <div style={{background:"#fffbeb",borderRadius:10,padding:"10px 12px",border:"1px solid #fde68a",marginBottom:10}}>
+                <div style={{fontSize:11,color:"#d97706",marginBottom:3}}>Equipment</div>
+                <div style={{fontSize:13,fontWeight:600,color:"#92400e"}}>{viewApt.offloadingEquipment.join(", ")}</div>
+              </div>
+            )}
+            {viewApt.attachments&&viewApt.attachments.length>0&&(
+              <div style={{background:"#f0f9ff",borderRadius:10,padding:"10px 12px",border:"1px solid #bae6fd",marginBottom:10}}>
+                <div style={{fontSize:11,color:"#0369a1",marginBottom:6,fontWeight:600}}>📎 Attachments ({viewApt.attachments.length})</div>
+                <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                  {viewApt.attachments.map(file=>(
+                    <div key={file.name} style={{display:"flex",alignItems:"center",gap:8,fontSize:13,color:"#374151"}}>
+                      <span>{file.type&&file.type.includes("pdf")?"📄":file.type&&file.type.includes("image")?"🖼️":"📎"}</span>
+                      <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{file.name}</span>
+                      <span style={{fontSize:11,color:"#9ca3af",flexShrink:0}}>{fmtBytes(file.size)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {viewApt.additionalNotes&&<div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}><div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>Notes</div><div style={{fontSize:13,color:"#374151"}}>{viewApt.additionalNotes}</div></div>}
+            {viewApt.managerComments&&<div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:10,padding:"10px 12px",marginBottom:10}}><div style={{fontSize:10,fontWeight:700,color:"#ef4444",textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Manager Comments</div><div style={{fontSize:13,color:"#991b1b"}}>{viewApt.managerComments}</div></div>}
             <button onClick={()=>setViewId(null)} style={{width:"100%",padding:12,border:"1px solid #e5e7eb",borderRadius:12,fontSize:14,fontWeight:600,color:"#6b7280",background:"transparent",cursor:"pointer",marginTop:4}}>Close</button>
           </div>
         </div>
