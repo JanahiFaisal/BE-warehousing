@@ -1509,6 +1509,8 @@ function TransactionsHistory({ transactions, isMobile }) {
  create:{bg:"#eff6ff",color:"#1d4ed8",border:"#bfdbfe",label:"📝 Created",icon:"📝"},
  approve:{bg:"#f0fdf4",color:"#15803d",border:"#bbf7d0",label:"✅ Approved",icon:"✅"},
  reject:{bg:"#fef2f2",color:"#b91c1c",border:"#fecaca",label:"❌ Rejected",icon:"❌"},
+ delivery_complete:{bg:"#d1fae5",color:"#065f46",border:"#6ee7b7",label:"✅ Delivered",icon:"✅"},
+ delivery_failed:{bg:"#fee2e2",color:"#991b1b",border:"#fca5a5",label:"❌ Failed Delivery",icon:"❌"},
  };
 
  const uniqueActors=useMemo(()=>{
@@ -1531,7 +1533,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  }).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
  },[transactions,searchQ,actionFilter,actorFilter,dFrom,dTo]);
 
- const counts={create:0,approve:0,reject:0};
+ const counts={create:0,approve:0,reject:0,delivery_complete:0,delivery_failed:0};
  transactions.forEach(t=>{if(counts[t.action]!==undefined)counts[t.action]++;});
 
  function exportCSV(){
@@ -1559,8 +1561,8 @@ function TransactionsHistory({ transactions, isMobile }) {
  </div>
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Full audit log of every action performed in the system</p>
 
- <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr 1fr":"repeat(3,1fr)",gap:12,marginBottom:16}}>
- {[{key:"create",label:"Created",color:"#a5b4fc"},{key:"approve",label:"Approved",color:"#6ee7b7"},{key:"reject",label:"Rejected",color:"#fca5a5"}].map(s=>(
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(5,1fr)",gap:12,marginBottom:16}}>
+ {[{key:"create",label:"Created",color:"#a5b4fc"},{key:"approve",label:"Approved",color:"#6ee7b7"},{key:"reject",label:"Rejected",color:"#fca5a5"},{key:"delivery_complete",label:"Delivered",color:"#86efac"},{key:"delivery_failed",label:"Failed",color:"#f87171"}].map(s=>(
  <div key={s.key} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:14,padding:isMobile?12:16}}>
  <div style={{color:s.color,fontSize:isMobile?22:26,fontWeight:800}}>{counts[s.key]}</div>
  <div style={{color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:500,marginTop:2}}>{s.label}</div>
@@ -1576,6 +1578,8 @@ function TransactionsHistory({ transactions, isMobile }) {
  <option value="create">📝 Created</option>
  <option value="approve">✅ Approved</option>
  <option value="reject">❌ Rejected</option>
+ <option value="delivery_complete">✅ Delivered</option>
+ <option value="delivery_failed">❌ Failed Delivery</option>
  </select>
  <select value={actorFilter} onChange={e=>setActorFilter(e.target.value)} style={inpDark}>
  <option value="">All actors</option>
@@ -1650,6 +1654,7 @@ function TransactionsHistory({ transactions, isMobile }) {
 }
 
 function TeamLeadPanel({ appointments, isMobile }) {
+ const [statusFilter,setStatusFilter]=useState("all");
  const now = new Date();
  const approved = appointments.filter(a=>a.status==="approved");
  
@@ -1733,7 +1738,19 @@ function TeamLeadPanel({ appointments, isMobile }) {
  ))}
  </div>
 
- {overdue.length>0&&(
+ <div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,padding:12,marginBottom:20,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+ <span style={{color:"rgba(255,255,255,0.5)",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Filter:</span>
+ <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"8px 12px",color:"#fff",fontSize:13,outline:"none",cursor:"pointer",colorScheme:"dark"}}>
+ <option value="all">All Deliveries</option>
+ <option value="overdue">⚠️ Overdue Only</option>
+ <option value="upcoming">📦 Upcoming Only</option>
+ <option value="completed">✅ Completed Only</option>
+ <option value="failed">❌ Failed Only</option>
+ </select>
+ {statusFilter!=="all"&&<button onClick={()=>setStatusFilter("all")} style={{padding:"6px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:11,cursor:"pointer"}}>Clear filter</button>}
+ </div>
+
+ {(statusFilter==="all"||statusFilter==="overdue")&&overdue.length>0&&(
  <div style={{marginBottom:24}}>
  <h2 style={{color:"#fff",fontSize:isMobile?16:18,fontWeight:700,margin:"0 0 12px",display:"flex",alignItems:"center",gap:8}}>
  <span>🔴</span><span>OVERDUE - Action Required</span><span style={{background:"#dc2626",color:"#fff",fontSize:11,fontWeight:800,padding:"2px 8px",borderRadius:99}}>{overdue.length}</span>
@@ -1744,7 +1761,7 @@ function TeamLeadPanel({ appointments, isMobile }) {
  </div>
  )}
 
- {upcoming.length>0&&(
+ {(statusFilter==="all"||statusFilter==="upcoming")&&upcoming.length>0&&(
  <div style={{marginBottom:24}}>
  <h2 style={{color:"#fff",fontSize:isMobile?16:18,fontWeight:700,margin:"0 0 12px",display:"flex",alignItems:"center",gap:8}}>
  <span>📦</span><span>Upcoming Deliveries</span><span style={{background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:99}}>{upcoming.length}</span>
@@ -1755,7 +1772,7 @@ function TeamLeadPanel({ appointments, isMobile }) {
  </div>
  )}
 
- {completed.length>0&&(
+ {(statusFilter==="all"||statusFilter==="completed")&&completed.length>0&&(
  <div style={{marginBottom:24}}>
  <h2 style={{color:"#fff",fontSize:isMobile?16:18,fontWeight:700,margin:"0 0 12px",display:"flex",alignItems:"center",gap:8}}>
  <span>✅</span><span>Completed Deliveries</span><span style={{background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:99}}>{completed.length}</span>
@@ -1766,7 +1783,7 @@ function TeamLeadPanel({ appointments, isMobile }) {
  </div>
  )}
 
- {failed.length>0&&(
+ {(statusFilter==="all"||statusFilter==="failed")&&failed.length>0&&(
  <div>
  <h2 style={{color:"#fff",fontSize:isMobile?16:18,fontWeight:700,margin:"0 0 12px",display:"flex",alignItems:"center",gap:8}}>
  <span>❌</span><span>Failed Deliveries</span><span style={{background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:99}}>{failed.length}</span>
