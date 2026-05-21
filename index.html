@@ -9,31 +9,6 @@
  body{font-family:system-ui,-apple-system,sans-serif;}
  input,select,textarea,button{font-family:inherit;}
  </style>
- <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
- <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
- <script>
- try {
-   const firebaseConfig = {
-     apiKey: "AIzaSyDfyMS9Zmp_eglB8eNR3LXOlOZPIDTpo0g",
-     authDomain: "be-warehouse-appointments.firebaseapp.com",
-     projectId: "be-warehouse-appointments",
-     storageBucket: "be-warehouse-appointments.firebasestorage.app",
-     messagingSenderId: "128861389604",
-     appId: "1:128861389604:web:c8bf792a28ed6ff04869b1"
-   };
-   if(typeof firebase!=="undefined"){
-     firebase.initializeApp(firebaseConfig);
-     window.db = firebase.firestore();
-     window.db.enablePersistence({synchronizeTabs:true}).catch(e=>console.warn("Persistence:",e.code));
-     console.log("✅ Firebase initialized");
-   } else {
-     console.warn("⚠️ Firebase SDK not loaded - app will work in offline mode");
-   }
- } catch(e) {
-   console.error("Firebase init error:",e);
-   window.db = null;
- }
- </script>
 </head>
 <body>
  <div id="root">
@@ -787,7 +762,15 @@ function CalendarView({ appointments, isMobile }) {
  const [view,setView]=useState("monthly");
  const [cur,setCur]=useState(new Date());
  const [sel,setSel]=useState(null);
- const approved = appointments.filter(a=>a.status==="approved");
+ const [deliveryFilter,setDeliveryFilter]=useState("all");
+ const approved = appointments.filter(a=>{
+ if(a.status!=="approved")return false;
+ if(deliveryFilter==="all")return true;
+ if(deliveryFilter==="pending")return !a.deliveryStatus||a.deliveryStatus==="awaiting_delivery";
+ if(deliveryFilter==="completed")return a.deliveryStatus==="completed";
+ if(deliveryFilter==="failed")return a.deliveryStatus==="failed";
+ return true;
+ });
  const DAY_FULL = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
  const DAY_SHORT = ["S","M","T","W","T","F","S"];
 
@@ -1030,6 +1013,12 @@ function CalendarView({ appointments, isMobile }) {
  <p style={{color:"rgba(255,255,255,0.45)",fontSize:11,margin:"3px 0 0"}}>Week starts Sunday · Fri & Sat are non-working days · {approved.length} approved</p>
  </div>
  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+ <select value={deliveryFilter} onChange={e=>setDeliveryFilter(e.target.value)} style={{padding:isMobile?"7px 10px":"8px 12px",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,background:"rgba(255,255,255,0.08)",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",outline:"none",colorScheme:"dark"}}>
+ <option value="all">All Deliveries</option>
+ <option value="pending">⏳ Pending</option>
+ <option value="completed">✅ Completed</option>
+ <option value="failed">❌ Failed</option>
+ </select>
  <div style={{display:"flex",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,overflow:"hidden"}}>
  {["daily","weekly","monthly"].map(v=>(
  <button key={v} onClick={()=>setView(v)} style={{padding:isMobile?"7px 10px":"8px 14px",fontSize:12,fontWeight:600,textTransform:"capitalize",background:view===v?A:"transparent",color:view===v?"#fff":"rgba(255,255,255,0.55)",border:"none",cursor:"pointer"}}>{v}</button>
@@ -1847,77 +1836,7 @@ function App() {
  try{const s=localStorage.getItem(LS_TRANSACTIONS);return s?JSON.parse(s):[];}catch{return [];}
  });
 
- // === FIREBASE REAL-TIME SYNC + AUTO-MIGRATION ===
- useEffect(()=>{
-   if(!window.db) return;
-   let migrated=false;
-   // Real-time listener for appointments (1 subscription = minimal reads)
-   const unsubAppts=window.db.collection("appointments").onSnapshot(async snap=>{
-     const cloudAppts=snap.docs.map(d=>d.data());
-     // Auto-migrate localStorage data ONCE if cloud is empty and local has data
-     if(!migrated && cloudAppts.length===0){
-       migrated=true;
-       try{
-         const localAppts=JSON.parse(localStorage.getItem(LS_APPTS)||"[]");
-         if(localAppts.length>0){
-           const batch=window.db.batch();
-           localAppts.forEach(a=>batch.set(window.db.collection("appointments").doc(a.id),a));
-           await batch.commit();
-           console.log("✅ Migrated",localAppts.length,"appointments to Firebase");
-           return; // listener will fire again with new data
-         }
-       }catch(e){console.error("Migration error:",e);}
-     }
-     setAppts(cloudAppts.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)));
-   },err=>{
-     console.error("Appts listener:",err);
-     // Firestore not available - keep using localStorage
-     window.db = null;
-   });
-
-   // Real-time listener for emails
-   const unsubEmails=window.db.collection("emails").onSnapshot(async snap=>{
-     const cloudEmails=snap.docs.map(d=>d.data());
-     if(cloudEmails.length===0){
-       try{
-         const localEmails=JSON.parse(localStorage.getItem(LS_EMAILS)||"[]");
-         if(localEmails.length>0){
-           const batch=window.db.batch();
-           localEmails.forEach(e=>batch.set(window.db.collection("emails").doc(String(e.id)),e));
-           await batch.commit();
-           console.log("✅ Migrated",localEmails.length,"emails to Firebase");
-           return;
-         }
-       }catch(e){console.error("Email migration:",e);}
-     }
-     setEmailLog(cloudEmails.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)));
-   },err=>console.error("Emails listener:",err));
-
-   return ()=>{unsubAppts();unsubEmails();};
- },[]);
-
- // Firebase listener for transactions (separate effect for safe addition)
- useEffect(()=>{
-   if(!window.db) return;
-   const unsubTx=window.db.collection("transactions").onSnapshot(async snap=>{
-     const cloudTx=snap.docs.map(d=>d.data());
-     if(cloudTx.length===0){
-       try{
-         const localTx=JSON.parse(localStorage.getItem(LS_TRANSACTIONS)||"[]");
-         if(localTx.length>0){
-           const batch=window.db.batch();
-           localTx.forEach(t=>batch.set(window.db.collection("transactions").doc(String(t.id)),t));
-           await batch.commit();
-           return;
-         }
-       }catch(e){console.error("Tx migration:",e);}
-     }
-     setTransactions(cloudTx.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)));
-   },err=>console.error("Tx listener:",err));
-   return ()=>unsubTx();
- },[]);
-
- // Keep localStorage as backup
+ // === LOCALSTORAGE PERSISTENCE ===
  useEffect(()=>{try{localStorage.setItem(LS_APPTS,JSON.stringify(appts));}catch(e){}},[appts]);
  useEffect(()=>{try{localStorage.setItem(LS_EMAILS,JSON.stringify(emailLog));}catch(e){}},[emailLog]);
  useEffect(()=>{try{localStorage.setItem(LS_CONFIG,JSON.stringify(config));}catch(e){}},[config]);
@@ -1953,9 +1872,7 @@ function App() {
  pin:type==="submission"?appt.pin:null,
  ...extra
  };
- // Write to Firestore (listener auto-updates state)
- if(window.db){window.db.collection("emails").doc(String(emailDoc.id)).set(emailDoc).catch(e=>console.error("Email write:",e));}
- else{setEmailLog(p=>[emailDoc,...p]);}
+ setEmailLog(p=>[emailDoc,...p]);
  }
 
  function logTransaction(action, appt, details={}){
@@ -1970,8 +1887,7 @@ function App() {
  deliveryTo:appt?appt.deliveryTo:"—",
  details:details.note||"",
  };
- if(window.db){window.db.collection("transactions").doc(String(tx.id)).set(tx).catch(e=>console.error("Tx write:",e));}
- else{setTransactions(p=>[tx,...p]);}
+ setTransactions(p=>[tx,...p]);
  }
 
  function handleBook(data){
@@ -1997,14 +1913,7 @@ function App() {
  createdAt:new Date().toISOString(),
  updatedAt:new Date().toISOString()
  };
- // Write to Firestore (listener auto-updates state)
- if(window.db){
- window.db.collection("appointments").doc(id).set(newAppt).catch(e=>{
- console.error("Book write:",e);
  setAppts(p=>[newAppt,...p]);
- });
- }
- else{setAppts(p=>[newAppt,...p]);}
  logEmail("submission", newAppt);
  logTransaction("create", newAppt, {actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:"New appointment submitted"});
  return {id,pin};
@@ -2012,8 +1921,7 @@ function App() {
 
  function handleApprove(a){
  const updates={status:"approved",deliveryStatus:"awaiting_delivery",updatedAt:new Date().toISOString()};
- if(window.db){window.db.collection("appointments").doc(a.id).update(updates).catch(e=>console.error("Approve:",e));}
- else{setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));}
+ setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  logEmail("approval", a);
  logTransaction("approve", a, {actor:"Admin",actorEmail:adminEmail||ADMIN_EMAIL,note:"Appointment approved"});
  showToast("✅ Appointment approved");
@@ -2025,8 +1933,7 @@ function App() {
  const a=appts.find(x=>x.id===rejectId);
  if(!a)return;
  const updates={status:"rejected",managerComments:rejReason,updatedAt:new Date().toISOString()};
- if(window.db){window.db.collection("appointments").doc(a.id).update(updates).catch(e=>console.error("Reject:",e));}
- else{setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));}
+ setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  logEmail("rejection", a, {reason:rejReason});
  logTransaction("reject", a, {actor:"Admin",actorEmail:adminEmail||ADMIN_EMAIL,note:rejReason});
  showToast("Appointment rejected");
@@ -2036,8 +1943,7 @@ function App() {
  function handleDeliveryComplete(a){
  if(!confirm("✅ Confirm delivery completed for "+a.id+"?"))return;
  const updates={deliveryStatus:"completed",completedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
- if(window.db){window.db.collection("appointments").doc(a.id).update(updates).catch(e=>console.error("Complete:",e));}
- else{setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));}
+ setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  logTransaction("delivery_complete", a, {actor:"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery completed successfully"});
  showToast("✅ Delivery marked as completed");
  }
@@ -2046,8 +1952,7 @@ function App() {
  const reason=prompt("❌ Reason for delivery failure:");
  if(!reason||!reason.trim())return;
  const updates={deliveryStatus:"failed",failureReason:reason.trim(),failedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
- if(window.db){window.db.collection("appointments").doc(a.id).update(updates).catch(e=>console.error("Failed:",e));}
- else{setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));}
+ setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  logTransaction("delivery_failed", a, {actor:"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery failed: "+reason});
  showToast("❌ Delivery marked as failed");
  }
