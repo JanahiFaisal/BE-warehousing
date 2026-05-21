@@ -1891,8 +1891,8 @@ function App() {
  {view==="admin" && <AdminPanel appointments={filteredAppts} onApprove={handleApprove} onReject={id=>{setRejectId(id);setRejReason("");}} onView={setViewId} loading={loading} isMobile={isMobile}/>}
  {view==="statistics" && <StatisticsPanel appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="calendar" && <CalendarView appointments={filteredAppts} isMobile={isMobile}/>}
- {view==="emails" && <EmailLog emailLog={emailLog} isMobile={isMobile}/>}
- {view==="history" && <TransactionsHistory transactions={transactions} isMobile={isMobile}/>}
+ {view==="emails" && <EmailLog emailLog={orgFilter==="BE"?emailLog:emailLog.filter(e=>(e.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
+ {view==="history" && <TransactionsHistory transactions={orgFilter==="BE"?transactions:transactions.filter(t=>(t.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
  {view==="settings" && <SettingsPanel config={config} onChange={setConfig} isMobile={isMobile}/>}
  </div>
  <div style={{borderTop:"1px solid rgba(255,255,255,0.08)",padding:isMobile?"12px 16px":"12px 28px",display:"flex",alignItems:"center",flexWrap:"wrap",gap:isMobile?10:24,justifyContent:"space-between"}}>
