@@ -972,48 +972,161 @@ function CalendarView({ appointments, isMobile }) {
 }
 
 function EmailLog({ emailLog, isMobile }) {
-  const [expandedId, setExpandedId] = useState(null);
+  const [searchQ, setSearchQ] = useState("");
+  const [expandedApt, setExpandedApt] = useState(null);
+  const [expandedEmail, setExpandedEmail] = useState(null);
+  
   const typeCfg = {
     submission: {bg:"#eff6ff",color:"#1d4ed8",border:"#bfdbfe",label:"📨 Submission"},
     approval:   {bg:"#f0fdf4",color:"#15803d",border:"#bbf7d0",label:"✅ Approval"},
     rejection:  {bg:"#fef2f2",color:"#b91c1c",border:"#fecaca",label:"❌ Rejection"},
   };
+
+  // Group emails by appointment ID
+  const grouped = useMemo(() => {
+    const groups = {};
+    emailLog.forEach(e => {
+      if (!groups[e.appointmentId]) {
+        groups[e.appointmentId] = [];
+      }
+      groups[e.appointmentId].push(e);
+    });
+    // Sort each group by timestamp (newest first)
+    Object.keys(groups).forEach(aptId => {
+      groups[aptId].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    });
+    return groups;
+  }, [emailLog]);
+
+  // Filter groups by search query
+  const filteredGroups = useMemo(() => {
+    const q = searchQ.toLowerCase();
+    if (!q) return Object.keys(grouped).sort((a,b) => {
+      const aLatest = new Date(grouped[a][0]?.timestamp);
+      const bLatest = new Date(grouped[b][0]?.timestamp);
+      return bLatest - aLatest;
+    });
+    
+    return Object.keys(grouped).filter(aptId => {
+      const emails = grouped[aptId];
+      return aptId.toLowerCase().includes(q) || 
+             emails.some(e => 
+               e.subject.toLowerCase().includes(q) || 
+               e.recipient.toLowerCase().includes(q)
+             );
+    }).sort((a,b) => {
+      const aLatest = new Date(grouped[a][0]?.timestamp);
+      const bLatest = new Date(grouped[b][0]?.timestamp);
+      return bLatest - aLatest;
+    });
+  }, [grouped, searchQ]);
+
+  const totalEmails = emailLog.length;
+  const totalConversations = Object.keys(grouped).length;
+
   return (
     <div style={{padding:isMobile?16:28}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10,marginBottom:4}}>
         <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:0}}>Email Log</h1>
-        <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,padding:"4px 12px",borderRadius:99}}>{emailLog.length} email{emailLog.length!==1?"s":""}</span>
+        <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+          <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{totalConversations} conversation{totalConversations!==1?"s":""}</span>
+          <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{totalEmails} email{totalEmails!==1?"s":""}</span>
+        </div>
       </div>
-      <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 20px"}}>All notification emails triggered by submission, approval, and rejection events</p>
+      <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Grouped by appointment with full conversation history</p>
 
-      {emailLog.length===0 ? (
+      {totalEmails===0 ? (
         <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
           <div style={{fontSize:40,marginBottom:12}}>✉️</div>
           <div style={{color:"rgba(255,255,255,0.4)",fontSize:13}}>No emails yet. Approve or reject appointments to see logs here.</div>
         </div>
       ) : (
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {emailLog.map(e=>{
-            const cfg=typeCfg[e.type]||typeCfg.submission;
-            const isExpanded=expandedId===e.id;
-            return (
-              <div key={e.id} style={{background:"#fff",borderRadius:16,overflow:"hidden",border:"1px solid #f3f4f6"}}>
-                <div onClick={()=>setExpandedId(isExpanded?null:e.id)} style={{padding:"14px 18px",display:"flex",flexDirection:isMobile?"column":"row",gap:isMobile?10:14,alignItems:isMobile?"flex-start":"center",cursor:"pointer",background:isExpanded?"#f9fafb":"#fff"}}>
-                  <span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,padding:"4px 11px",borderRadius:99,fontSize:11,fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>{cfg.label}</span>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontWeight:600,fontSize:13,color:"#111827",marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subject}</div>
-                    <div style={{fontSize:11,color:"#9ca3af"}}>To: <span style={{color:"#6b7280"}}>{e.recipient}</span>{e.pin?<span style={{marginLeft:10,background:"#fef3c7",color:"#92400e",border:"1px solid #fcd34d",padding:"1px 8px",borderRadius:99,fontWeight:700,fontFamily:"monospace",fontSize:11}}>PIN: {e.pin}</span>:""}</div>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{background:"#fff",borderRadius:16,padding:isMobile?12:16}}>
+            <input 
+              type="text"
+              placeholder="Search conversations by ID, email, or subject..."
+              value={searchQ}
+              onChange={e=>setSearchQ(e.target.value)}
+              style={{width:"100%",border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:13,outline:"none",background:"#f9fafb"}}
+            />
+          </div>
+
+          {filteredGroups.length===0 ? (
+            <div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:32,textAlign:"center"}}>
+              <div style={{fontSize:28,marginBottom:8}}>🔍</div>
+              <div style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>No conversations match "{searchQ}"</div>
+            </div>
+          ) : (
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {filteredGroups.map(aptId => {
+                const emails = grouped[aptId];
+                const isExpanded = expandedApt === aptId;
+                const latestEmail = emails[0];
+                const typesCounts = {submission:0, approval:0, rejection:0};
+                emails.forEach(e => typesCounts[e.type]++);
+                
+                return (
+                  <div key={aptId} style={{background:"#fff",borderRadius:16,overflow:"hidden",border:"1px solid #f3f4f6"}}>
+                    {/* Conversation header - always visible */}
+                    <div 
+                      onClick={()=>setExpandedApt(isExpanded?null:aptId)} 
+                      style={{padding:"16px 18px",display:"flex",flexDirection:isMobile?"column":"row",gap:isMobile?12:16,alignItems:isMobile?"flex-start":"center",cursor:"pointer",background:isExpanded?"#f9fafb":"#fff",borderBottom:isExpanded?"1px solid #f3f4f6":"none"}}
+                    >
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+                          <span style={{fontFamily:"monospace",fontSize:13,fontWeight:800,color:P}}>{aptId}</span>
+                          <span style={{background:"rgba(59,130,246,0.15)",color:"#2563eb",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99}}>{emails.length} email{emails.length!==1?"s":""}</span>
+                          {typesCounts.submission>0&&<span style={{background:"#eff6ff",color:"#1d4ed8",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:99}}>📨 {typesCounts.submission}</span>}
+                          {typesCounts.approval>0&&<span style={{background:"#f0fdf4",color:"#15803d",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:99}}>✅ {typesCounts.approval}</span>}
+                          {typesCounts.rejection>0&&<span style={{background:"#fef2f2",color:"#b91c1c",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:99}}>❌ {typesCounts.rejection}</span>}
+                        </div>
+                        <div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>Latest: {fmtTs(latestEmail.timestamp)}</div>
+                        <div style={{fontSize:12,color:"#6b7280"}}>{latestEmail.subject}</div>
+                      </div>
+                      <div style={{flexShrink:0,textAlign:isMobile?"left":"right"}}>
+                        <div style={{fontSize:12,color:"#9ca3af",marginBottom:2}}>To: {latestEmail.recipient}</div>
+                        <div style={{fontSize:13,color:"#9ca3af"}}>{isExpanded?"▾":"▸"}</div>
+                      </div>
+                    </div>
+
+                    {/* Expanded conversation thread */}
+                    {isExpanded&&(
+                      <div style={{padding:"14px 18px",background:"#fafafa",borderTop:"1px solid #f3f4f6",display:"flex",flexDirection:"column",gap:8,maxHeight:600,overflowY:"auto"}}>
+                        {emails.map(e => {
+                          const cfg = typeCfg[e.type]||typeCfg.submission;
+                          const isEmailExpanded = expandedEmail === e.id;
+                          return (
+                            <div key={e.id} style={{background:"#fff",borderRadius:12,border:"1px solid #e5e7eb",overflow:"hidden"}}>
+                              <div 
+                                onClick={()=>setExpandedEmail(isEmailExpanded?null:e.id)}
+                                style={{padding:"12px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",background:isEmailExpanded?"#f3f4f6":"#fff"}}
+                              >
+                                <span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,padding:"3px 9px",borderRadius:99,fontSize:10,fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>{cfg.label}</span>
+                                <div style={{flex:1,minWidth:0}}>
+                                  <div style={{fontWeight:600,fontSize:12,color:"#111827",marginBottom:2}}>{e.subject}</div>
+                                  <div style={{fontSize:10,color:"#9ca3af"}}>To: {e.recipient}{e.pin?<span style={{marginLeft:8,background:"#fef3c7",color:"#92400e",border:"1px solid #fcd34d",padding:"1px 6px",borderRadius:99,fontWeight:700,fontFamily:"monospace",fontSize:10}}>PIN: {e.pin}</span>:""}</div>
+                                </div>
+                                <div style={{flexShrink:0,fontSize:10,color:"#9ca3af",textAlign:"right"}}>
+                                  <div>{fmtTs(e.timestamp)}</div>
+                                  <div style={{marginTop:2}}>{isEmailExpanded?"▾":"▸"}</div>
+                                </div>
+                              </div>
+                              {isEmailExpanded&&e.body&&(
+                                <div style={{borderTop:"1px solid #e5e7eb",padding:"12px 14px",background:"#f9fafb",whiteSpace:"pre-wrap",fontSize:11,lineHeight:1.6,fontFamily:"monospace",color:"#374151",maxHeight:350,overflowY:"auto"}}>
+                                  {e.body}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                  <div style={{flexShrink:0,textAlign:isMobile?"left":"right"}}>
-                    <div style={{fontFamily:"monospace",fontSize:12,color:P,fontWeight:800}}>{e.appointmentId}</div>
-                    <div style={{fontSize:11,color:"#9ca3af",marginTop:2}}>{fmtTs(e.timestamp)}</div>
-                    <div style={{fontSize:12,color:"#9ca3af",marginTop:4}}>{isExpanded?"▾":"▸"}</div>
-                  </div>
-                </div>
-                {isExpanded&&e.body&&<div style={{borderTop:"1px solid #f3f4f6",padding:"14px 18px",background:"#fafafa",whiteSpace:"pre-wrap",fontSize:12,lineHeight:1.6,fontFamily:"monospace",color:"#374151",maxHeight:400,overflowY:"auto"}}>{e.body}</div>}
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
