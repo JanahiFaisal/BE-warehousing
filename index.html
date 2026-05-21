@@ -1513,7 +1513,8 @@ function OrgFilter({ value, onChange, isMobile }) {
 function TransactionsHistory({ transactions, isMobile }) {
  const [searchQ,setSearchQ]=useState("");
  const [actionFilter,setActionFilter]=useState("all");
- const [actorFilter,setActorFilter]=useState("");
+ const [supplierFilter,setSupplierFilter]=useState("");
+ const [supplierSearchQ,setSupplierSearchQ]=useState("");
  const [dFrom,setDFrom]=useState("");
  const [dTo,setDTo]=useState("");
 
@@ -1525,16 +1526,22 @@ function TransactionsHistory({ transactions, isMobile }) {
  delivery_failed:{bg:"#fee2e2",color:"#991b1b",border:"#fca5a5",label:"❌ Failed Delivery",icon:"❌"},
  };
 
- const uniqueActors=useMemo(()=>{
+ const uniqueSuppliers=useMemo(()=>{
  const set=new Set();
- transactions.forEach(t=>{if(t.actorEmail&&t.actorEmail!=="—")set.add(t.actorEmail);});
+ transactions.forEach(t=>{if(t.supplierName&&t.supplierName!=="—")set.add(t.supplierName);});
  return Array.from(set).sort();
  },[transactions]);
+
+ const filteredSuppliers=useMemo(()=>{
+ if(!supplierSearchQ)return uniqueSuppliers;
+ const q=supplierSearchQ.toLowerCase();
+ return uniqueSuppliers.filter(s=>s.toLowerCase().includes(q));
+ },[uniqueSuppliers,supplierSearchQ]);
 
  const filtered=useMemo(()=>{
  return transactions.filter(t=>{
  if(actionFilter!=="all"&&t.action!==actionFilter)return false;
- if(actorFilter&&t.actorEmail!==actorFilter)return false;
+ if(supplierFilter&&t.supplierName!==supplierFilter)return false;
  if(dFrom&&t.timestamp.split("T")[0]<dFrom)return false;
  if(dTo&&t.timestamp.split("T")[0]>dTo)return false;
  if(searchQ){
@@ -1543,7 +1550,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  }
  return true;
  }).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
- },[transactions,searchQ,actionFilter,actorFilter,dFrom,dTo]);
+ },[transactions,searchQ,actionFilter,supplierFilter,dFrom,dTo]);
 
  const counts={create:0,approve:0,reject:0,delivery_complete:0,delivery_failed:0};
  transactions.forEach(t=>{if(counts[t.action]!==undefined)counts[t.action]++;});
@@ -1593,15 +1600,27 @@ function TransactionsHistory({ transactions, isMobile }) {
  <option value="delivery_complete">✅ Delivered</option>
  <option value="delivery_failed">❌ Failed Delivery</option>
  </select>
- <select value={actorFilter} onChange={e=>setActorFilter(e.target.value)} style={inpDark}>
- <option value="">All actors</option>
- {uniqueActors.map(a=><option key={a} value={a}>{a}</option>)}
- </select>
+ <div style={{position:"relative",minWidth:isMobile?140:200}}>
+ <input 
+ list="supplier-list"
+ value={supplierFilter||supplierSearchQ} 
+ onChange={e=>{setSupplierSearchQ(e.target.value);setSupplierFilter("");}}
+ onBlur={()=>{if(filteredSuppliers.includes(supplierSearchQ))setSupplierFilter(supplierSearchQ);}}
+ placeholder="Filter by supplier..."
+ style={{...inpDark,width:"100%",paddingRight:supplierFilter||supplierSearchQ?"30px":"12px"}}
+ />
+ <datalist id="supplier-list">
+ {filteredSuppliers.map(s=><option key={s} value={s}/>)}
+ </datalist>
+ {(supplierFilter||supplierSearchQ)&&(
+ <button onClick={()=>{setSupplierFilter("");setSupplierSearchQ("");}} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"rgba(255,255,255,0.5)",cursor:"pointer",fontSize:16,padding:0,lineHeight:1}}>×</button>
+ )}
+ </div>
  <span style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>From</span>
  <input type="date" value={dFrom} onChange={e=>setDFrom(e.target.value)} style={inpDark}/>
  <span style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>To</span>
  <input type="date" value={dTo} onChange={e=>setDTo(e.target.value)} style={inpDark}/>
- {(actionFilter!=="all"||actorFilter||dFrom||dTo||searchQ)&&<button onClick={()=>{setActionFilter("all");setActorFilter("");setDFrom("");setDTo("");setSearchQ("");}} style={{padding:"8px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:11,cursor:"pointer"}}>Clear filters</button>}
+ {(actionFilter!=="all"||supplierFilter||supplierSearchQ||dFrom||dTo||searchQ)&&<button onClick={()=>{setActionFilter("all");setSupplierFilter("");setSupplierSearchQ("");setDFrom("");setDTo("");setSearchQ("");}} style={{padding:"8px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:11,cursor:"pointer"}}>Clear filters</button>}
  <span style={{marginLeft:"auto",background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{filtered.length} match{filtered.length!==1?"es":""}</span>
  </div>
  </div>
