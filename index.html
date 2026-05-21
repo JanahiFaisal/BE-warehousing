@@ -791,9 +791,11 @@ function CalendarView({ appointments, isMobile }) {
  }
 
  function AptChip({ a, showTime }) {
+ const statusIcon = a.deliveryStatus==="completed"?"✅":a.deliveryStatus==="failed"?"❌":"";
  return (
  <button onClick={()=>setSel(a)} style={{width:"100%",textAlign:"left",padding:isMobile?"3px 4px":"4px 7px",borderRadius:6,border:"1px solid #c7d2fe",background:"#eef2ff",fontSize:isMobile?9:10,fontWeight:600,cursor:"pointer",marginBottom:2,overflow:"hidden",display:"block"}}>
  {showTime && <span style={{color:"#4f46e5",fontWeight:800,marginRight:3}}>{a.time}</span>}
+ {statusIcon && <span style={{marginRight:2}}>{statusIcon}</span>}
  <span style={{color:"#374151",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"inline-block",maxWidth:"100%"}}>{isMobile?"":a.supplierName}</span>
  </button>
  );
@@ -961,6 +963,34 @@ function CalendarView({ appointments, isMobile }) {
  <div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}>
  <div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>Notes</div>
  <div style={{fontSize:13,color:"#374151"}}>{sel.additionalNotes}</div>
+ </div>
+ )}
+ {sel.status==="approved"&&sel.deliveryStatus!=="completed"&&sel.deliveryStatus!=="failed"&&(
+ <div style={{background:"#fef9e7",borderRadius:12,padding:12,border:"1px solid #fde68a",marginBottom:12}}>
+ <div style={{fontSize:11,fontWeight:700,color:"#d97706",marginBottom:8}}>📦 Delivery Confirmation</div>
+ <div style={{display:"flex",gap:8}}>
+ <button onClick={()=>{setSel(null);window.handleDeliveryComplete(sel);}} style={{flex:1,padding:"10px 14px",background:"#10b981",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+ <span>✅</span><span>Completed</span>
+ </button>
+ <button onClick={()=>{setSel(null);window.handleDeliveryFailed(sel);}} style={{flex:1,padding:"10px 14px",background:"#ef4444",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+ <span>❌</span><span>Failed</span>
+ </button>
+ </div>
+ </div>
+ )}
+ {sel.status==="approved"&&sel.deliveryStatus==="completed"&&(
+ <div style={{background:"#f0fdf4",borderRadius:12,padding:12,border:"1px solid #bbf7d0",marginBottom:12,textAlign:"center"}}>
+ <div style={{fontSize:28,marginBottom:4}}>✅</div>
+ <div style={{fontSize:13,fontWeight:700,color:"#15803d"}}>Delivery Completed</div>
+ <div style={{fontSize:11,color:"#6b7280",marginTop:3}}>{sel.completedAt?fmtTs(sel.completedAt):""}</div>
+ </div>
+ )}
+ {sel.status==="approved"&&sel.deliveryStatus==="failed"&&(
+ <div style={{background:"#fef2f2",borderRadius:12,padding:12,border:"1px solid #fecaca",marginBottom:12,textAlign:"center"}}>
+ <div style={{fontSize:28,marginBottom:4}}>❌</div>
+ <div style={{fontSize:13,fontWeight:700,color:"#b91c1c"}}>Delivery Failed</div>
+ {sel.failureReason&&<div style={{fontSize:11,color:"#6b7280",marginTop:3,fontStyle:"italic"}}>Reason: {sel.failureReason}</div>}
+ <div style={{fontSize:11,color:"#6b7280",marginTop:3}}>{sel.failedAt?fmtTs(sel.failedAt):""}</div>
  </div>
  )}
  <button onClick={()=>setSel(null)} style={{marginTop:6,width:"100%",padding:12,border:"1px solid #e5e7eb",borderRadius:12,fontSize:14,fontWeight:600,color:"#6b7280",background:"transparent",cursor:"pointer"}}>Close</button>
@@ -1619,6 +1649,144 @@ function TransactionsHistory({ transactions, isMobile }) {
  );
 }
 
+function TeamLeadPanel({ appointments, isMobile }) {
+ const now = new Date();
+ const approved = appointments.filter(a=>a.status==="approved");
+ 
+ const completed = approved.filter(a=>a.deliveryStatus==="completed");
+ const failed = approved.filter(a=>a.deliveryStatus==="failed");
+ const awaiting = approved.filter(a=>a.deliveryStatus==="awaiting_delivery"||!a.deliveryStatus);
+ 
+ // Check if overdue (past date+time but not completed/failed)
+ const overdue = awaiting.filter(a=>{
+ const aptDateTime = new Date(a.date+"T"+a.time);
+ return aptDateTime < now;
+ });
+ 
+ const upcoming = awaiting.filter(a=>{
+ const aptDateTime = new Date(a.date+"T"+a.time);
+ return aptDateTime >= now;
+ });
+
+ function StatusCard({a, isOverdue}){
+ const bgColor = isOverdue ? "#fef2f2" : a.deliveryStatus==="completed" ? "#f0fdf4" : a.deliveryStatus==="failed" ? "#fff1f2" : "#fefce8";
+ const borderColor = isOverdue ? "#fecaca" : a.deliveryStatus==="completed" ? "#bbf7d0" : a.deliveryStatus==="failed" ? "#fecaca" : "#fde68a";
+ const icon = isOverdue ? "⚠️" : a.deliveryStatus==="completed" ? "✅" : a.deliveryStatus==="failed" ? "❌" : "📦";
+ 
+ return(
+ <div style={{background:bgColor,border:`1px solid ${borderColor}`,borderRadius:14,padding:isMobile?12:16}}>
+ <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+ <span style={{fontSize:28}}>{icon}</span>
+ <div style={{flex:1}}>
+ <div style={{fontFamily:"monospace",fontSize:14,fontWeight:800,color:P,marginBottom:2}}>{a.id}</div>
+ <div style={{fontSize:12,color:"#6b7280"}}>{a.supplierName}</div>
+ </div>
+ </div>
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:10}}>
+ <div>
+ <div style={{fontSize:10,color:"#9ca3af",marginBottom:2}}>Scheduled</div>
+ <div style={{fontSize:12,fontWeight:600,color:"#111827"}}>{fmtDate(a.date)} {a.time}</div>
+ </div>
+ <div>
+ <div style={{fontSize:10,color:"#9ca3af",marginBottom:2}}>Delivery To</div>
+ <div style={{fontSize:12,fontWeight:600,color:"#111827"}}><StoreBadge loc={a.storageLocation}/></div>
+ </div>
+ </div>
+ {a.deliveryStatus==="completed"&&a.completedAt&&(
+ <div style={{fontSize:11,color:"#15803d",fontWeight:600,background:"#dcfce7",padding:"6px 10px",borderRadius:8}}>
+ ✅ Completed: {fmtTs(a.completedAt)}
+ </div>
+ )}
+ {a.deliveryStatus==="failed"&&(
+ <div style={{fontSize:11,color:"#b91c1c",fontWeight:600,background:"#fee2e2",padding:"6px 10px",borderRadius:8}}>
+ ❌ Failed: {a.failureReason||"No reason provided"}
+ {a.failedAt&&<div style={{fontSize:10,marginTop:2}}>{fmtTs(a.failedAt)}</div>}
+ </div>
+ )}
+ {isOverdue&&(
+ <div style={{fontSize:11,color:"#b91c1c",fontWeight:700,background:"#fee2e2",padding:"8px 10px",borderRadius:8}}>
+ ⚠️ OVERDUE - Delivery not confirmed yet
+ </div>
+ )}
+ </div>
+ );
+ }
+
+ return(
+ <div style={{padding:isMobile?16:28}}>
+ <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Team Lead Dashboard</h1>
+ <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 20px"}}>Monitor approved deliveries and track completion status</p>
+
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12,marginBottom:20}}>
+ {[
+ {label:"Completed",count:completed.length,color:"#6ee7b7",icon:"✅"},
+ {label:"Overdue",count:overdue.length,color:"#fca5a5",icon:"⚠️"},
+ {label:"Upcoming",count:upcoming.length,color:"#fde68a",icon:"📦"},
+ {label:"Failed",count:failed.length,color:"#f87171",icon:"❌"}
+ ].map(s=>(
+ <div key={s.label} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:14,padding:isMobile?12:16}}>
+ <div style={{fontSize:isMobile?11:12,color:"rgba(255,255,255,0.6)",marginBottom:4,display:"flex",alignItems:"center",gap:6}}>
+ <span>{s.icon}</span><span>{s.label}</span>
+ </div>
+ <div style={{fontSize:isMobile?24:28,fontWeight:800,color:s.color}}>{s.count}</div>
+ </div>
+ ))}
+ </div>
+
+ {overdue.length>0&&(
+ <div style={{marginBottom:24}}>
+ <h2 style={{color:"#fff",fontSize:isMobile?16:18,fontWeight:700,margin:"0 0 12px",display:"flex",alignItems:"center",gap:8}}>
+ <span>🔴</span><span>OVERDUE - Action Required</span><span style={{background:"#dc2626",color:"#fff",fontSize:11,fontWeight:800,padding:"2px 8px",borderRadius:99}}>{overdue.length}</span>
+ </h2>
+ <div style={{display:"flex",flexDirection:"column",gap:10}}>
+ {overdue.map(a=><StatusCard key={a.id} a={a} isOverdue={true}/>)}
+ </div>
+ </div>
+ )}
+
+ {upcoming.length>0&&(
+ <div style={{marginBottom:24}}>
+ <h2 style={{color:"#fff",fontSize:isMobile?16:18,fontWeight:700,margin:"0 0 12px",display:"flex",alignItems:"center",gap:8}}>
+ <span>📦</span><span>Upcoming Deliveries</span><span style={{background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:99}}>{upcoming.length}</span>
+ </h2>
+ <div style={{display:"flex",flexDirection:"column",gap:10}}>
+ {upcoming.map(a=><StatusCard key={a.id} a={a} isOverdue={false}/>)}
+ </div>
+ </div>
+ )}
+
+ {completed.length>0&&(
+ <div style={{marginBottom:24}}>
+ <h2 style={{color:"#fff",fontSize:isMobile?16:18,fontWeight:700,margin:"0 0 12px",display:"flex",alignItems:"center",gap:8}}>
+ <span>✅</span><span>Completed Deliveries</span><span style={{background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:99}}>{completed.length}</span>
+ </h2>
+ <div style={{display:"flex",flexDirection:"column",gap:10}}>
+ {completed.map(a=><StatusCard key={a.id} a={a} isOverdue={false}/>)}
+ </div>
+ </div>
+ )}
+
+ {failed.length>0&&(
+ <div>
+ <h2 style={{color:"#fff",fontSize:isMobile?16:18,fontWeight:700,margin:"0 0 12px",display:"flex",alignItems:"center",gap:8}}>
+ <span>❌</span><span>Failed Deliveries</span><span style={{background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:99}}>{failed.length}</span>
+ </h2>
+ <div style={{display:"flex",flexDirection:"column",gap:10}}>
+ {failed.map(a=><StatusCard key={a.id} a={a} isOverdue={false}/>)}
+ </div>
+ </div>
+ )}
+
+ {approved.length===0&&(
+ <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
+ <div style={{fontSize:40,marginBottom:12}}>👷</div>
+ <div style={{color:"rgba(255,255,255,0.4)",fontSize:13}}>No approved deliveries to monitor yet.</div>
+ </div>
+ )}
+ </div>
+ );
+}
+
 function App() {
  const { isMobile, isTablet } = useWindowSize();
  const [page,setPage]=useState("landing");
@@ -1780,6 +1948,7 @@ function App() {
  additionalNotes:data.additionalNotes,
  attachments:data.attachments||[],
  status:"pending",
+ deliveryStatus:"pending",
  managerComments:null,
  createdAt:new Date().toISOString(),
  updatedAt:new Date().toISOString()
@@ -1793,7 +1962,7 @@ function App() {
  }
 
  function handleApprove(a){
- const updates={status:"approved",updatedAt:new Date().toISOString()};
+ const updates={status:"approved",deliveryStatus:"awaiting_delivery",updatedAt:new Date().toISOString()};
  if(window.db){window.db.collection("appointments").doc(a.id).update(updates).catch(e=>console.error("Approve:",e));}
  else{setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));}
  logEmail("approval", a);
@@ -1815,6 +1984,31 @@ function App() {
  setRejectId(null);setRejReason("");setLoading(null);
  }
 
+ function handleDeliveryComplete(a){
+ if(!confirm("✅ Confirm delivery completed for "+a.id+"?"))return;
+ const updates={deliveryStatus:"completed",completedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+ if(window.db){window.db.collection("appointments").doc(a.id).update(updates).catch(e=>console.error("Complete:",e));}
+ else{setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));}
+ logTransaction("delivery_complete", a, {actor:"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery completed successfully"});
+ showToast("✅ Delivery marked as completed");
+ }
+
+ function handleDeliveryFailed(a){
+ const reason=prompt("❌ Reason for delivery failure:");
+ if(!reason||!reason.trim())return;
+ const updates={deliveryStatus:"failed",failureReason:reason.trim(),failedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+ if(window.db){window.db.collection("appointments").doc(a.id).update(updates).catch(e=>console.error("Failed:",e));}
+ else{setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));}
+ logTransaction("delivery_failed", a, {actor:"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery failed: "+reason});
+ showToast("❌ Delivery marked as failed");
+ }
+
+ // Make handlers globally accessible for calendar modal
+ useEffect(()=>{
+ window.handleDeliveryComplete=handleDeliveryComplete;
+ window.handleDeliveryFailed=handleDeliveryFailed;
+ },[]);
+
  if(page==="landing") return <Landing onSupplier={()=>setPage("supplier")} onAdmin={()=>setPage("admin-login")} onTracker={()=>setPage("tracker")}/>;
  if(page==="supplier") return <SupplierForm onSubmit={handleBook} onBack={()=>setPage("landing")} appointments={appts}/>;
  if(page==="tracker") return <SupplierTracker appointments={appts} onBack={()=>setPage("landing")}/>;
@@ -1822,9 +2016,11 @@ function App() {
 
  const pending = appts.filter(a=>a.status==="pending");
  const viewApt = appts.find(a=>a.id===viewId);
+ const overdueCount = appts.filter(a=>a.status==="approved"&&(a.deliveryStatus==="awaiting_delivery"||!a.deliveryStatus)&&new Date(a.date+"T"+a.time)<new Date()).length;
  const nav = [
  {id:"dashboard",label:"Dashboard",icon:"📊"},
  {id:"admin",label:"Admin Panel",badge:pending.length,icon:"📋"},
+ {id:"teamlead",label:"Team Lead",badge:overdueCount,icon:"👷"},
  {id:"statistics",label:"Statistics",icon:"📈"},
  {id:"calendar",label:"Calendar",icon:"📅"},
  {id:"emails",label:"Email Log",badge:emailLog.length,icon:"✉️"},
@@ -1889,6 +2085,7 @@ function App() {
  <div style={{flex:1}}>
  {view==="dashboard" && <Dashboard appointments={filteredAppts} setView={setView} isMobile={isMobile}/>}
  {view==="admin" && <AdminPanel appointments={filteredAppts} onApprove={handleApprove} onReject={id=>{setRejectId(id);setRejReason("");}} onView={setViewId} loading={loading} isMobile={isMobile}/>}
+ {view==="teamlead" && <TeamLeadPanel appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="statistics" && <StatisticsPanel appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="calendar" && <CalendarView appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="emails" && <EmailLog emailLog={orgFilter==="BE"?emailLog:emailLog.filter(e=>(e.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
