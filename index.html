@@ -9,22 +9,6 @@
  body{font-family:system-ui,-apple-system,sans-serif;}
  input,select,textarea,button{font-family:inherit;}
  </style>
- <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
- <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
- <script>
- const firebaseConfig = {
-   apiKey: "AIzaSyDfyMS9Zmp_eglB8eNR3LXOlOZPIDTpo0g",
-   authDomain: "be-warehouse-appointments.firebaseapp.com",
-   projectId: "be-warehouse-appointments",
-   storageBucket: "be-warehouse-appointments.firebasestorage.app",
-   messagingSenderId: "128861389604",
-   appId: "1:128861389604:web:c8bf792a28ed6ff04869b1"
- };
- firebase.initializeApp(firebaseConfig);
- window.db = firebase.firestore();
- // Enable offline persistence for instant reads and offline support
- window.db.enablePersistence({synchronizeTabs:true}).catch(e=>console.warn("Persistence:",e.code));
- </script>
 </head>
 <body>
  <div id="root">
@@ -232,6 +216,7 @@ function AdminLogin({ onLogin, onBack }) {
  {err && <p style={{fontSize:12,color:"#dc2626",background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:8,padding:"8px 12px",margin:"0 0 12px"}}>{err}</p>}
  <button onClick={submit} style={{width:"100%",padding:"13px",background:P,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer",marginBottom:10}}>Log In</button>
  <button onClick={onBack} style={{width:"100%",padding:"11px",background:"transparent",color:"#6b7280",border:"1px solid #e5e7eb",borderRadius:12,fontSize:13,fontWeight:500,cursor:"pointer"}}>← Back</button>
+ </div>
  </div>
  </div>
  </div>
@@ -1176,6 +1161,7 @@ function SettingsPanel({ config, onChange, isMobile }) {
  </div>
  </div>
  </div>
+ </div>
  );
 }
 
@@ -1473,55 +1459,9 @@ function App() {
  try{const s=localStorage.getItem(LS_CONFIG);return s?JSON.parse(s):{serviceId:"",templateId:"",publicKey:"",adminEmail:""};}catch{return {serviceId:"",templateId:"",publicKey:"",adminEmail:""};}
  });
 
- // === FIREBASE REAL-TIME SYNC + AUTO-MIGRATION ===
- useEffect(()=>{
-   if(!window.db) return;
-   let migrated=false;
-   // Real-time listener for appointments (1 subscription = minimal reads)
-   const unsubAppts=window.db.collection("appointments").onSnapshot(async snap=>{
-     const cloudAppts=snap.docs.map(d=>d.data());
-     // Auto-migrate localStorage data ONCE if cloud is empty and local has data
-     if(!migrated && cloudAppts.length===0){
-       migrated=true;
-       try{
-         const localAppts=JSON.parse(localStorage.getItem(LS_APPTS)||"[]");
-         if(localAppts.length>0){
-           const batch=window.db.batch();
-           localAppts.forEach(a=>batch.set(window.db.collection("appointments").doc(a.id),a));
-           await batch.commit();
-           console.log("✅ Migrated",localAppts.length,"appointments to Firebase");
-           return; // listener will fire again with new data
-         }
-       }catch(e){console.error("Migration error:",e);}
-     }
-     setAppts(cloudAppts.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)));
-   },err=>console.error("Appts listener:",err));
-
-   // Real-time listener for emails
-   const unsubEmails=window.db.collection("emails").onSnapshot(async snap=>{
-     const cloudEmails=snap.docs.map(d=>d.data());
-     if(cloudEmails.length===0){
-       try{
-         const localEmails=JSON.parse(localStorage.getItem(LS_EMAILS)||"[]");
-         if(localEmails.length>0){
-           const batch=window.db.batch();
-           localEmails.forEach(e=>batch.set(window.db.collection("emails").doc(String(e.id)),e));
-           await batch.commit();
-           console.log("✅ Migrated",localEmails.length,"emails to Firebase");
-           return;
-         }
-       }catch(e){console.error("Email migration:",e);}
-     }
-     setEmailLog(cloudEmails.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)));
-   },err=>console.error("Emails listener:",err));
-
-   return ()=>{unsubAppts();unsubEmails();};
- },[]);
-
- // Keep localStorage as backup
- useEffect(()=>{try{localStorage.setItem(LS_APPTS,JSON.stringify(appts));}catch(e){}},[appts]);
- useEffect(()=>{try{localStorage.setItem(LS_EMAILS,JSON.stringify(emailLog));}catch(e){}},[emailLog]);
- useEffect(()=>{try{localStorage.setItem(LS_CONFIG,JSON.stringify(config));}catch(e){}},[config]);
+ useEffect(()=>{try{localStorage.setItem(LS_APPTS,JSON.stringify(appts));}catch(e){console.warn("localStorage full:",e);}},[appts]);
+ useEffect(()=>{try{localStorage.setItem(LS_EMAILS,JSON.stringify(emailLog));}catch(e){console.warn("localStorage full:",e);}},[emailLog]);
+ useEffect(()=>{try{localStorage.setItem(LS_CONFIG,JSON.stringify(config));}catch(e){console.warn("localStorage full:",e);}},[config]);
 
  const [toast,setToast]=useState(null);
  const [rejectId,setRejectId]=useState(null);
@@ -1541,7 +1481,7 @@ function App() {
  rejection:`Appointment Status Update – ${appt.id}`,
  };
  const body=buildEmailBody(type, appt, extra);
- const emailDoc={
+ setEmailLog(p=>[{
  id:Date.now()+Math.random(),
  timestamp:new Date().toISOString(),
  type,
@@ -1550,12 +1490,9 @@ function App() {
  subject:subjects[type]||`Notification – ${appt.id}`,
  body,
  status:"sent",
- pin:type==="submission"?appt.pin:null,
+ pin:type==="submission"?appt.pin:undefined,
  ...extra
- };
- // Write to Firestore (listener auto-updates state)
- if(window.db){window.db.collection("emails").doc(String(emailDoc.id)).set(emailDoc).catch(e=>console.error("Email write:",e));}
- else{setEmailLog(p=>[emailDoc,...p]);}
+ },...p]);
  }
 
  function handleBook(data){
@@ -1580,17 +1517,13 @@ function App() {
  createdAt:new Date().toISOString(),
  updatedAt:new Date().toISOString()
  };
- // Write to Firestore (listener auto-updates state)
- if(window.db){window.db.collection("appointments").doc(id).set(newAppt).catch(e=>console.error("Book write:",e));}
- else{setAppts(p=>[newAppt,...p]);}
+ setAppts(p=>[newAppt,...p]);
  logEmail("submission", newAppt);
  return {id,pin};
  }
 
  function handleApprove(a){
- const updates={status:"approved",updatedAt:new Date().toISOString()};
- if(window.db){window.db.collection("appointments").doc(a.id).update(updates).catch(e=>console.error("Approve:",e));}
- else{setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));}
+ setAppts(p=>p.map(x=>x.id===a.id?{...x,status:"approved",updatedAt:new Date().toISOString()}:x));
  logEmail("approval", a);
  showToast("✅ Appointment approved");
  setLoading(null);
@@ -1600,9 +1533,7 @@ function App() {
  if(!rejReason.trim())return;
  const a=appts.find(x=>x.id===rejectId);
  if(!a)return;
- const updates={status:"rejected",managerComments:rejReason,updatedAt:new Date().toISOString()};
- if(window.db){window.db.collection("appointments").doc(a.id).update(updates).catch(e=>console.error("Reject:",e));}
- else{setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));}
+ setAppts(p=>p.map(x=>x.id===a.id?{...x,status:"rejected",managerComments:rejReason,updatedAt:new Date().toISOString()}:x));
  logEmail("rejection", a, {reason:rejReason});
  showToast("Appointment rejected");
  setRejectId(null);setRejReason("");setLoading(null);
@@ -1796,7 +1727,7 @@ function App() {
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
  </script>
  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
- <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+ <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
  <script>
  try {
