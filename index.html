@@ -45,12 +45,13 @@ const addDays = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+n); return
 const toLocs = v => Array.isArray(v) ? v : (v ? [v] : []);
 const todayStr = () => new Date().toISOString().split("T")[0];
 const genPin = () => String(Math.floor(1000 + Math.random() * 9000));
-const nextAptId = existing => {
+const nextAptId = (existing, sbu) => {
   const max = (existing||[]).reduce((m,a) => {
-    const n = parseInt((a.id||"").replace(/^BE-/,""), 10);
+    if (!a.id || !a.id.startsWith(sbu + "-")) return m;
+    const n = parseInt(a.id.replace(sbu + "-", ""), 10);
     return isNaN(n) ? m : Math.max(m, n);
   }, 0);
-  return "BE-" + String(max+1).padStart(4,"0");
+  return sbu + "-" + String(max+1).padStart(4,"0");
 };
 const fmtBytes = b => b < 1024 ? b+"B" : b < 1048576 ? (b/1024).toFixed(1)+"KB" : (b/1048576).toFixed(1)+"MB";
 
@@ -513,18 +514,25 @@ function SupplierTracker({ appointments, onBack }) {
           const statusBorder=a.status==="approved"?"#6ee7b7":a.status==="rejected"?"#fca5a5":"#fcd34d";
           return (
             <div key={a.id} style={{background:"#fff",borderRadius:20,marginBottom:16,overflow:"hidden",border:"1px solid #f3f4f6"}}>
-              <div style={{padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",background:statusBg,borderBottom:`1px solid ${statusBorder}`}}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <span style={{fontSize:20}}>{a.status==="approved"?"✅":a.status==="rejected"?"❌":"⏳"}</span>
-                  <div style={{fontWeight:700,fontSize:14,color:statusColor}}>{a.status==="approved"?"Approved":a.status==="rejected"?"Rejected":"Pending Review"}</div>
+              {isUnlocked ? (
+                <div style={{padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",background:statusBg,borderBottom:`1px solid ${statusBorder}`}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <span style={{fontSize:20}}>{a.status==="approved"?"✅":a.status==="rejected"?"❌":"⏳"}</span>
+                    <div style={{fontWeight:700,fontSize:14,color:statusColor}}>{a.status==="approved"?"Approved":a.status==="rejected"?"Rejected":"Pending Review"}</div>
+                  </div>
+                  <span style={{fontFamily:"monospace",fontSize:12,fontWeight:800,color:P}}>{a.id}</span>
                 </div>
-                <span style={{fontFamily:"monospace",fontSize:12,fontWeight:800,color:P}}>{a.id}</span>
-              </div>
+              ) : (
+                <div style={{padding:"14px 18px",background:"#f9fafb",borderBottom:"1px solid #e5e7eb",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{color:"#6b7280",fontSize:12,fontWeight:600}}>🔒 Locked</span>
+                  <span style={{fontFamily:"monospace",fontSize:12,fontWeight:800,color:P}}>{a.id}</span>
+                </div>
+              )}
 
               {!isUnlocked ? (
                 <div style={{padding:24}}>
                   <div style={{textAlign:"center",marginBottom:18}}>
-                    <div style={{fontSize:36,marginBottom:10}}>🔒</div>
+                    <div style={{fontSize:36,marginBottom:10}}>🔐</div>
                     <p style={{fontSize:13,color:"#6b7280",margin:0}}>Enter your 4-digit PIN to view appointment details</p>
                   </div>
                   <div style={{display:"flex",gap:10,maxWidth:300,margin:"0 auto"}}>
@@ -964,6 +972,7 @@ function CalendarView({ appointments, isMobile }) {
 }
 
 function EmailLog({ emailLog, isMobile }) {
+  const [expandedId, setExpandedId] = useState(null);
   const typeCfg = {
     submission: {bg:"#eff6ff",color:"#1d4ed8",border:"#bfdbfe",label:"📨 Submission"},
     approval:   {bg:"#f0fdf4",color:"#15803d",border:"#bbf7d0",label:"✅ Approval"},
@@ -986,17 +995,22 @@ function EmailLog({ emailLog, isMobile }) {
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           {emailLog.map(e=>{
             const cfg=typeCfg[e.type]||typeCfg.submission;
+            const isExpanded=expandedId===e.id;
             return (
-              <div key={e.id} style={{background:"#fff",borderRadius:16,padding:"14px 18px",border:"1px solid #f3f4f6",display:"flex",flexDirection:isMobile?"column":"row",gap:isMobile?10:14,alignItems:isMobile?"flex-start":"center"}}>
-                <span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,padding:"4px 11px",borderRadius:99,fontSize:11,fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>{cfg.label}</span>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontWeight:600,fontSize:13,color:"#111827",marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subject}</div>
-                  <div style={{fontSize:11,color:"#9ca3af"}}>To: <span style={{color:"#6b7280"}}>{e.recipient}</span>{e.pin?<span style={{marginLeft:10,background:"#fef3c7",color:"#92400e",border:"1px solid #fcd34d",padding:"1px 8px",borderRadius:99,fontWeight:700,fontFamily:"monospace",fontSize:11}}>PIN: {e.pin}</span>:""}</div>
+              <div key={e.id} style={{background:"#fff",borderRadius:16,overflow:"hidden",border:"1px solid #f3f4f6"}}>
+                <div onClick={()=>setExpandedId(isExpanded?null:e.id)} style={{padding:"14px 18px",display:"flex",flexDirection:isMobile?"column":"row",gap:isMobile?10:14,alignItems:isMobile?"flex-start":"center",cursor:"pointer",background:isExpanded?"#f9fafb":"#fff"}}>
+                  <span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,padding:"4px 11px",borderRadius:99,fontSize:11,fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>{cfg.label}</span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:600,fontSize:13,color:"#111827",marginBottom:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subject}</div>
+                    <div style={{fontSize:11,color:"#9ca3af"}}>To: <span style={{color:"#6b7280"}}>{e.recipient}</span>{e.pin?<span style={{marginLeft:10,background:"#fef3c7",color:"#92400e",border:"1px solid #fcd34d",padding:"1px 8px",borderRadius:99,fontWeight:700,fontFamily:"monospace",fontSize:11}}>PIN: {e.pin}</span>:""}</div>
+                  </div>
+                  <div style={{flexShrink:0,textAlign:isMobile?"left":"right"}}>
+                    <div style={{fontFamily:"monospace",fontSize:12,color:P,fontWeight:800}}>{e.appointmentId}</div>
+                    <div style={{fontSize:11,color:"#9ca3af",marginTop:2}}>{fmtTs(e.timestamp)}</div>
+                    <div style={{fontSize:12,color:"#9ca3af",marginTop:4}}>{isExpanded?"▾":"▸"}</div>
+                  </div>
                 </div>
-                <div style={{flexShrink:0,textAlign:isMobile?"left":"right"}}>
-                  <div style={{fontFamily:"monospace",fontSize:12,color:P,fontWeight:800}}>{e.appointmentId}</div>
-                  <div style={{fontSize:11,color:"#9ca3af",marginTop:2}}>{fmtTs(e.timestamp)}</div>
-                </div>
+                {isExpanded&&e.body&&<div style={{borderTop:"1px solid #f3f4f6",padding:"14px 18px",background:"#fafafa",whiteSpace:"pre-wrap",fontSize:12,lineHeight:1.6,fontFamily:"monospace",color:"#374151",maxHeight:400,overflowY:"auto"}}>{e.body}</div>}
               </div>
             );
           })}
@@ -1230,6 +1244,78 @@ function StatisticsPanel({ appointments, isMobile }) {
   );
 }
 
+function buildEmailBody(type,appt,extra={}){
+  const sbu=SBUS.find(s=>s.code===appt.deliveryTo);
+  const sbuLabel=sbu?`${sbu.code} (${sbu.name})`:appt.deliveryTo||"—";
+  const poList=(appt.poNumbers||[]).map(p=>"#"+p).join(", ")||"—";
+  const storage=toLocs(appt.storageLocation).join(", ")||"—";
+  const equipment=(appt.offloadingEquipment||[]).join(", ")||"Not required";
+  if(type==="submission"){return`Dear ${appt.supplierName},
+
+Thank you for submitting your delivery appointment request. We have received the details below and will review them shortly.
+
+Appointment Details:
+─────────────────────────────
+Reference ID: ${appt.id}
+Tracking PIN: ${appt.pin}
+Delivery To: ${sbuLabel}
+Date: ${fmtDate(appt.date)}
+Time: ${appt.time}
+Total Orders: ${appt.totalOrders}
+Total Lines: ${appt.totalLines}
+PO Numbers: ${poList}
+Storage Location: ${storage}
+Equipment Required: ${equipment}
+
+Important: Please save your Tracking PIN. You will need it to view your request status in the tracker portal.
+
+Status: Pending Review
+
+Kind regards,
+BE Warehouse Operations
+Bapco Energies`;}
+  if(type==="approval"){return`Dear ${appt.supplierName},
+
+Good news — your delivery appointment request has been approved by our warehouse team.
+
+Confirmed Details:
+─────────────────────────────
+Reference ID: ${appt.id}
+Delivery To: ${sbuLabel}
+Date: ${fmtDate(appt.date)}
+Time: ${appt.time}
+Storage Location: ${storage}
+
+Please arrive at the scheduled time and present your reference ID at the warehouse gate. Bring all relevant delivery documentation.
+
+Status: Approved
+
+Kind regards,
+BE Warehouse Operations
+Bapco Energies`;}
+  if(type==="rejection"){return`Dear ${appt.supplierName},
+
+Unfortunately, we are unable to approve your delivery appointment request at this time.
+
+Request Details:
+─────────────────────────────
+Reference ID: ${appt.id}
+Date: ${fmtDate(appt.date)}
+Time: ${appt.time}
+
+Reason for Rejection:
+${extra.reason||"—"}
+
+Please submit a new request with revised details. If you need clarification, contact us at warehouse@bapcoenergies.com.
+
+Status: Rejected
+
+Kind regards,
+BE Warehouse Operations
+Bapco Energies`;}
+  return "";
+}
+
 function OrgFilter({ value, onChange, isMobile }) {
   const opts = [{code:"BE",label:"All (BE)"},...SBUS.map(s=>({code:s.code,label:s.code}))];
   return (
@@ -1275,24 +1361,29 @@ function App() {
 
   function showToast(msg){setToast(msg);setTimeout(()=>setToast(null),4000);}
 
-  function logEmail(type, recipient, appointmentId, extra={}) {
+  function logEmail(type, appt, extra={}) {
     const subjects={
-      submission:`Appointment Received – ${appointmentId}`,
-      approval:`Your Appointment Has Been Approved – ${appointmentId}`,
-      rejection:`Appointment Status Update – ${appointmentId}`,
+      submission:`Appointment Request Received – ${appt.id}`,
+      approval:`Appointment Approved – ${appt.id}`,
+      rejection:`Appointment Status Update – ${appt.id}`,
     };
+    const body=buildEmailBody(type, appt, extra);
     setEmailLog(p=>[{
       id:Date.now()+Math.random(),
       timestamp:new Date().toISOString(),
-      type,recipient,appointmentId,
-      subject:subjects[type]||`Notification – ${appointmentId}`,
+      type,
+      recipient:appt.supplierEmail,
+      appointmentId:appt.id,
+      subject:subjects[type]||`Notification – ${appt.id}`,
+      body,
       status:"sent",
+      pin:type==="submission"?appt.pin:undefined,
       ...extra
     },...p]);
   }
 
   function handleBook(data){
-    const id=nextAptId(appts);
+    const id=nextAptId(appts, data.deliveryTo);
     const pin=genPin();
     const newAppt={
       id,pin,
@@ -1314,13 +1405,13 @@ function App() {
       updatedAt:new Date().toISOString()
     };
     setAppts(p=>[newAppt,...p]);
-    logEmail("submission",data.supplierEmail,id,{pin});
+    logEmail("submission", newAppt);
     return {id,pin};
   }
 
   function handleApprove(a){
     setAppts(p=>p.map(x=>x.id===a.id?{...x,status:"approved",updatedAt:new Date().toISOString()}:x));
-    logEmail("approval",a.supplierEmail,a.id);
+    logEmail("approval", a);
     showToast("✅ Appointment approved");
     setLoading(null);
   }
@@ -1330,7 +1421,7 @@ function App() {
     const a=appts.find(x=>x.id===rejectId);
     if(!a)return;
     setAppts(p=>p.map(x=>x.id===a.id?{...x,status:"rejected",managerComments:rejReason,updatedAt:new Date().toISOString()}:x));
-    logEmail("rejection",a.supplierEmail,a.id,{reason:rejReason});
+    logEmail("rejection", a, {reason:rejReason});
     showToast("Appointment rejected");
     setRejectId(null);setRejReason("");setLoading(null);
   }
