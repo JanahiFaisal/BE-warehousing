@@ -63,6 +63,29 @@ const LS_EMAILS = "be_wh_emails_v3";
 const LS_CONFIG = "be_wh_config_v3";
 const LS_TRANSACTIONS = "be_wh_transactions_v3";
 
+const BAHRAIN_HOLIDAYS = {
+ "2026-01-01":"New Year's Day",
+ "2026-03-20":"Eid Al Fitr","2026-03-21":"Eid Al Fitr Holiday","2026-03-22":"Eid Al Fitr Holiday",
+ "2026-05-01":"Labour Day",
+ "2026-05-26":"Arafat Day",
+ "2026-05-27":"Eid Al Adha","2026-05-28":"Eid Al Adha Holiday","2026-05-29":"Eid Al Adha Holiday",
+ "2026-06-17":"Islamic New Year",
+ "2026-06-26":"Ashoora","2026-06-27":"Ashoora Holiday",
+ "2026-08-26":"Prophet Muhammad's Birthday",
+ "2026-12-16":"Bahrain National Day","2026-12-17":"Bahrain National Day Holiday",
+ "2027-01-01":"New Year's Day",
+ "2027-03-09":"Eid Al Fitr","2027-03-10":"Eid Al Fitr Holiday","2027-03-11":"Eid Al Fitr Holiday",
+ "2027-05-01":"Labour Day",
+ "2027-05-16":"Arafat Day",
+ "2027-05-17":"Eid Al Adha","2027-05-18":"Eid Al Adha Holiday","2027-05-19":"Eid Al Adha Holiday",
+ "2027-06-06":"Islamic New Year",
+ "2027-06-15":"Ashoora","2027-06-16":"Ashoora Holiday",
+ "2027-08-15":"Prophet Muhammad's Birthday",
+ "2027-12-16":"Bahrain National Day","2027-12-17":"Bahrain National Day Holiday"
+};
+const isHoliday = ds => !!BAHRAIN_HOLIDAYS[ds];
+const holidayName = ds => BAHRAIN_HOLIDAYS[ds] || "";
+
 const fmtDate = ds => !ds ? "—" : new Date(ds+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"});
 const fmtTs = iso => iso ? new Date(iso).toLocaleString("en-GB",{dateStyle:"short",timeStyle:"short"}) : "—";
 const isWeekend = ds => { if (!ds) return false; const d = new Date(ds+"T00:00:00").getDay(); return d===5||d===6; };
@@ -284,7 +307,7 @@ function SupplierForm({ onSubmit, onBack, appointments }) {
  const mismatch = hasDeclared&&declared!==tagCount;
  const valid = (f.supplierName&&f.supplierEmail&&f.deliveryTo&&f.date&&!dateErr&&f.time&&!slotFull&&hasDeclared&&!mismatch&&tagCount>0&&f.totalLines&&f.storageLocation.length>0&&f.needsEquipment!==null&&(!f.needsEquipment||f.offloadingEquipment.length>0));
 
- function handleDate(e){const v=e.target.value;set("date")(v);if(v<today)setDateErr("Cannot book a past date.");else if(isWeekend(v))setDateErr("Friday and Saturday are non-working days.");else setDateErr("");if(f.time&&isSlotPast(f.time,v))set("time")("");}
+ function handleDate(e){const v=e.target.value;set("date")(v);if(v<today)setDateErr("Cannot book a past date.");else if(isWeekend(v))setDateErr("Friday and Saturday are non-working days.");else if(isHoliday(v))setDateErr("🇧🇭 Public holiday — "+holidayName(v)+". Please pick another date.");else setDateErr("");if(f.time&&isSlotPast(f.time,v))set("time")("");}
  function addPO(raw){const v=raw.trim().toUpperCase().replace(/,/g,"");if(!v||f.poNumbers.some(t=>t.toUpperCase()===v)){setPoVal("");return;}set("poNumbers")([...f.poNumbers,v]);setPoVal("");}
  function removePO(t){set("poNumbers")(f.poNumbers.filter(x=>x!==t));}
  function onPoKey(e){if(["Enter",",","Tab"].includes(e.key)){e.preventDefault();addPO(poVal);}else if(e.key==="Backspace"&&poVal===""&&f.poNumbers.length>0)removePO(f.poNumbers[f.poNumbers.length-1]);}
@@ -355,7 +378,7 @@ function SupplierForm({ onSubmit, onBack, appointments }) {
  <div>
  <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Delivery Date *</label>
  <input type="date" min={today} value={f.date} onChange={handleDate} style={{...inp,borderColor:dateErr?"#f87171":"#e5e7eb"}}/>
- {dateErr ? <p style={{fontSize:12,color:"#dc2626",margin:"5px 0 0"}}>⛔ {dateErr}</p> : <p style={{fontSize:11,color:"#9ca3af",margin:"5px 0 0"}}>Sun – Thu only</p>}
+ {dateErr ? <p style={{fontSize:12,color:"#dc2626",margin:"5px 0 0"}}>⛔ {dateErr}</p> : <p style={{fontSize:11,color:"#9ca3af",margin:"5px 0 0"}}>Sun – Thu only, excluding Bahrain public holidays</p>}
  </div>
  <div>
  <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Delivery Time *</label>
