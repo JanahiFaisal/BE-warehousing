@@ -33,6 +33,11 @@ const sbuName = code => { const s = SBUS.find(x=>x.code===code); return s?s.name
 const SLOTS = ["07:00","07:30","08:00","08:30","09:30","10:00","10:30","11:00","11:30","12:30","13:00","13:30"];
 const ADMIN_PWD = "Bapco@123456";
 const ADMIN_EMAIL = "janahifaisal2@gmail.com";
+const LS_CREDS = "be_wh_creds_v1";
+function getAdminCreds(){
+ try{const s=localStorage.getItem(LS_CREDS);return s?JSON.parse(s):{password:ADMIN_PWD,nickname:"Admin"};}
+ catch{return {password:ADMIN_PWD,nickname:"Admin"};}
+}
 const LS_APPTS = "be_wh_appts_v3";
 const LS_EMAILS = "be_wh_emails_v3";
 const LS_CONFIG = "be_wh_config_v3";
@@ -256,9 +261,10 @@ function AdminLogin({ onLogin, onBack }) {
  const [err,setErr]=useState("");
  const inp = {width:"100%",border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,background:"#f9fafb",outline:"none",boxSizing:"border-box"};
  function submit() {
+ const creds=getAdminCreds();
  if (!email.trim()){setErr("Please enter your email.");return;}
- if (email.trim().toLowerCase()!==ADMIN_EMAIL){setErr("Unauthorised email address.");return;}
- if (pwd!==ADMIN_PWD){setErr("Incorrect password.");return;}
+ if (email.trim().toLowerCase()!==ADMIN_EMAIL.toLowerCase()){setErr("Unauthorised email address.");return;}
+ if (pwd!==creds.password){setErr("Incorrect password.");return;}
  onLogin(email.trim());
  }
  return (
@@ -1354,6 +1360,27 @@ function SettingsPanel({ config, onChange, isMobile, jbCfg, onJbCfg, jbStatus, o
  const inp = {width:"100%",border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,background:"#f9fafb",outline:"none",boxSizing:"border-box"};
  const ok = config.serviceId&&config.templateId&&config.publicKey;
  const jbOk = jbCfg?.apiKey&&jbCfg?.binId;
+
+ // Credentials state
+ const [credsOpen,setCredsOpen]=useState(false);
+ const [curPwd,setCurPwd]=useState("");
+ const [newNickname,setNewNickname]=useState("");
+ const [newPwd,setNewPwd]=useState("");
+ const [confirmPwd,setConfirmPwd]=useState("");
+ const [credsMsg,setCredsMsg]=useState(null);
+
+ function saveCreds(){
+ const creds=getAdminCreds();
+ if(!curPwd){setCredsMsg({type:"error",text:"Enter your current password to confirm."});return;}
+ if(curPwd!==creds.password){setCredsMsg({type:"error",text:"Current password is incorrect."});return;}
+ if(!newNickname.trim()&&!newPwd){setCredsMsg({type:"error",text:"Enter a new nickname or new password."});return;}
+ if(newPwd&&newPwd.length<6){setCredsMsg({type:"error",text:"New password must be at least 6 characters."});return;}
+ if(newPwd&&newPwd!==confirmPwd){setCredsMsg({type:"error",text:"New passwords do not match."});return;}
+ const updated={password:newPwd||creds.password,nickname:newNickname.trim()||creds.nickname};
+ localStorage.setItem(LS_CREDS,JSON.stringify(updated));
+ setCredsMsg({type:"ok",text:`✅ Saved! Nickname: "${updated.nickname}"${newPwd?" · Password updated.":""}`});
+ setCurPwd("");setNewNickname("");setNewPwd("");setConfirmPwd("");
+ }
  return(
  <div style={{padding:isMobile?16:28}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Settings</h1>
@@ -1409,6 +1436,61 @@ function SettingsPanel({ config, onChange, isMobile, jbCfg, onJbCfg, jbStatus, o
  {!jbOk&&jbCfg?.apiKey&&jbCfg?.binId&&<button onClick={onJbSync} style={{flex:1,padding:"11px",background:"#4f46e5",color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>☁️ Save & Connect</button>}
  </div>
  {jbOk&&<p style={{fontSize:11,color:"#6b7280",marginTop:10,textAlign:"center"}}>Data auto-syncs across all devices every time changes are made.</p>}
+ </div>
+
+ {/* Change Credentials Card */}
+ <div style={{background:"#fff",borderRadius:16,padding:isMobile?16:20}}>
+ <button onClick={()=>{setCredsOpen(p=>!p);setCredsMsg(null);}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,background:"transparent",border:"none",cursor:"pointer",textAlign:"left",padding:0}}>
+ <span style={{fontSize:20}}>🔐</span>
+ <div style={{flex:1}}>
+ <div style={{fontWeight:700,fontSize:15,color:"#111827"}}>Change Credentials</div>
+ <div style={{fontSize:11,color:"#6b7280"}}>Update your admin email or password</div>
+ </div>
+ <span style={{color:"#9ca3af",fontSize:18,transform:credsOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",display:"inline-block"}}>▾</span>
+ </button>
+
+ {credsOpen&&(
+ <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:12}}>
+ <div style={{background:"#fef3c7",border:"1px solid #fcd34d",borderRadius:10,padding:"10px 12px",fontSize:12,color:"#92400e"}}>
+ ⚠️ You must enter your <strong>current password</strong> to make any changes.
+ </div>
+
+ <div>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Current Password *</label>
+ <input type="password" value={curPwd} onChange={e=>setCurPwd(e.target.value)} placeholder="Enter current password" style={inp}/>
+ </div>
+
+ <div style={{height:1,background:"#f3f4f6"}}/>
+
+ <div>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Nickname <span style={{fontWeight:400,textTransform:"none",color:"#9ca3af"}}>(shown in transaction history)</span></label>
+ <input type="text" value={newNickname} onChange={e=>setNewNickname(e.target.value)} placeholder={getAdminCreds().nickname||"e.g. Faisal"} style={inp}/>
+ </div>
+
+ <div>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>New Password <span style={{fontWeight:400,textTransform:"none",color:"#9ca3af"}}>(leave blank to keep current)</span></label>
+ <input type="password" value={newPwd} onChange={e=>setNewPwd(e.target.value)} placeholder="Min 6 characters" style={inp}/>
+ </div>
+
+ {newPwd&&(
+ <div>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Confirm New Password *</label>
+ <input type="password" value={confirmPwd} onChange={e=>setConfirmPwd(e.target.value)} placeholder="Repeat new password" style={{...inp,borderColor:confirmPwd&&confirmPwd!==newPwd?"#f87171":"#e5e7eb"}}/>
+ {confirmPwd&&confirmPwd!==newPwd&&<p style={{fontSize:11,color:"#dc2626",margin:"4px 0 0"}}>⛔ Passwords do not match</p>}
+ </div>
+ )}
+
+ {credsMsg&&(
+ <div style={{padding:"10px 12px",borderRadius:10,background:credsMsg.type==="ok"?"#d1fae5":"#fee2e2",border:`1px solid ${credsMsg.type==="ok"?"#6ee7b7":"#fca5a5"}`,fontSize:13,color:credsMsg.type==="ok"?"#065f46":"#991b1b"}}>
+ {credsMsg.text}
+ </div>
+ )}
+
+ <button onClick={saveCreds} style={{padding:"12px",background:P,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:700,cursor:"pointer"}}>
+ 🔐 Save Changes
+ </button>
+ </div>
+ )}
  </div>
 
  </div>
@@ -2271,7 +2353,7 @@ function App() {
  const updates={status:"approved",deliveryStatus:"awaiting_delivery",updatedAt:new Date().toISOString()};
  setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  logEmail("approval", a);
- logTransaction("approve", a, {actor:"Admin",actorEmail:adminEmail||ADMIN_EMAIL,note:"Appointment approved"});
+ logTransaction("approve", a, {actor:getAdminCreds().nickname||"Admin",actorEmail:adminEmail||ADMIN_EMAIL,note:"Appointment approved"});
  showToast("✅ Appointment approved");
  setLoading(null);
  }
@@ -2283,7 +2365,7 @@ function App() {
  const updates={status:"rejected",managerComments:rejReason,updatedAt:new Date().toISOString()};
  setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  logEmail("rejection", a, {reason:rejReason});
- logTransaction("reject", a, {actor:"Admin",actorEmail:adminEmail||ADMIN_EMAIL,note:rejReason});
+ logTransaction("reject", a, {actor:getAdminCreds().nickname||"Admin",actorEmail:adminEmail||ADMIN_EMAIL,note:rejReason});
  showToast("Appointment rejected");
  setRejectId(null);setRejReason("");setLoading(null);
  }
@@ -2292,10 +2374,10 @@ function App() {
  if(!rejReason.trim())return;
  const a=appts.find(x=>x.id===rejectId);
  if(!a)return;
- const updates={status:"revision_required",revisionComments:rejReason,revisionHistory:[...(a.revisionHistory||[]),{timestamp:new Date().toISOString(),comments:rejReason,requestedBy:adminEmail||ADMIN_EMAIL}],updatedAt:new Date().toISOString()};
+ const updates={status:"revision_required",revisionComments:rejReason,revisionHistory:[...(a.revisionHistory||[]),{timestamp:new Date().toISOString(),comments:rejReason,requestedBy:`${getAdminCreds().nickname||"Admin"} (${adminEmail||ADMIN_EMAIL})`}],updatedAt:new Date().toISOString()};
  setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  logEmail("revision", a, {reason:rejReason});
- logTransaction("return_for_revision", a, {actor:"Admin",actorEmail:adminEmail||ADMIN_EMAIL,note:rejReason});
+ logTransaction("return_for_revision", a, {actor:getAdminCreds().nickname||"Admin",actorEmail:adminEmail||ADMIN_EMAIL,note:rejReason});
  showToast("↩️ Returned to supplier for revision");
  setRejectId(null);setRejReason("");setLoading(null);
  }
@@ -2304,7 +2386,7 @@ function App() {
  if(!confirm("✅ Confirm delivery completed for "+a.id+"?"))return;
  const updates={deliveryStatus:"completed",completedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
  setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
- logTransaction("delivery_complete", a, {actor:"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery completed successfully"});
+ logTransaction("delivery_complete", a, {actor:getAdminCreds().nickname||"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery completed successfully"});
  showToast("✅ Delivery marked as completed");
  }
 
@@ -2313,7 +2395,7 @@ function App() {
  if(!reason||!reason.trim())return;
  const updates={deliveryStatus:"failed",failureReason:reason.trim(),failedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
  setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
- logTransaction("delivery_failed", a, {actor:"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery failed: "+reason});
+ logTransaction("delivery_failed", a, {actor:getAdminCreds().nickname||"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery failed: "+reason});
  showToast("❌ Delivery marked as failed");
  }
 
