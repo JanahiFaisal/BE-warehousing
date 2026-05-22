@@ -1972,11 +1972,16 @@ function TeamLeadPanel({ appointments, isMobile }) {
 
 function App() {
  const { isMobile, isTablet } = useWindowSize();
- const [page,setPage]=useState("landing");
- const [view,setView]=useState("dashboard");
+ const [page,setPage]=useState(()=>sessionStorage.getItem("be_page")||"landing");
+ const [view,setView]=useState(()=>sessionStorage.getItem("be_view")||"dashboard");
  const [navOpen,setNavOpen]=useState(false);
- const [adminEmail,setAdminEmail]=useState("");
+ const [adminEmail,setAdminEmail]=useState(()=>sessionStorage.getItem("be_admin_email")||"");
  const [editingId,setEditingId]=useState(null);
+
+ // Persist session state across reloads
+ useEffect(()=>{sessionStorage.setItem("be_page",page);},[page]);
+ useEffect(()=>{sessionStorage.setItem("be_view",view);},[view]);
+ useEffect(()=>{sessionStorage.setItem("be_admin_email",adminEmail);},[adminEmail]);
 
  const [appts,setAppts]=useState(()=>{
  try{const s=localStorage.getItem(LS_APPTS);return s?JSON.parse(s):[];}catch{return [];}
@@ -2205,7 +2210,7 @@ function App() {
  </div>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
  {!isMobile && <span style={{color:"rgba(255,255,255,0.5)",fontSize:12}}>{adminEmail}</span>}
- <button onClick={()=>{setPage("landing");setView("dashboard");}} style={{color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
+ <button onClick={()=>{setPage("landing");setView("dashboard");setAdminEmail("");sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");}} style={{color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
  </div>
  </header>
 
