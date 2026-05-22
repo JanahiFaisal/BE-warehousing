@@ -248,7 +248,7 @@ function AdminLogin({ onLogin, onBack }) {
  );
 }
 
-const BLANK = {supplierName:"",supplierEmail:"",deliveryTo:"",date:"",time:"",totalOrders:"",totalLines:"",poNumbers:[],needsEquipment:null,offloadingEquipment:[],storageLocation:[],additionalNotes:"",attachments:[]};
+const BLANK = {supplierName:"",supplierEmail:"",deliveryTo:"",date:"",time:"",totalOrders:"",totalLines:"",poNumbers:[],needsEquipment:null,offloadingEquipment:[],storageLocation:[],additionalNotes:"",attachments:[],isEmergency:false,emergencyJustification:"",emergencyDeclared:false};
 
 function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  const { isMobile } = useWindowSize();
@@ -290,14 +290,15 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  function isSlotPast(slot,dateVal){const d=dateVal!==undefined?dateVal:f.date;if(!d||d>today)return false;if(d<today)return true;const now=new Date(),parts=slot.split(":");const slotMins=parseInt(parts[0],10)*60+parseInt(parts[1],10);return slotMins<=now.getHours()*60+now.getMinutes();}
  function slotCount(slot){if(!f.date)return 0;return(appointments||[]).filter(a=>a.date===f.date&&a.time===slot&&a.status!=="rejected").length;}
 
- const slotFull = f.time && slotCount(f.time)>=2;
+ const slotFull = f.time && !f.isEmergency && slotCount(f.time)>=2;
  const declared = parseInt(f.totalOrders,10);
  const tagCount = f.poNumbers.length;
  const hasDeclared = f.totalOrders!==""&&!isNaN(declared);
  const mismatch = hasDeclared&&declared!==tagCount;
- const valid = (f.supplierName&&f.supplierEmail&&f.deliveryTo&&f.date&&!dateErr&&f.time&&!slotFull&&hasDeclared&&!mismatch&&tagCount>0&&f.totalLines&&f.storageLocation.length>0&&f.needsEquipment!==null&&(!f.needsEquipment||f.offloadingEquipment.length>0));
+ const emergencyValid = !f.isEmergency||(f.emergencyJustification.trim().length>=20&&f.emergencyDeclared);
+ const valid = (f.supplierName&&f.supplierEmail&&f.deliveryTo&&f.date&&!dateErr&&f.time&&!slotFull&&hasDeclared&&!mismatch&&tagCount>0&&f.totalLines&&f.storageLocation.length>0&&f.needsEquipment!==null&&(!f.needsEquipment||f.offloadingEquipment.length>0)&&emergencyValid);
 
- function handleDate(e){const v=e.target.value;set("date")(v);if(v<today)setDateErr("Cannot book a past date.");else if(isWeekend(v))setDateErr("Friday and Saturday are non-working days.");else if(isHoliday(v))setDateErr("🇧🇭 Public holiday — "+holidayName(v)+". Please pick another date.");else setDateErr("");if(f.time&&isSlotPast(f.time,v))set("time")("");}
+ function handleDate(e){const v=e.target.value;set("date")(v);if(f.isEmergency){setDateErr("");return;}if(v<today)setDateErr("Cannot book a past date.");else if(isWeekend(v))setDateErr("Friday and Saturday are non-working days.");else if(isHoliday(v))setDateErr("🇧🇭 Public holiday — "+holidayName(v)+". Please pick another date.");else setDateErr("");if(f.time&&isSlotPast(f.time,v))set("time")("");}
  function addPO(raw){const v=raw.trim().toUpperCase().replace(/,/g,"");if(!v||f.poNumbers.some(t=>t.toUpperCase()===v)){setPoVal("");return;}set("poNumbers")([...f.poNumbers,v]);setPoVal("");}
  function removePO(t){set("poNumbers")(f.poNumbers.filter(x=>x!==t));}
  function onPoKey(e){if(["Enter",",","Tab"].includes(e.key)){e.preventDefault();addPO(poVal);}else if(e.key==="Backspace"&&poVal===""&&f.poNumbers.length>0)removePO(f.poNumbers[f.poNumbers.length-1]);}
@@ -475,6 +476,42 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  <textarea style={{...inp,height:80,resize:"none"}} value={f.additionalNotes} onChange={setE("additionalNotes")} placeholder="Special requirements (optional)"/>
  </div>
 
+ {/* Emergency Section */}
+ <div style={{borderRadius:14,border:`2px solid ${f.isEmergency?"#dc2626":"#e5e7eb"}`,background:f.isEmergency?"#fff5f5":"#f9fafb",padding:16,transition:"all 0.2s"}}>
+ <label style={{display:"flex",alignItems:"flex-start",gap:10,cursor:"pointer"}}>
+ <input type="checkbox" checked={f.isEmergency} onChange={e=>{set("isEmergency")(e.target.checked);if(!e.target.checked){set("emergencyJustification")("");set("emergencyDeclared")(false);setDateErr("");}}} style={{marginTop:3,width:16,height:16,accentColor:"#dc2626",flexShrink:0}}/>
+ <div>
+ <div style={{fontWeight:700,fontSize:13,color:f.isEmergency?"#dc2626":"#374151"}}>🚨 This is an Emergency / Urgent Delivery</div>
+ <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>Check this only if the delivery cannot follow the standard scheduling process</div>
+ </div>
+ </label>
+
+ {f.isEmergency&&(
+ <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:12}}>
+ <div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:10,padding:"10px 12px"}}>
+ <div style={{fontSize:11,fontWeight:700,color:"#dc2626",marginBottom:4}}>⚠️ Emergency Access Granted — Date, time, holidays and slot limits are bypassed.</div>
+ <div style={{fontSize:11,color:"#991b1b"}}>All emergency requests are permanently logged and subject to management review.</div>
+ </div>
+
+ <div>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#dc2626",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Emergency Justification * <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(minimum 20 characters)</span></label>
+ <textarea value={f.emergencyJustification} onChange={e=>set("emergencyJustification")(e.target.value)} placeholder="e.g. Compressor unit 3 failure — production at risk. Urgent replacement parts required immediately." style={{...inp,height:90,resize:"none",borderColor:f.emergencyJustification.trim().length>0&&f.emergencyJustification.trim().length<20?"#f87171":"#e5e7eb"}}/>
+ {f.emergencyJustification.trim().length>0&&f.emergencyJustification.trim().length<20&&(
+ <p style={{fontSize:11,color:"#dc2626",margin:"4px 0 0"}}>⛔ Please provide more detail ({20-f.emergencyJustification.trim().length} more characters needed)</p>
+ )}
+ </div>
+
+ <label style={{display:"flex",alignItems:"flex-start",gap:10,cursor:"pointer",background:"#fff",border:"1px solid #fecaca",borderRadius:10,padding:"12px 14px"}}>
+ <input type="checkbox" checked={f.emergencyDeclared} onChange={e=>set("emergencyDeclared")(e.target.checked)} style={{marginTop:3,width:16,height:16,accentColor:"#dc2626",flexShrink:0}}/>
+ <div style={{fontSize:12,color:"#374151",lineHeight:1.6}}>
+ <span style={{fontWeight:700,color:"#dc2626"}}>Declaration: </span>
+ I declare that this is a genuine emergency delivery and I understand that misuse of this feature is subject to review and consequences per <span style={{fontWeight:700}}>Bapco Energies Warehouse Policy</span>. I accept full responsibility for this emergency declaration.
+ </div>
+ </label>
+ </div>
+ )}
+ </div>
+
  <button disabled={!valid} onClick={()=>{const r=onSubmit({...f});if(r)setResult(r);}} style={{padding:"14px 24px",background:valid?P:"#9ca3af",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:valid?"pointer":"not-allowed",width:"100%"}}>
  {editingAppointment?"↩️ Resubmit for Review":"Submit for Approval"}
  </button>
@@ -556,8 +593,8 @@ function SupplierTracker({ appointments, onBack }) {
  {isUnlocked ? (
  <div style={{padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",background:statusBg,borderBottom:`1px solid ${statusBorder}`}}>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
- <span style={{fontSize:20}}>{a.status==="approved"?"✅":a.status==="rejected"?"❌":a.status==="revision_required"?"↩️":"⏳"}</span>
- <div style={{fontWeight:700,fontSize:14,color:statusColor}}>{a.status==="approved"?"Approved":a.status==="rejected"?"Rejected":a.status==="revision_required"?"Revision Required":"Pending Review"}</div>
+ <span style={{fontSize:20}}>{a.status==="approved"?"✅":a.status==="rejected"?"❌":a.status==="revision_required"?"↩️":a.priority==="emergency"?"🚨":"⏳"}</span>
+ <div style={{fontWeight:700,fontSize:14,color:statusColor}}>{a.status==="approved"?"Approved":a.status==="rejected"?"Rejected":a.status==="revision_required"?"Revision Required":a.priority==="emergency"?"🚨 Emergency — Pending Review":"Pending Review"}</div>
  </div>
  <span style={{fontFamily:"monospace",fontSize:12,fontWeight:800,color:P}}>{a.id}</span>
  </div>
@@ -705,6 +742,8 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  const [statFs,setStatFs]=useState([]);
  function togStat(s){setStatFs(p=>p.includes(s)?p.filter(x=>x!==s):[...p,s]);}
  const rows=useMemo(()=>appointments.filter(a=>{if(searchQ&&!a.supplierName.toLowerCase().includes(searchQ.toLowerCase())&&!a.supplierEmail.toLowerCase().includes(searchQ.toLowerCase())&&!a.id.toLowerCase().includes(searchQ.toLowerCase()))return false;if(statFs.length&&!statFs.includes(a.status))return false;return true;}).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)),[appointments,searchQ,statFs]);
+ const emergencyRows=rows.filter(a=>a.priority==="emergency"&&a.status==="pending");
+ const standardRows=rows.filter(a=>a.priority!=="emergency"||a.status!=="pending");
  const sc={pending:"#f59e0b",approved:"#10b981",rejected:"#ef4444",revision_required:"#fb923c"};
  return(
  <div style={{padding:isMobile?16:28}}>
@@ -720,7 +759,29 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  {isMobile ? (
  <div style={{display:"flex",flexDirection:"column",gap:12}}>
  {rows.length===0 && <div style={{background:"rgba(255,255,255,0.06)",borderRadius:14,padding:40,textAlign:"center",color:"rgba(255,255,255,0.3)",fontSize:13}}>No appointments yet.</div>}
- {rows.map(a=>(
+ {emergencyRows.length>0&&(
+ <div style={{background:"rgba(220,38,38,0.12)",border:"1px solid rgba(220,38,38,0.4)",borderRadius:14,padding:"10px 14px",marginBottom:4}}>
+ <div style={{color:"#fca5a5",fontSize:12,fontWeight:800,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>🚨 EMERGENCY — Immediate Action Required<span style={{background:"#dc2626",color:"#fff",borderRadius:99,padding:"1px 8px",fontSize:11}}>{emergencyRows.length}</span></div>
+ {emergencyRows.map(a=>(
+ <div key={a.id} style={{background:"#fff",borderRadius:12,marginBottom:8,border:"2px solid #fca5a5",overflow:"hidden"}}>
+ <div style={{padding:"10px 14px",background:"#fef2f2",borderBottom:"1px solid #fecaca",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+ <div><div style={{fontWeight:700,fontSize:13,color:"#dc2626"}}>🚨 {a.supplierName}</div><div style={{fontSize:11,color:"#9ca3af",fontFamily:"monospace",fontWeight:700}}>{a.id}</div></div>
+ <StatusBadge status={a.status}/>
+ </div>
+ <div style={{padding:"10px 14px"}}>
+ <div style={{background:"#fef2f2",borderRadius:8,padding:"8px 10px",marginBottom:10,fontSize:12,color:"#991b1b",fontStyle:"italic"}}>"{a.emergencyJustification}"</div>
+ <div style={{display:"flex",gap:6}}>
+ <button onClick={()=>onView(a.id)} style={{flex:1,padding:"8px",background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:9,cursor:"pointer",color:"#6b7280",fontSize:12}}>👁 View</button>
+ <button onClick={()=>onApprove(a)} style={{flex:2,padding:"8px",background:"#059669",color:"#fff",border:"none",borderRadius:9,fontSize:12,fontWeight:700,cursor:"pointer"}}>✓ Approve</button>
+ <button onClick={()=>onReject(a.id)} style={{flex:1,padding:"8px",background:"#f59e0b",color:"#fff",border:"none",borderRadius:9,fontSize:12,fontWeight:600,cursor:"pointer"}}>↩</button>
+ </div>
+ </div>
+ </div>
+ ))}
+ </div>
+ )}
+ {standardRows.length>0&&emergencyRows.length>0&&<div style={{color:"rgba(255,255,255,0.4)",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>📋 Standard Requests</div>}
+ {standardRows.map(a=>(
  <div key={a.id} style={{background:"#fff",borderRadius:16,overflow:"hidden",border:"1px solid #f3f4f6"}}>
  <div style={{padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid #f3f4f6"}}>
  <div>
@@ -765,9 +826,9 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  </thead>
  <tbody>
  {rows.map(a=>(
- <tr key={a.id} style={{borderBottom:"1px solid #f9fafb"}}>
- <td style={{padding:"12px 14px",fontFamily:"monospace",fontSize:12,color:"#374151",fontWeight:700,whiteSpace:"nowrap"}}>{a.id}</td>
- <td style={{padding:"12px 14px"}}><div style={{fontWeight:600,color:"#111827",whiteSpace:"nowrap"}}>{a.supplierName}</div><div style={{fontSize:11,color:"#9ca3af"}}>{a.supplierEmail}</div></td>
+ <tr key={a.id} style={{borderBottom:"1px solid #f9fafb",background:a.priority==="emergency"&&a.status==="pending"?"#fff5f5":"#fff"}}>
+ <td style={{padding:"12px 14px",fontFamily:"monospace",fontSize:12,color:a.priority==="emergency"?"#dc2626":"#374151",fontWeight:700,whiteSpace:"nowrap"}}>{a.priority==="emergency"&&a.status==="pending"&&"🚨 "}{a.id}</td>
+ <td style={{padding:"12px 14px"}}><div style={{fontWeight:600,color:"#111827",whiteSpace:"nowrap"}}>{a.supplierName}</div><div style={{fontSize:11,color:"#9ca3af"}}>{a.supplierEmail}</div>{a.priority==="emergency"&&a.status==="pending"&&<div style={{fontSize:10,color:"#dc2626",fontWeight:700,marginTop:2,fontStyle:"italic"}}>"{a.emergencyJustification?.substring(0,50)}{a.emergencyJustification?.length>50?"…":""}"</div>}</td>
  <td style={{padding:"12px 14px",whiteSpace:"nowrap",fontWeight:500,color:"#374151"}}>{fmtDate(a.date)}</td>
  <td style={{padding:"12px 14px",color:"#374151"}}>{a.time}</td>
  <td style={{padding:"12px 14px",textAlign:"center",fontWeight:600,color:"#374151"}}>{a.totalOrders}</td>
@@ -1475,9 +1536,10 @@ function buildEmailBody(type,appt,extra={}){
 
 Thank you for submitting your delivery appointment request. We have received the details below and will review them shortly.
 
-Appointment Details:
+${appt.priority==="emergency"?`⚠️ EMERGENCY REQUEST — This has been flagged as urgent and will be reviewed with highest priority.\n`:""}Appointment Details:
 ─────────────────────────────
 Reference ID: ${appt.id}
+Priority: ${appt.priority==="emergency"?"🚨 EMERGENCY":"Standard"}
 Tracking PIN: ${appt.pin}
 Delivery To: ${sbuLabel}
 Date: ${fmtDate(appt.date)}
@@ -1487,6 +1549,7 @@ Total Lines: ${appt.totalLines}
 PO Numbers: ${poList}
 Storage Location: ${storage}
 Equipment Required: ${equipment}
+${appt.priority==="emergency"?`\nEmergency Justification:\n${appt.emergencyJustification}`:""}
 
 Important: Please save your Tracking PIN. You will need it to view your request status in the tracker portal.
 
@@ -1941,7 +2004,7 @@ function App() {
 
  function logEmail(type, appt, extra={}) {
  const subjects={
- submission:`Appointment Request Received – ${appt.id}`,
+ submission:appt.priority==="emergency"?`🚨 URGENT – Emergency Delivery Request – ${appt.id}`:`Appointment Request Received – ${appt.id}`,
  approval:`Appointment Approved – ${appt.id}`,
  rejection:`Appointment Status Update – ${appt.id}`,
  revision:`Action Required – ${appt.id} Needs Revision`,
@@ -2023,13 +2086,15 @@ function App() {
  attachments:data.attachments||[],
  status:"pending",
  deliveryStatus:"pending",
+ priority:data.isEmergency?"emergency":"standard",
+ emergencyJustification:data.isEmergency?data.emergencyJustification:"",
  managerComments:null,
  createdAt:new Date().toISOString(),
  updatedAt:new Date().toISOString()
  };
  setAppts(p=>[newAppt,...p]);
  logEmail("submission", newAppt);
- logTransaction("create", newAppt, {actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:"New appointment submitted"});
+ logTransaction("create", newAppt, {actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:data.isEmergency?"🚨 EMERGENCY: "+data.emergencyJustification:"New appointment submitted"});
  return {id,pin};
  }
 
@@ -2109,11 +2174,12 @@ function App() {
  if(page==="admin-login") return <AdminLogin onLogin={e=>{setAdminEmail(e);setPage("admin");setView("dashboard");}} onBack={()=>setPage("landing")}/>;
 
  const pending = appts.filter(a=>a.status==="pending");
+ const emergencyCount = pending.filter(a=>a.priority==="emergency").length;
  const viewApt = appts.find(a=>a.id===viewId);
  const overdueCount = appts.filter(a=>a.status==="approved"&&(a.deliveryStatus==="awaiting_delivery"||!a.deliveryStatus)&&new Date(a.date+"T"+a.time)<new Date()).length;
  const nav = [
  {id:"dashboard",label:"Dashboard",icon:"📊"},
- {id:"admin",label:"Admin Panel",badge:pending.length,icon:"📋"},
+ {id:"admin",label:"Admin Panel",badge:emergencyCount>0?`🚨${emergencyCount}`:pending.length||undefined,icon:"📋"},
  {id:"teamlead",label:"Team Lead",badge:overdueCount,icon:"👷"},
  {id:"statistics",label:"Statistics",icon:"📈"},
  {id:"calendar",label:"Calendar",icon:"📅"},
