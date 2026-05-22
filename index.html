@@ -1357,9 +1357,11 @@ function SettingsPanel({ config, onChange, isMobile, jbCfg, onJbCfg, jbStatus, o
  return(
  <div style={{padding:isMobile?16:28}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Settings</h1>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 20px"}}>Configure EmailJS for real email notifications</p>
- <div style={{maxWidth:480}}>
- <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:16,marginBottom:16,color:"rgba(255,255,255,0.6)",fontSize:12,lineHeight:1.8}}>
+ <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 20px"}}>Configure EmailJS and Cloud Sync</p>
+ <div style={{maxWidth:480,display:"flex",flexDirection:"column",gap:16}}>
+
+ {/* EmailJS Card */}
+ <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:16,color:"rgba(255,255,255,0.6)",fontSize:12,lineHeight:1.8}}>
  <strong style={{color:"#fff"}}>EmailJS Setup:</strong><br/>
  1. Create account at emailjs.com<br/>
  2. Add Email Service — copy Service ID<br/>
@@ -1376,54 +1378,39 @@ function SettingsPanel({ config, onChange, isMobile, jbCfg, onJbCfg, jbStatus, o
  <div style={{padding:12,borderRadius:12,border:`1px solid ${ok?"#6ee7b7":"#fcd34d"}`,background:ok?"#d1fae5":"#fffbeb",fontSize:13,color:ok?"#065f46":"#92400e"}}>
  {ok ? "✅ EmailJS configured." : "⚠️ Not configured. Fill in all three required fields."}
  </div>
+ </div>
 
- {/* JSONBin Cloud Sync Section */}
- <div style={{marginTop:24,background:"#fff",borderRadius:16,padding:20,boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
- <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+ {/* JSONBin Cloud Sync Card */}
+ <div style={{background:"#fff",borderRadius:16,padding:isMobile?16:20}}>
+ <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
  <span style={{fontSize:20}}>☁️</span>
- <div>
+ <div style={{flex:1}}>
  <div style={{fontWeight:700,fontSize:15,color:"#111827"}}>Cloud Sync — JSONBin.io</div>
  <div style={{fontSize:11,color:"#6b7280"}}>Sync data across all devices automatically</div>
  </div>
- {jbOk&&<span style={{marginLeft:"auto",fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:99,background:jbStatus==="ok"?"#d1fae5":jbStatus==="error"?"#fee2e2":"#fef3c7",color:jbStatus==="ok"?"#065f46":jbStatus==="error"?"#991b1b":"#92400e"}}>{jbStatus==="ok"?"✅ Synced":jbStatus==="error"?"⚠️ Error":"⏳ Syncing"}</span>}
+ {jbOk&&<span style={{fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:99,background:jbStatus==="ok"?"#d1fae5":jbStatus==="error"?"#fee2e2":"#fef3c7",color:jbStatus==="ok"?"#065f46":jbStatus==="error"?"#991b1b":"#92400e"}}>{jbStatus==="ok"?"✅ Synced":jbStatus==="error"?"⚠️ Error":"⏳ Syncing"}</span>}
  </div>
-
  <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:10,padding:"10px 12px",marginBottom:14,fontSize:12,color:"#1e40af",lineHeight:1.6}}>
  <strong>Setup (2 minutes):</strong><br/>
- 1. Go to <strong>jsonbin.io</strong> → Sign up free<br/>
- 2. Click <strong>"CREATE BIN"</strong> → copy the <strong>Bin ID</strong><br/>
- 3. Go to <strong>API Keys</strong> → copy your <strong>Master Key</strong><br/>
- 4. Paste both below → click <strong>Save & Sync</strong>
+ 1. Go to jsonbin.io → Sign up free<br/>
+ 2. Click CREATE BIN → copy the Bin ID<br/>
+ 3. Go to API Keys → copy your Master Key<br/>
+ 4. Paste both below → click Save & Connect
  </div>
-
  {[["Master API Key","apiKey","X-Master-Key from jsonbin.io…"],["Bin ID","binId","e.g. 64f2a1b3dc74654018a..."]].map(([label,key,ph])=>(
  <div key={key} style={{marginBottom:12}}>
  <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{label}</label>
  <input value={jbCfg?.[key]||""} onChange={e=>onJbCfg(p=>({...p,[key]:e.target.value}))} placeholder={ph} type={key==="apiKey"?"password":"text"} style={inp}/>
  </div>
  ))}
-
  <div style={{display:"flex",gap:10,marginTop:14,flexWrap:"wrap"}}>
- {!jbCfg?.binId&&jbCfg?.apiKey&&(
- <button onClick={onJbCreate} style={{flex:1,padding:"11px",background:"#4f46e5",color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>
- ✨ Create New Bin & Save
- </button>
- )}
- {jbOk&&(
- <button onClick={onJbSync} style={{flex:1,padding:"11px",background:"#059669",color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>
- 🔄 Pull Latest from Cloud
- </button>
- )}
- {!jbOk&&jbCfg?.apiKey&&jbCfg?.binId&&(
- <button onClick={onJbSync} style={{flex:1,padding:"11px",background:"#4f46e5",color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>
- ☁️ Save & Connect
- </button>
- )}
+ {!jbCfg?.binId&&jbCfg?.apiKey&&<button onClick={onJbCreate} style={{flex:1,padding:"11px",background:"#4f46e5",color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>✨ Create New Bin & Save</button>}
+ {jbOk&&<button onClick={onJbSync} style={{flex:1,padding:"11px",background:"#059669",color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>🔄 Pull Latest from Cloud</button>}
+ {!jbOk&&jbCfg?.apiKey&&jbCfg?.binId&&<button onClick={onJbSync} style={{flex:1,padding:"11px",background:"#4f46e5",color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>☁️ Save & Connect</button>}
  </div>
  {jbOk&&<p style={{fontSize:11,color:"#6b7280",marginTop:10,textAlign:"center"}}>Data auto-syncs across all devices every time changes are made.</p>}
  </div>
- </div>
- </div>
+
  </div>
  </div>
  );
