@@ -1783,6 +1783,27 @@ function TransactionsHistory({ transactions, isMobile }) {
  URL.revokeObjectURL(url);
  }
 
+ const [openGroups,setOpenGroups]=useState({});
+ function toggleGroup(id){setOpenGroups(p=>({...p,[id]:!p[id]}));}
+
+ // Group filtered transactions by appointmentId
+ const groups=useMemo(()=>{
+ const map={};
+ filtered.forEach(t=>{
+ const key=t.appointmentId||"—";
+ if(!map[key])map[key]=[];
+ map[key].push(t);
+ });
+ // Sort groups by latest transaction timestamp
+ return Object.entries(map).sort((a,b)=>new Date(b[1][0].timestamp)-new Date(a[1][0].timestamp));
+ },[filtered]);
+
+ // Last action badge color per group
+ function lastActionCfg(txList){
+ const last=txList[0];
+ return actionCfg[last?.action]||{bg:"#f3f4f6",color:"#374151",border:"#d1d5db",label:last?.action};
+ }
+
  const inpDark={background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none",colorScheme:"dark"};
 
  return(
@@ -1794,7 +1815,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  <button onClick={exportCSV} disabled={filtered.length===0} style={{padding:"6px 12px",background:A,color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:filtered.length===0?"not-allowed":"pointer",opacity:filtered.length===0?0.5:1}}>⬇ Export CSV</button>
  </div>
  </div>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Full audit log of every action performed in the system</p>
+ <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Full audit log — grouped by appointment</p>
 
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(7,1fr)",gap:12,marginBottom:16}}>
  {[{key:"create",label:"Created",color:"#a5b4fc"},{key:"resubmission",label:"Resubmission",color:"#7dd3fc"},{key:"approve",label:"Approved",color:"#6ee7b7"},{key:"reject",label:"Rejected",color:"#fca5a5"},{key:"return_for_revision",label:"Returned",color:"#fcd34d"},{key:"delivery_complete",label:"Delivered",color:"#86efac"},{key:"delivery_failed",label:"Failed",color:"#f87171"}].map(s=>(
@@ -1819,20 +1840,9 @@ function TransactionsHistory({ transactions, isMobile }) {
  <option value="delivery_failed">❌ Failed Delivery</option>
  </select>
  <div style={{position:"relative",minWidth:isMobile?140:200}}>
- <input 
- list="supplier-list"
- value={supplierFilter||supplierSearchQ} 
- onChange={e=>{setSupplierSearchQ(e.target.value);setSupplierFilter("");}}
- onBlur={()=>{if(filteredSuppliers.includes(supplierSearchQ))setSupplierFilter(supplierSearchQ);}}
- placeholder="Filter by supplier..."
- style={{...inpDark,width:"100%",paddingRight:supplierFilter||supplierSearchQ?"30px":"12px"}}
- />
- <datalist id="supplier-list">
- {filteredSuppliers.map(s=><option key={s} value={s}/>)}
- </datalist>
- {(supplierFilter||supplierSearchQ)&&(
- <button onClick={()=>{setSupplierFilter("");setSupplierSearchQ("");}} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"rgba(255,255,255,0.5)",cursor:"pointer",fontSize:16,padding:0,lineHeight:1}}>×</button>
- )}
+ <input list="supplier-list" value={supplierFilter||supplierSearchQ} onChange={e=>{setSupplierSearchQ(e.target.value);setSupplierFilter("");}} onBlur={()=>{if(filteredSuppliers.includes(supplierSearchQ))setSupplierFilter(supplierSearchQ);}} placeholder="Filter by supplier..." style={{...inpDark,width:"100%",paddingRight:supplierFilter||supplierSearchQ?"30px":"12px"}}/>
+ <datalist id="supplier-list">{filteredSuppliers.map(s=><option key={s} value={s}/>)}</datalist>
+ {(supplierFilter||supplierSearchQ)&&<button onClick={()=>{setSupplierFilter("");setSupplierSearchQ("");}} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"rgba(255,255,255,0.5)",cursor:"pointer",fontSize:16,padding:0,lineHeight:1}}>×</button>}
  </div>
  <span style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>From</span>
  <input type="date" value={dFrom} onChange={e=>setDFrom(e.target.value)} style={inpDark}/>
@@ -1840,63 +1850,74 @@ function TransactionsHistory({ transactions, isMobile }) {
  <input type="date" value={dTo} onChange={e=>setDTo(e.target.value)} style={inpDark}/>
  {(actionFilter!=="all"||supplierFilter||supplierSearchQ||dFrom||dTo||searchQ||emergencyOnly)&&<button onClick={()=>{setActionFilter("all");setSupplierFilter("");setSupplierSearchQ("");setDFrom("");setDTo("");setSearchQ("");setEmergencyOnly(false);}} style={{padding:"8px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:11,cursor:"pointer"}}>Clear filters</button>}
  <button onClick={()=>setEmergencyOnly(p=>!p)} style={{padding:"8px 12px",background:emergencyOnly?"#dc2626":"rgba(255,255,255,0.08)",border:`1px solid ${emergencyOnly?"#dc2626":"rgba(255,255,255,0.15)"}`,borderRadius:9,color:emergencyOnly?"#fff":"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,cursor:"pointer"}}>🚨 Emergency</button>
- <span style={{marginLeft:"auto",background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{filtered.length} match{filtered.length!==1?"es":""}</span>
+ <span style={{marginLeft:"auto",background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{groups.length} appointment{groups.length!==1?"s":""} · {filtered.length} event{filtered.length!==1?"s":""}</span>
  </div>
  </div>
 
- {filtered.length===0 ? (
+ {groups.length===0 ? (
  <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
  <div style={{fontSize:40,marginBottom:12}}>📜</div>
  <div style={{color:"rgba(255,255,255,0.4)",fontSize:13}}>{transactions.length===0?"No transactions yet. Actions will be recorded here.":"No transactions match your filters."}</div>
  </div>
- ) : isMobile ? (
- <div style={{display:"flex",flexDirection:"column",gap:10}}>
- {filtered.map(t=>{
- const cfg=actionCfg[t.action]||{bg:"#f3f4f6",color:"#374151",border:"#d1d5db",label:t.action};
- return(
- <div key={t.id} style={{background:"#fff",borderRadius:14,padding:14,border:"1px solid #f3f4f6"}}>
- <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
- <span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,padding:"3px 10px",borderRadius:99,fontSize:11,fontWeight:700}}>{cfg.label}</span>
- <span style={{fontFamily:"monospace",fontSize:11,fontWeight:800,color:P}}>{t.appointmentId}</span>
- </div>
- <div style={{fontSize:12,color:"#111827",fontWeight:600,marginBottom:3}}>{t.actor}</div>
- <div style={{fontSize:11,color:"#6b7280",marginBottom:6}}>{t.actorEmail}</div>
- {t.supplierName!=="—"&&<div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>Supplier: {t.supplierName}</div>}
- {t.details&&<div style={{fontSize:11,color:"#6b7280",fontStyle:"italic",marginBottom:6}}>{t.details}</div>}
- <div style={{fontSize:10,color:"#9ca3af"}}>{fmtTs(t.timestamp)}</div>
- </div>
- );
- })}
- </div>
  ) : (
- <div style={{background:"#fff",borderRadius:16,overflow:"hidden",border:"1px solid #f3f4f6"}}>
- <div style={{overflowX:"auto"}}>
- <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:900}}>
- <thead>
- <tr style={{background:"#f9fafb",borderBottom:"1px solid #f3f4f6"}}>
- {["Timestamp","Action","Actor","Email","Appointment","Supplier","Details"].map(h=>(
- <th key={h} style={{padding:"12px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"#9ca3af",textTransform:"uppercase",letterSpacing:0.5,whiteSpace:"nowrap"}}>{h}</th>
- ))}
- </tr>
- </thead>
- <tbody>
- {filtered.map(t=>{
- const cfg=actionCfg[t.action]||{bg:"#f3f4f6",color:"#374151",border:"#d1d5db",label:t.action};
+ <div style={{display:"flex",flexDirection:"column",gap:10}}>
+ {groups.map(([aptId,txList])=>{
+ const isOpen=!!openGroups[aptId];
+ const first=txList[txList.length-1]; // oldest = creation
+ const last=txList[0]; // newest = current state
+ const lastCfg=lastActionCfg(txList);
+ const isEmergency=txList.some(t=>(t.details||"").includes("🚨"));
  return(
- <tr key={t.id} style={{borderBottom:"1px solid #f9fafb"}}>
- <td style={{padding:"10px 14px",fontSize:11,color:"#6b7280",whiteSpace:"nowrap"}}>{fmtTs(t.timestamp)}</td>
- <td style={{padding:"10px 14px",whiteSpace:"nowrap"}}><span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,padding:"3px 9px",borderRadius:99,fontSize:10,fontWeight:700}}>{cfg.label}</span></td>
- <td style={{padding:"10px 14px",fontWeight:600,color:"#111827",whiteSpace:"nowrap"}}>{t.actor}</td>
- <td style={{padding:"10px 14px",color:"#6b7280",fontSize:12,whiteSpace:"nowrap"}}>{t.actorEmail}</td>
- <td style={{padding:"10px 14px",fontFamily:"monospace",fontSize:12,color:P,fontWeight:700,whiteSpace:"nowrap"}}>{t.appointmentId}</td>
- <td style={{padding:"10px 14px",color:"#374151",fontSize:12}}>{t.supplierName||"—"}</td>
- <td style={{padding:"10px 14px",color:"#6b7280",fontSize:11,fontStyle:"italic",maxWidth:240,overflow:"hidden",textOverflow:"ellipsis"}} title={t.details}>{t.details||"—"}</td>
- </tr>
+ <div key={aptId} style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${isEmergency?"rgba(220,38,38,0.4)":"rgba(255,255,255,0.1)"}`,borderRadius:16,overflow:"hidden"}}>
+ {/* Parent Card Header — clickable */}
+ <button onClick={()=>toggleGroup(aptId)} style={{width:"100%",padding:isMobile?"12px 14px":"14px 18px",display:"flex",alignItems:"center",gap:12,background:"transparent",border:"none",cursor:"pointer",textAlign:"left"}}>
+ <div style={{flex:1,minWidth:0}}>
+ <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
+ <span style={{fontFamily:"monospace",fontSize:13,fontWeight:800,color:isEmergency?"#fca5a5":"#a5b4fc"}}>{isEmergency?"🚨 ":""}{aptId}</span>
+ <span style={{background:lastCfg.bg,color:lastCfg.color,border:`1px solid ${lastCfg.border}`,padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:700}}>{lastCfg.label}</span>
+ {isEmergency&&<span style={{background:"rgba(220,38,38,0.2)",color:"#fca5a5",border:"1px solid rgba(220,38,38,0.3)",padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:700}}>Emergency</span>}
+ </div>
+ <div style={{color:"rgba(255,255,255,0.5)",fontSize:11,display:"flex",gap:12,flexWrap:"wrap"}}>
+ <span>{first.supplierName||"—"}</span>
+ <span>·</span>
+ <span>{txList.length} event{txList.length!==1?"s":""}</span>
+ <span>·</span>
+ <span>Last: {fmtTs(last.timestamp)}</span>
+ </div>
+ </div>
+ <span style={{color:"rgba(255,255,255,0.4)",fontSize:18,flexShrink:0,transition:"transform 0.2s",display:"inline-block",transform:isOpen?"rotate(180deg)":"rotate(0deg)"}}>▾</span>
+ </button>
+
+ {/* Timeline — shown when open */}
+ {isOpen&&(
+ <div style={{borderTop:"1px solid rgba(255,255,255,0.08)",padding:isMobile?"12px 14px":"14px 18px",display:"flex",flexDirection:"column",gap:0}}>
+ {[...txList].reverse().map((t,i,arr)=>{
+ const cfg=actionCfg[t.action]||{bg:"#f3f4f6",color:"#374151",border:"#d1d5db",label:t.action,icon:"•"};
+ const isLast=i===arr.length-1;
+ return(
+ <div key={t.id} style={{display:"flex",gap:12,position:"relative"}}>
+ {/* Timeline line */}
+ <div style={{display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0}}>
+ <div style={{width:28,height:28,borderRadius:"50%",background:cfg.bg,border:`2px solid ${cfg.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0,zIndex:1}}>{cfg.icon}</div>
+ {!isLast&&<div style={{width:2,flex:1,minHeight:16,background:"rgba(255,255,255,0.08)",margin:"2px 0"}}/>}
+ </div>
+ {/* Event content */}
+ <div style={{flex:1,paddingBottom:isLast?0:16}}>
+ <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:2}}>
+ <span style={{fontSize:12,fontWeight:700,color:"#fff"}}>{cfg.label}</span>
+ <span style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>{fmtTs(t.timestamp)}</span>
+ </div>
+ <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginBottom:t.details?4:0}}>{t.actor} · {t.actorEmail}</div>
+ {t.details&&<div style={{fontSize:11,color:"rgba(255,255,255,0.4)",fontStyle:"italic",background:"rgba(255,255,255,0.04)",borderRadius:8,padding:"6px 10px"}}>{t.details}</div>}
+ </div>
+ </div>
  );
  })}
- </tbody>
- </table>
  </div>
+ )}
+ </div>
+ );
+ })}
  </div>
  )}
  </div>
