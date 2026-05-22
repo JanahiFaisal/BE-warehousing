@@ -791,25 +791,23 @@ function SupplierApp() {
   return ()=>clearInterval(iv);
  },[]);
 
+ function pushToJSONBin(newAppts, newEmailLog, newTransactions){
+  if(!jbCfg.apiKey||!jbCfg.binId)return;
+  jbSave(jbCfg.binId,jbCfg.apiKey,{appts:newAppts,emailLog:newEmailLog,transactions:newTransactions});
+ }
+
  function logEmail(type,appt,extra={}){
   const body=buildEmailBody(type,appt,extra);
   const subjects={submission:appt.priority==="emergency"?`🚨 URGENT – Emergency Delivery Request – ${appt.id}`:`Appointment Request Received – ${appt.id}`};
   const emailDoc={id:Date.now()+Math.random(),timestamp:new Date().toISOString(),type,recipient:appt.supplierEmail,appointmentId:appt.id,subject:subjects[type]||`Notification – ${appt.id}`,body,status:"sent",pin:type==="submission"?appt.pin:null,...extra};
   setEmailLog(p=>[emailDoc,...p]);
+  return emailDoc;
  }
 
  function logTransaction(action,appt,details={}){
   const tx={id:Date.now()+Math.random(),timestamp:new Date().toISOString(),action,actor:details.actor||"Supplier",actorEmail:details.actorEmail||(appt&&appt.supplierEmail)||"—",appointmentId:appt?appt.id:"—",supplierName:appt?appt.supplierName:"—",deliveryTo:appt?appt.deliveryTo:"—",details:details.note||""};
   setTransactions(p=>[tx,...p]);
-  // Push to JSONBin
-  if(jbCfg.apiKey&&jbCfg.binId){
-   setTimeout(()=>{
-    jbFetch(jbCfg.binId,jbCfg.apiKey).then(data=>{
-     if(!data)return;
-     jbSave(jbCfg.binId,jbCfg.apiKey,{...data,emailLog:[...emailLog],transactions:[tx,...(data.transactions||[])],appts});
-    });
-   },500);
-  }
+  return tx;
  }
 
  function handleBook(data){
@@ -818,26 +816,22 @@ function SupplierApp() {
    if(!existing)return {id:editingId,pin:"0000"};
    const updates={supplierName:data.supplierName,supplierEmail:data.supplierEmail,deliveryTo:data.deliveryTo,date:data.date,time:data.time,totalOrders:Number(data.totalOrders),totalLines:Number(data.totalLines),poNumbers:data.poNumbers||[],offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],storageLocation:data.storageLocation,additionalNotes:data.additionalNotes,status:"pending",revisionComments:null,updatedAt:new Date().toISOString()};
    const updated={...existing,...updates};
-   setAppts(p=>p.map(a=>a.id===editingId?updated:a));
-   logEmail("submission",updated);
-   logTransaction("resubmission",updated,{actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:"🔄 Resubmission after revision"});
-   // Push to JSONBin
-   if(jbCfg.apiKey&&jbCfg.binId){
-    setTimeout(()=>{jbFetch(jbCfg.binId,jbCfg.apiKey).then(d=>{if(!d)return;const newAppts=d.appts.map(a=>a.id===editingId?updated:a);jbSave(jbCfg.binId,jbCfg.apiKey,{...d,appts:newAppts});});},500);
-   }
+   const newAppts=appts.map(a=>a.id===editingId?updated:a);
+   const emailDoc=logEmail("submission",updated);
+   const tx=logTransaction("resubmission",updated,{actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:"🔄 Resubmission after revision"});
+   setAppts(newAppts);
+   pushToJSONBin(newAppts,[emailDoc,...emailLog],[tx,...transactions]);
    setEditingId(null);
    return {id:existing.id,pin:existing.pin};
   }
   const id=nextAptId(appts,data.deliveryTo);
   const pin=genPin();
   const newAppt={id,pin,supplierName:data.supplierName,supplierEmail:data.supplierEmail,deliveryTo:data.deliveryTo,date:data.date,time:data.time,totalOrders:Number(data.totalOrders),totalLines:Number(data.totalLines),poNumbers:data.poNumbers||[],offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],storageLocation:data.storageLocation,additionalNotes:data.additionalNotes,attachments:data.attachments||[],status:"pending",deliveryStatus:"pending",priority:data.isEmergency?"emergency":"standard",emergencyJustification:data.isEmergency?data.emergencyJustification:"",managerComments:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
-  setAppts(p=>[newAppt,...p]);
-  logEmail("submission",newAppt);
-  logTransaction("create",newAppt,{actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:data.isEmergency?"🚨 EMERGENCY: "+data.emergencyJustification:"New appointment submitted"});
-  // Push to JSONBin
-  if(jbCfg.apiKey&&jbCfg.binId){
-   setTimeout(()=>{jbFetch(jbCfg.binId,jbCfg.apiKey).then(d=>{if(!d)return;jbSave(jbCfg.binId,jbCfg.apiKey,{...d,appts:[newAppt,...(d.appts||[])],emailLog:[...emailLog],transactions:[{id:Date.now(),timestamp:new Date().toISOString(),action:"create",actor:data.supplierName,actorEmail:data.supplierEmail,appointmentId:id,supplierName:data.supplierName,deliveryTo:data.deliveryTo,details:data.isEmergency?"🚨 EMERGENCY: "+data.emergencyJustification:"New appointment submitted"},...(d.transactions||[])]});});},500);
-  }
+  const newAppts=[newAppt,...appts];
+  const emailDoc=logEmail("submission",newAppt);
+  const tx=logTransaction("create",newAppt,{actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:data.isEmergency?"🚨 EMERGENCY: "+data.emergencyJustification:"New appointment submitted"});
+  setAppts(newAppts);
+  pushToJSONBin(newAppts,[emailDoc,...emailLog],[tx,...transactions]);
   return {id,pin};
  }
 
