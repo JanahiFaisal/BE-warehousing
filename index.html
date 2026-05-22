@@ -1410,11 +1410,9 @@ function SettingsPanel({ config, onChange, isMobile, jbCfg, onJbCfg, jbStatus, o
  </button>
  )}
  {jbOk&&(
- <>
  <button onClick={onJbSync} style={{flex:1,padding:"11px",background:"#059669",color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>
  🔄 Pull Latest from Cloud
  </button>
- </>
  )}
  {!jbOk&&jbCfg?.apiKey&&jbCfg?.binId&&(
  <button onClick={onJbSync} style={{flex:1,padding:"11px",background:"#4f46e5",color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>
