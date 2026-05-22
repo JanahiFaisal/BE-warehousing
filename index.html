@@ -738,8 +738,9 @@ function Dashboard({ appointments, setView, isMobile }) {
 function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobile }) {
  const [searchQ,setSearchQ]=useState("");
  const [statFs,setStatFs]=useState([]);
+ const [emergencyOnly,setEmergencyOnly]=useState(false);
  function togStat(s){setStatFs(p=>p.includes(s)?p.filter(x=>x!==s):[...p,s]);}
- const rows=useMemo(()=>appointments.filter(a=>{if(searchQ&&!a.supplierName.toLowerCase().includes(searchQ.toLowerCase())&&!a.supplierEmail.toLowerCase().includes(searchQ.toLowerCase())&&!a.id.toLowerCase().includes(searchQ.toLowerCase()))return false;if(statFs.length&&!statFs.includes(a.status))return false;return true;}).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)),[appointments,searchQ,statFs]);
+ const rows=useMemo(()=>appointments.filter(a=>{if(searchQ&&!a.supplierName.toLowerCase().includes(searchQ.toLowerCase())&&!a.supplierEmail.toLowerCase().includes(searchQ.toLowerCase())&&!a.id.toLowerCase().includes(searchQ.toLowerCase()))return false;if(statFs.length&&!statFs.includes(a.status))return false;if(emergencyOnly&&a.priority!=="emergency")return false;return true;}).sort((a,b)=>{if(a.priority==="emergency"&&b.priority!=="emergency")return -1;if(b.priority==="emergency"&&a.priority!=="emergency")return 1;return new Date(b.createdAt)-new Date(a.createdAt);}),[appointments,searchQ,statFs,emergencyOnly]);
  const emergencyRows=rows.filter(a=>a.priority==="emergency"&&a.status==="pending");
  const standardRows=rows.filter(a=>a.priority!=="emergency"||a.status!=="pending");
  const sc={pending:"#f59e0b",approved:"#10b981",rejected:"#ef4444",revision_required:"#fb923c"};
@@ -749,7 +750,8 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Review and action delivery appointment requests</p>
  <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:14,padding:14,marginBottom:14,display:"flex",flexDirection:isMobile?"column":"row",gap:10,alignItems:isMobile?"stretch":"center"}}>
  <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by ID, supplier name or email…" style={{flex:1,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
- <div style={{display:"flex",gap:8}}>
+ <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+ <button onClick={()=>setEmergencyOnly(p=>!p)} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${emergencyOnly?"#dc2626":"rgba(255,255,255,0.15)"}`,background:emergencyOnly?"#dc2626":"rgba(255,255,255,0.07)",color:emergencyOnly?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,cursor:"pointer"}}>🚨 Emergency</button>
  {["pending","approved","rejected","revision_required"].map(s=>{const on=statFs.includes(s);return(<button key={s} onClick={()=>togStat(s)} style={{flex:isMobile?1:undefined,padding:"8px 12px",borderRadius:10,border:`1px solid ${on?sc[s]:"rgba(255,255,255,0.15)"}`,background:on?sc[s]:"rgba(255,255,255,0.07)",color:on?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600,cursor:"pointer",textTransform:"capitalize"}}>{s==="revision_required"?"Revision":s}</button>);})}
  </div>
  </div>
@@ -865,6 +867,7 @@ function CalendarView({ appointments, isMobile }) {
  const approved = appointments.filter(a=>{
  if(a.status!=="approved")return false;
  if(deliveryFilter==="all")return true;
+ if(deliveryFilter==="emergency")return a.priority==="emergency";
  if(deliveryFilter==="pending")return !a.deliveryStatus||a.deliveryStatus==="awaiting_delivery";
  if(deliveryFilter==="completed")return a.deliveryStatus==="completed";
  if(deliveryFilter==="failed")return a.deliveryStatus==="failed";
@@ -1114,6 +1117,7 @@ function CalendarView({ appointments, isMobile }) {
  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
  <select value={deliveryFilter} onChange={e=>setDeliveryFilter(e.target.value)} style={{padding:isMobile?"7px 10px":"8px 12px",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,background:"rgba(255,255,255,0.08)",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",outline:"none",colorScheme:"dark"}}>
  <option value="all">All Deliveries</option>
+ <option value="emergency">🚨 Emergency</option>
  <option value="pending">⏳ Pending</option>
  <option value="completed">✅ Completed</option>
  <option value="failed">❌ Failed</option>
@@ -1642,6 +1646,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  const [supplierSearchQ,setSupplierSearchQ]=useState("");
  const [dFrom,setDFrom]=useState("");
  const [dTo,setDTo]=useState("");
+ const [emergencyOnly,setEmergencyOnly]=useState(false);
 
  const actionCfg={
  create:{bg:"#eff6ff",color:"#1d4ed8",border:"#bfdbfe",label:"📝 Created",icon:"📝"},
@@ -1670,13 +1675,14 @@ function TransactionsHistory({ transactions, isMobile }) {
  if(supplierFilter&&t.supplierName!==supplierFilter)return false;
  if(dFrom&&t.timestamp.split("T")[0]<dFrom)return false;
  if(dTo&&t.timestamp.split("T")[0]>dTo)return false;
+ if(emergencyOnly&&!(t.details||"").includes("🚨"))return false;
  if(searchQ){
  const q=searchQ.toLowerCase();
  if(!t.appointmentId.toLowerCase().includes(q)&&!t.actorEmail.toLowerCase().includes(q)&&!t.actor.toLowerCase().includes(q)&&!(t.supplierName||"").toLowerCase().includes(q)&&!(t.details||"").toLowerCase().includes(q))return false;
  }
  return true;
  }).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
- },[transactions,searchQ,actionFilter,supplierFilter,dFrom,dTo]);
+ },[transactions,searchQ,actionFilter,supplierFilter,dFrom,dTo,emergencyOnly]);
 
  const counts={create:0,approve:0,reject:0,return_for_revision:0,delivery_complete:0,delivery_failed:0};
  transactions.forEach(t=>{if(counts[t.action]!==undefined)counts[t.action]++;});
@@ -1747,7 +1753,8 @@ function TransactionsHistory({ transactions, isMobile }) {
  <input type="date" value={dFrom} onChange={e=>setDFrom(e.target.value)} style={inpDark}/>
  <span style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>To</span>
  <input type="date" value={dTo} onChange={e=>setDTo(e.target.value)} style={inpDark}/>
- {(actionFilter!=="all"||supplierFilter||supplierSearchQ||dFrom||dTo||searchQ)&&<button onClick={()=>{setActionFilter("all");setSupplierFilter("");setSupplierSearchQ("");setDFrom("");setDTo("");setSearchQ("");}} style={{padding:"8px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:11,cursor:"pointer"}}>Clear filters</button>}
+ {(actionFilter!=="all"||supplierFilter||supplierSearchQ||dFrom||dTo||searchQ||emergencyOnly)&&<button onClick={()=>{setActionFilter("all");setSupplierFilter("");setSupplierSearchQ("");setDFrom("");setDTo("");setSearchQ("");setEmergencyOnly(false);}} style={{padding:"8px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:11,cursor:"pointer"}}>Clear filters</button>}
+ <button onClick={()=>setEmergencyOnly(p=>!p)} style={{padding:"8px 12px",background:emergencyOnly?"#dc2626":"rgba(255,255,255,0.08)",border:`1px solid ${emergencyOnly?"#dc2626":"rgba(255,255,255,0.15)"}`,borderRadius:9,color:emergencyOnly?"#fff":"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,cursor:"pointer"}}>🚨 Emergency</button>
  <span style={{marginLeft:"auto",background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{filtered.length} match{filtered.length!==1?"es":""}</span>
  </div>
  </div>
@@ -1900,6 +1907,7 @@ function TeamLeadPanel({ appointments, isMobile }) {
  <span style={{color:"rgba(255,255,255,0.5)",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Filter:</span>
  <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"8px 12px",color:"#fff",fontSize:13,outline:"none",cursor:"pointer",colorScheme:"dark"}}>
  <option value="all">All Deliveries</option>
+ <option value="emergency">🚨 Emergency</option>
  <option value="overdue">⚠️ Overdue Only</option>
  <option value="upcoming">📦 Upcoming Only</option>
  <option value="completed">✅ Completed Only</option>
@@ -1908,24 +1916,24 @@ function TeamLeadPanel({ appointments, isMobile }) {
  {statusFilter!=="all"&&<button onClick={()=>setStatusFilter("all")} style={{padding:"6px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:11,cursor:"pointer"}}>Clear filter</button>}
  </div>
 
- {(statusFilter==="all"||statusFilter==="overdue")&&overdue.length>0&&(
+ {(statusFilter==="all"||statusFilter==="emergency")&&overdue.filter(a=>statusFilter!=="emergency"||(a.priority==="emergency")).length>0&&(
  <div style={{marginBottom:24}}>
  <h2 style={{color:"#fff",fontSize:isMobile?16:18,fontWeight:700,margin:"0 0 12px",display:"flex",alignItems:"center",gap:8}}>
- <span>🔴</span><span>OVERDUE - Action Required</span><span style={{background:"#dc2626",color:"#fff",fontSize:11,fontWeight:800,padding:"2px 8px",borderRadius:99}}>{overdue.length}</span>
+ <span>🔴</span><span>OVERDUE - Action Required</span><span style={{background:"#dc2626",color:"#fff",fontSize:11,fontWeight:800,padding:"2px 8px",borderRadius:99}}>{overdue.filter(a=>statusFilter!=="emergency"||(a.priority==="emergency")).length}</span>
  </h2>
  <div style={{display:"flex",flexDirection:"column",gap:10}}>
- {overdue.map(a=><StatusCard key={a.id} a={a} isOverdue={true}/>)}
+ {overdue.filter(a=>statusFilter!=="emergency"||(a.priority==="emergency")).map(a=><StatusCard key={a.id} a={a} isOverdue={true}/>)}
  </div>
  </div>
  )}
 
- {(statusFilter==="all"||statusFilter==="upcoming")&&upcoming.length>0&&(
+ {(statusFilter==="all"||statusFilter==="upcoming"||statusFilter==="emergency")&&upcoming.filter(a=>statusFilter!=="emergency"||(a.priority==="emergency")).length>0&&(
  <div style={{marginBottom:24}}>
  <h2 style={{color:"#fff",fontSize:isMobile?16:18,fontWeight:700,margin:"0 0 12px",display:"flex",alignItems:"center",gap:8}}>
- <span>📦</span><span>Upcoming Deliveries</span><span style={{background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:99}}>{upcoming.length}</span>
+ <span>📦</span><span>Upcoming Deliveries</span><span style={{background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:99}}>{upcoming.filter(a=>statusFilter!=="emergency"||(a.priority==="emergency")).length}</span>
  </h2>
  <div style={{display:"flex",flexDirection:"column",gap:10}}>
- {upcoming.map(a=><StatusCard key={a.id} a={a} isOverdue={false}/>)}
+ {upcoming.filter(a=>statusFilter!=="emergency"||(a.priority==="emergency")).map(a=><StatusCard key={a.id} a={a} isOverdue={false}/>)}
  </div>
  </div>
  )}
