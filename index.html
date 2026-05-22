@@ -854,58 +854,10 @@ function SupplierApp() {
 
  const editingAppt=editingId?appts.find(a=>a.id===editingId):null;
 
- // Supplier-only landing (no admin button)
- function SupplierLanding(){
-  return(
-   <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",padding:isMobile?"24px 16px":"40px 20px",fontFamily:"system-ui,sans-serif"}}>
-    <div style={{textAlign:"center",marginBottom:isMobile?28:40}}>
-     <h1 style={{color:"#fff",fontSize:isMobile?22:28,fontWeight:800,margin:0,lineHeight:1.2}}>BE – Warehouse Appointments</h1>
-     <p style={{color:"rgba(255,255,255,0.45)",fontSize:12,marginTop:8}}>Delivery Appointment Booking Portal</p>
-    </div>
-    <div style={{display:"flex",flexDirection:"column",gap:14,width:"100%",maxWidth:480,marginBottom:32}}>
-     <button onClick={()=>setPage("supplier")} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:20,padding:isMobile?20:28,textAlign:"left",cursor:"pointer",color:"inherit"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-       <div style={{background:A,width:48,height:48,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>📦</div>
-       <span style={{background:"rgba(200,150,42,0.15)",color:A,border:"1px solid rgba(200,150,42,0.35)",padding:"3px 10px",borderRadius:99,fontSize:10,fontWeight:700}}>SUPPLIERS</span>
-      </div>
-      <div style={{color:"#fff",fontWeight:800,fontSize:isMobile?15:17,marginBottom:4}}>Book a Delivery</div>
-      <div style={{color:"rgba(255,255,255,0.45)",fontSize:12,lineHeight:1.6}}>Request an appointment — select date, time, storage and submit PO details for review.</div>
-      <div style={{color:A,fontSize:11,fontWeight:700,marginTop:10}}>Book Now →</div>
-     </button>
-     <button onClick={()=>setPage("tracker")} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:20,padding:"18px 20px",display:"flex",alignItems:"center",gap:14,cursor:"pointer",color:"inherit",textAlign:"left"}}>
-      <div style={{background:"rgba(52,211,153,0.2)",width:42,height:42,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:20}}>🔍</div>
-      <div style={{flex:1}}>
-       <div style={{color:"#fff",fontWeight:800,fontSize:13,marginBottom:3}}>Track Your Appointment</div>
-       <p style={{color:"rgba(255,255,255,0.55)",fontSize:12,margin:0}}>Search by ID, email or PO — PIN required.</p>
-      </div>
-      <span style={{color:"#34d399",fontSize:11,fontWeight:700,flexShrink:0}}>Track →</span>
-     </button>
-    </div>
-    <div style={{width:"100%",maxWidth:480,borderTop:"1px solid rgba(255,255,255,0.1)",paddingTop:24}}>
-     <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:10}}>
-      {[{icon:"📧",label:"Email",value:"Faisal.Janahi@Bapcoenergies.com",href:"mailto:Faisal.Janahi@Bapcoenergies.com"},{icon:"📱",label:"Mobile",value:"+973 6667 6797",href:"tel:+97366676797"},{icon:"📞",label:"Office",value:"17757483",href:"tel:17757483"}].map(({icon,label,value,href})=>(
-       <a key={label} href={href} style={{display:"flex",alignItems:"center",gap:8,textDecoration:"none",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:12,padding:"10px 12px"}}>
-        <span style={{fontSize:16,flexShrink:0}}>{icon}</span>
-        <div style={{minWidth:0}}><div style={{color:"rgba(255,255,255,0.4)",fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>{label}</div><div style={{color:"#fff",fontSize:11,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{value}</div></div>
-       </a>
-      ))}
-     </div>
-     <div style={{textAlign:"center",marginTop:20}}>
-      <div style={{display:"inline-flex",background:"#fff",borderRadius:99,padding:"6px 16px",alignItems:"center",gap:8}}>
-       <div style={{width:6,height:6,borderRadius:"50%",background:"#10b981"}}/>
-       <span style={{color:"#374151",fontSize:12,fontWeight:600}}>Made by</span>
-       <span style={{color:"#07114C",fontSize:13,fontWeight:800}}>Faisal Janahi</span>
-      </div>
-     </div>
-    </div>
-   </div>
-  );
- }
-
- if(page==="landing") return <SupplierLanding/>;
+ if(page==="landing") return <Landing onSupplier={()=>setPage("supplier")} onAdmin={()=>{window.location.href="admin.html";}} onTracker={()=>setPage("tracker")}/>;
  if(page==="supplier") return <SupplierForm onSubmit={handleBook} onBack={()=>{setEditingId(null);setPage("landing");}} appointments={appts} editingAppointment={editingAppt}/>;
  if(page==="tracker") return <SupplierTracker appointments={appts} onBack={()=>setPage("landing")}/>;
- return <SupplierLanding/>;
+ return <Landing onSupplier={()=>setPage("supplier")} onAdmin={()=>{window.location.href="admin.html";}} onTracker={()=>setPage("tracker")}/>;
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(SupplierApp));
