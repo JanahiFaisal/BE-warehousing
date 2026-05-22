@@ -98,6 +98,7 @@ function StatusBadge({ status }) {
  pending: {bg:"#fef3c7",color:"#92400e",border:"#fcd34d",label:"⏳ Pending"},
  approved: {bg:"#d1fae5",color:"#065f46",border:"#6ee7b7",label:"✓ Approved"},
  rejected: {bg:"#fee2e2",color:"#991b1b",border:"#fca5a5",label:"✕ Rejected"},
+ revision_required: {bg:"#ffedd5",color:"#9a3412",border:"#fed7aa",label:"↩️ Revision Required"},
  }[status];
  return <span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,padding:"3px 10px",borderRadius:99,fontSize:11,fontWeight:700,whiteSpace:"nowrap"}}>{cfg.label}</span>;
 }
@@ -249,9 +250,23 @@ function AdminLogin({ onLogin, onBack }) {
 
 const BLANK = {supplierName:"",supplierEmail:"",deliveryTo:"",date:"",time:"",totalOrders:"",totalLines:"",poNumbers:[],needsEquipment:null,offloadingEquipment:[],storageLocation:[],additionalNotes:"",attachments:[]};
 
-function SupplierForm({ onSubmit, onBack, appointments }) {
+function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  const { isMobile } = useWindowSize();
- const [f,setF]=useState(BLANK);
+ const [f,setF]=useState(editingAppointment?{
+ supplierName:editingAppointment.supplierName,
+ supplierEmail:editingAppointment.supplierEmail,
+ deliveryTo:editingAppointment.deliveryTo,
+ date:editingAppointment.date,
+ time:editingAppointment.time,
+ totalOrders:String(editingAppointment.totalOrders),
+ totalLines:String(editingAppointment.totalLines),
+ poNumbers:editingAppointment.poNumbers||[],
+ needsEquipment:editingAppointment.offloadingEquipment&&editingAppointment.offloadingEquipment.length>0,
+ offloadingEquipment:editingAppointment.offloadingEquipment||[],
+ storageLocation:editingAppointment.storageLocation||[],
+ additionalNotes:editingAppointment.additionalNotes||"",
+ attachments:editingAppointment.attachments||[]
+ }:BLANK);
  const [result,setResult]=useState(null);
  const [dateErr,setDateErr]=useState("");
  const [poVal,setPoVal]=useState("");
@@ -293,8 +308,8 @@ function SupplierForm({ onSubmit, onBack, appointments }) {
  <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
  <div style={{textAlign:"center",maxWidth:440,width:"100%"}}>
  <div style={{width:72,height:72,background:"#d1fae5",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:36}}>✅</div>
- <h2 style={{color:"#fff",fontWeight:800,fontSize:22,margin:"0 0 8px"}}>Request Submitted!</h2>
- <p style={{color:"rgba(255,255,255,0.55)",fontSize:13,marginBottom:24}}>Save your Appointment ID and PIN — you will need both to track your request.</p>
+ <h2 style={{color:"#fff",fontWeight:800,fontSize:22,margin:"0 0 8px"}}>{editingAppointment?"Resubmitted Successfully!":"Request Submitted!"}</h2>
+ <p style={{color:"rgba(255,255,255,0.55)",fontSize:13,marginBottom:24}}>{editingAppointment?"Your revised appointment has been sent back to the admin for review.":"Save your Appointment ID and PIN — you will need both to track your request."}</p>
 
  <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.18)",borderRadius:20,padding:isMobile?18:24,marginBottom:20}}>
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
@@ -326,8 +341,8 @@ function SupplierForm({ onSubmit, onBack, appointments }) {
  <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",fontFamily:"system-ui,sans-serif"}}>
  <TopBar onBack={onBack}/>
  <div style={{maxWidth:640,width:"100%",margin:"0 auto",padding:isMobile?"20px 16px":"28px 20px"}}>
- <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,marginBottom:4}}>Book a Delivery</h1>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,marginBottom:20}}>All requests are subject to warehouse approval.</p>
+ <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,marginBottom:4}}>{editingAppointment?"↩️ Edit & Resubmit":"Book a Delivery"}</h1>
+ <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,marginBottom:20}}>{editingAppointment?`Revising appointment ${editingAppointment.id} — Make your changes and resubmit.`:"All requests are subject to warehouse approval."}</p>
  <div style={{background:"#fff",borderRadius:20,padding:isMobile?20:28,display:"flex",flexDirection:"column",gap:18}}>
 
  <div>
@@ -461,7 +476,7 @@ function SupplierForm({ onSubmit, onBack, appointments }) {
  </div>
 
  <button disabled={!valid} onClick={()=>{const r=onSubmit({...f});if(r)setResult(r);}} style={{padding:"14px 24px",background:valid?P:"#9ca3af",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:valid?"pointer":"not-allowed",width:"100%"}}>
- Submit for Approval
+ {editingAppointment?"↩️ Resubmit for Review":"Submit for Approval"}
  </button>
  </div>
  </div>
@@ -533,16 +548,16 @@ function SupplierTracker({ appointments, onBack }) {
 
  {results.map(a=>{
  const isUnlocked=unlocked[a.id];
- const statusColor=a.status==="approved"?"#065f46":a.status==="rejected"?"#991b1b":"#92400e";
- const statusBg=a.status==="approved"?"#d1fae5":a.status==="rejected"?"#fee2e2":"#fef3c7";
- const statusBorder=a.status==="approved"?"#6ee7b7":a.status==="rejected"?"#fca5a5":"#fcd34d";
+ const statusColor=a.status==="approved"?"#065f46":a.status==="rejected"?"#991b1b":a.status==="revision_required"?"#9a3412":"#92400e";
+ const statusBg=a.status==="approved"?"#d1fae5":a.status==="rejected"?"#fee2e2":a.status==="revision_required"?"#ffedd5":"#fef3c7";
+ const statusBorder=a.status==="approved"?"#6ee7b7":a.status==="rejected"?"#fca5a5":a.status==="revision_required"?"#fed7aa":"#fcd34d";
  return (
  <div key={a.id} style={{background:"#fff",borderRadius:20,marginBottom:16,overflow:"hidden",border:"1px solid #f3f4f6"}}>
  {isUnlocked ? (
  <div style={{padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",background:statusBg,borderBottom:`1px solid ${statusBorder}`}}>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
- <span style={{fontSize:20}}>{a.status==="approved"?"✅":a.status==="rejected"?"❌":"⏳"}</span>
- <div style={{fontWeight:700,fontSize:14,color:statusColor}}>{a.status==="approved"?"Approved":a.status==="rejected"?"Rejected":"Pending Review"}</div>
+ <span style={{fontSize:20}}>{a.status==="approved"?"✅":a.status==="rejected"?"❌":a.status==="revision_required"?"↩️":"⏳"}</span>
+ <div style={{fontWeight:700,fontSize:14,color:statusColor}}>{a.status==="approved"?"Approved":a.status==="rejected"?"Rejected":a.status==="revision_required"?"Revision Required":"Pending Review"}</div>
  </div>
  <span style={{fontFamily:"monospace",fontSize:12,fontWeight:800,color:P}}>{a.id}</span>
  </div>
@@ -607,9 +622,34 @@ function SupplierTracker({ appointments, onBack }) {
  </div>
  )}
  {a.status==="rejected"&&a.managerComments&&(
- <div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:12,padding:"12px 14px"}}>
+ <div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:12,padding:"12px 14px",marginBottom:10}}>
  <div style={{fontSize:10,fontWeight:700,color:"#ef4444",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Rejection Reason</div>
  <p style={{fontSize:13,color:"#991b1b",margin:0}}>{a.managerComments}</p>
+ </div>
+ )}
+ {a.status==="revision_required"&&a.revisionComments&&(
+ <div style={{background:"#ffedd5",border:"1px solid #fed7aa",borderRadius:12,padding:"12px 14px",marginBottom:12}}>
+ <div style={{fontSize:10,fontWeight:700,color:"#ea580c",marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>⚠️ Action Required - Revision Needed</div>
+ <div style={{background:"#fff",borderRadius:8,padding:"10px 12px",marginBottom:10,border:"1px solid #fdba74"}}>
+ <div style={{fontSize:10,color:"#9a3412",marginBottom:3,fontWeight:600}}>Admin Comments:</div>
+ <p style={{fontSize:13,color:"#7c2d12",margin:0,fontWeight:500}}>{a.revisionComments}</p>
+ </div>
+ {a.revisionHistory&&a.revisionHistory.length>1&&(
+ <details style={{marginTop:8}}>
+ <summary style={{fontSize:11,color:"#9a3412",cursor:"pointer",fontWeight:600}}>View revision history ({a.revisionHistory.length} revisions)</summary>
+ <div style={{marginTop:8,paddingLeft:12,borderLeft:"2px solid #fdba74"}}>
+ {a.revisionHistory.slice(0,-1).reverse().map((r,i)=>(
+ <div key={i} style={{fontSize:11,color:"#7c2d12",marginBottom:6}}>
+ <div style={{fontWeight:600}}>{fmtTs(r.timestamp)}</div>
+ <div>{r.comments}</div>
+ </div>
+ ))}
+ </div>
+ </details>
+ )}
+ <button onClick={()=>window.editAppointment=a.id} style={{width:"100%",padding:"12px",background:"#ea580c",color:"#fff",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer",marginTop:10}}>
+ 📝 Edit & Resubmit
+ </button>
  </div>
  )}
  </div>
@@ -665,7 +705,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  const [statFs,setStatFs]=useState([]);
  function togStat(s){setStatFs(p=>p.includes(s)?p.filter(x=>x!==s):[...p,s]);}
  const rows=useMemo(()=>appointments.filter(a=>{if(searchQ&&!a.supplierName.toLowerCase().includes(searchQ.toLowerCase())&&!a.supplierEmail.toLowerCase().includes(searchQ.toLowerCase())&&!a.id.toLowerCase().includes(searchQ.toLowerCase()))return false;if(statFs.length&&!statFs.includes(a.status))return false;return true;}).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)),[appointments,searchQ,statFs]);
- const sc={pending:"#f59e0b",approved:"#10b981",rejected:"#ef4444"};
+ const sc={pending:"#f59e0b",approved:"#10b981",rejected:"#ef4444",revision_required:"#fb923c"};
  return(
  <div style={{padding:isMobile?16:28}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Admin Panel</h1>
@@ -673,7 +713,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:14,padding:14,marginBottom:14,display:"flex",flexDirection:isMobile?"column":"row",gap:10,alignItems:isMobile?"stretch":"center"}}>
  <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by ID, supplier name or email…" style={{flex:1,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
  <div style={{display:"flex",gap:8}}>
- {["pending","approved","rejected"].map(s=>{const on=statFs.includes(s);return(<button key={s} onClick={()=>togStat(s)} style={{flex:isMobile?1:undefined,padding:"8px 12px",borderRadius:10,border:`1px solid ${on?sc[s]:"rgba(255,255,255,0.15)"}`,background:on?sc[s]:"rgba(255,255,255,0.07)",color:on?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600,cursor:"pointer",textTransform:"capitalize"}}>{s}</button>);})}
+ {["pending","approved","rejected","revision_required"].map(s=>{const on=statFs.includes(s);return(<button key={s} onClick={()=>togStat(s)} style={{flex:isMobile?1:undefined,padding:"8px 12px",borderRadius:10,border:`1px solid ${on?sc[s]:"rgba(255,255,255,0.15)"}`,background:on?sc[s]:"rgba(255,255,255,0.07)",color:on?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600,cursor:"pointer",textTransform:"capitalize"}}>{s==="revision_required"?"Revision":s}</button>);})}
  </div>
  </div>
 
@@ -702,10 +742,10 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  <div style={{display:"flex",gap:8}}>
  <button onClick={()=>onView(a.id)} style={{flex:1,padding:"9px",background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:10,cursor:"pointer",color:"#6b7280",fontSize:13,fontWeight:500}}>👁 View</button>
  {a.status==="pending" && (
+ <>
  <button onClick={()=>onApprove(a)} disabled={!!loading} style={{flex:1,padding:"9px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:600,cursor:"pointer"}}>✓ Approve</button>
- )}
- {a.status==="pending" && (
- <button onClick={()=>onReject(a.id)} disabled={!!loading} style={{flex:1,padding:"9px",background:"#dc2626",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:600,cursor:"pointer"}}>✕ Reject</button>
+ <button onClick={()=>onReject(a.id)} disabled={!!loading} style={{flex:1,padding:"9px",background:"#f59e0b",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:600,cursor:"pointer"}}>↩ Return</button>
+ </>
  )}
  </div>
  </div>
@@ -740,7 +780,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  {a.status==="pending" && (
  <div style={{display:"flex",gap:6}}>
  <button onClick={()=>onApprove(a)} disabled={!!loading} style={{padding:"5px 10px",background:"#059669",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{loading===a.id+"-a"?"…":"✓ Approve"}</button>
- <button onClick={()=>onReject(a.id)} disabled={!!loading} style={{padding:"5px 10px",background:"#dc2626",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{loading===a.id+"-r"?"…":"✕ Reject"}</button>
+ <button onClick={()=>onReject(a.id)} disabled={!!loading} style={{padding:"5px 10px",background:"#f59e0b",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{loading===a.id+"-r"?"…":"↩ Return"}</button>
  </div>
  )}
  </div>
@@ -1494,6 +1534,30 @@ Status: Rejected
 Kind regards,
 BE Warehouse Operations
 Bapco Energies`;}
+ if(type==="revision"){return`Dear ${appt.supplierName},
+
+Your delivery appointment request requires some revisions before we can approve it.
+
+Request Details:
+─────────────────────────────
+Reference ID: ${appt.id}
+Tracking PIN: ${appt.pin}
+Date: ${fmtDate(appt.date)}
+Time: ${appt.time}
+
+Required Changes:
+${extra.reason||"—"}
+
+Action Required:
+Please log in to the tracker using your Tracking PIN and click "Edit & Resubmit" to make the necessary changes. Your appointment ID will remain the same.
+
+If you have questions, contact us at warehouse@bapcoenergies.com or call 17757483.
+
+Status: Revision Required
+
+Kind regards,
+BE Warehouse Operations
+Bapco Energies`;}
  return "";
 }
 
@@ -1522,6 +1586,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  create:{bg:"#eff6ff",color:"#1d4ed8",border:"#bfdbfe",label:"📝 Created",icon:"📝"},
  approve:{bg:"#f0fdf4",color:"#15803d",border:"#bbf7d0",label:"✅ Approved",icon:"✅"},
  reject:{bg:"#fef2f2",color:"#b91c1c",border:"#fecaca",label:"❌ Rejected",icon:"❌"},
+ return_for_revision:{bg:"#fef3c7",color:"#92400e",border:"#fcd34d",label:"↩️ Returned",icon:"↩️"},
  delivery_complete:{bg:"#d1fae5",color:"#065f46",border:"#6ee7b7",label:"✅ Delivered",icon:"✅"},
  delivery_failed:{bg:"#fee2e2",color:"#991b1b",border:"#fca5a5",label:"❌ Failed Delivery",icon:"❌"},
  };
@@ -1552,7 +1617,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  }).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
  },[transactions,searchQ,actionFilter,supplierFilter,dFrom,dTo]);
 
- const counts={create:0,approve:0,reject:0,delivery_complete:0,delivery_failed:0};
+ const counts={create:0,approve:0,reject:0,return_for_revision:0,delivery_complete:0,delivery_failed:0};
  transactions.forEach(t=>{if(counts[t.action]!==undefined)counts[t.action]++;});
 
  function exportCSV(){
@@ -1580,8 +1645,8 @@ function TransactionsHistory({ transactions, isMobile }) {
  </div>
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Full audit log of every action performed in the system</p>
 
- <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(5,1fr)",gap:12,marginBottom:16}}>
- {[{key:"create",label:"Created",color:"#a5b4fc"},{key:"approve",label:"Approved",color:"#6ee7b7"},{key:"reject",label:"Rejected",color:"#fca5a5"},{key:"delivery_complete",label:"Delivered",color:"#86efac"},{key:"delivery_failed",label:"Failed",color:"#f87171"}].map(s=>(
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(6,1fr)",gap:12,marginBottom:16}}>
+ {[{key:"create",label:"Created",color:"#a5b4fc"},{key:"approve",label:"Approved",color:"#6ee7b7"},{key:"reject",label:"Rejected",color:"#fca5a5"},{key:"return_for_revision",label:"Returned",color:"#fcd34d"},{key:"delivery_complete",label:"Delivered",color:"#86efac"},{key:"delivery_failed",label:"Failed",color:"#f87171"}].map(s=>(
  <div key={s.key} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:14,padding:isMobile?12:16}}>
  <div style={{color:s.color,fontSize:isMobile?22:26,fontWeight:800}}>{counts[s.key]}</div>
  <div style={{color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:500,marginTop:2}}>{s.label}</div>
@@ -1597,6 +1662,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  <option value="create">📝 Created</option>
  <option value="approve">✅ Approved</option>
  <option value="reject">❌ Rejected</option>
+ <option value="return_for_revision">↩️ Returned</option>
  <option value="delivery_complete">✅ Delivered</option>
  <option value="delivery_failed">❌ Failed Delivery</option>
  </select>
@@ -1841,6 +1907,7 @@ function App() {
  const [view,setView]=useState("dashboard");
  const [navOpen,setNavOpen]=useState(false);
  const [adminEmail,setAdminEmail]=useState("");
+ const [editingId,setEditingId]=useState(null);
 
  const [appts,setAppts]=useState(()=>{
  try{const s=localStorage.getItem(LS_APPTS);return s?JSON.parse(s):[];}catch{return [];}
@@ -1877,6 +1944,7 @@ function App() {
  submission:`Appointment Request Received – ${appt.id}`,
  approval:`Appointment Approved – ${appt.id}`,
  rejection:`Appointment Status Update – ${appt.id}`,
+ revision:`Action Required – ${appt.id} Needs Revision`,
  };
  const body=buildEmailBody(type, appt, extra);
  const emailDoc={
@@ -1910,6 +1978,33 @@ function App() {
  }
 
  function handleBook(data){
+ // Check if editing existing appointment
+ if(editingId){
+ const existing=appts.find(a=>a.id===editingId);
+ if(!existing)return {id:editingId,pin:existing?.pin||"0000"};
+ const updates={
+ supplierName:data.supplierName,
+ supplierEmail:data.supplierEmail,
+ deliveryTo:data.deliveryTo,
+ date:data.date,
+ time:data.time,
+ totalOrders:Number(data.totalOrders),
+ totalLines:Number(data.totalLines),
+ poNumbers:data.poNumbers||[],
+ offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],
+ storageLocation:data.storageLocation,
+ additionalNotes:data.additionalNotes,
+ status:"pending",
+ revisionComments:null,
+ updatedAt:new Date().toISOString()
+ };
+ setAppts(p=>p.map(a=>a.id===editingId?{...a,...updates}:a));
+ logEmail("submission", {...existing,...updates});
+ logTransaction("create", {...existing,...updates}, {actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:"Resubmitted after revision"});
+ setEditingId(null);
+ return {id:existing.id,pin:existing.pin};
+ }
+ // Create new appointment
  const id=nextAptId(appts, data.deliveryTo);
  const pin=genPin();
  const newAppt={
@@ -1959,6 +2054,18 @@ function App() {
  setRejectId(null);setRejReason("");setLoading(null);
  }
 
+ function handleReturnSubmit(){
+ if(!rejReason.trim())return;
+ const a=appts.find(x=>x.id===rejectId);
+ if(!a)return;
+ const updates={status:"revision_required",revisionComments:rejReason,revisionHistory:[...(a.revisionHistory||[]),{timestamp:new Date().toISOString(),comments:rejReason,requestedBy:adminEmail||ADMIN_EMAIL}],updatedAt:new Date().toISOString()};
+ setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
+ logEmail("revision", a, {reason:rejReason});
+ logTransaction("return_for_revision", a, {actor:"Admin",actorEmail:adminEmail||ADMIN_EMAIL,note:rejReason});
+ showToast("↩️ Returned to supplier for revision");
+ setRejectId(null);setRejReason("");setLoading(null);
+ }
+
  function handleDeliveryComplete(a){
  if(!confirm("✅ Confirm delivery completed for "+a.id+"?"))return;
  const updates={deliveryStatus:"completed",completedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
@@ -1982,8 +2089,22 @@ function App() {
  window.handleDeliveryFailed=handleDeliveryFailed;
  },[]);
 
- if(page==="landing") return <Landing onSupplier={()=>setPage("supplier")} onAdmin={()=>setPage("admin-login")} onTracker={()=>setPage("tracker")}/>;
- if(page==="supplier") return <SupplierForm onSubmit={handleBook} onBack={()=>setPage("landing")} appointments={appts}/>;
+ // Listen for edit button clicks from tracker
+ useEffect(()=>{
+ const interval=setInterval(()=>{
+ if(window.editAppointment){
+ setEditingId(window.editAppointment);
+ setPage("supplier");
+ window.editAppointment=null;
+ }
+ },100);
+ return ()=>clearInterval(interval);
+ },[]);
+
+ const editingAppt=editingId?appts.find(a=>a.id===editingId):null;
+
+ if(page==="landing") return <Landing onSupplier={()=>{setEditingId(null);setPage("supplier");}} onAdmin={()=>setPage("admin-login")} onTracker={()=>setPage("tracker")}/>;
+ if(page==="supplier") return <SupplierForm onSubmit={handleBook} onBack={()=>{setEditingId(null);setPage("landing");}} appointments={appts} editingAppointment={editingAppt}/>;
  if(page==="tracker") return <SupplierTracker appointments={appts} onBack={()=>setPage("landing")}/>;
  if(page==="admin-login") return <AdminLogin onLogin={e=>{setAdminEmail(e);setPage("admin");setView("dashboard");}} onBack={()=>setPage("landing")}/>;
 
@@ -2093,13 +2214,16 @@ function App() {
  {rejectId && (
  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:isMobile?"flex-end":"center",justifyContent:"center",zIndex:40,padding:isMobile?0:16}}>
  <div style={{background:"#fff",borderRadius:isMobile?"24px 24px 0 0":"24px",padding:22,width:"100%",maxWidth:isMobile?"100%":420}}>
- <h3 style={{fontWeight:800,fontSize:18,color:P,margin:"0 0 4px"}}>Reject Appointment</h3>
- <p style={{fontSize:13,color:"#6b7280",margin:"0 0 14px"}}>Supplier will be notified with this reason.</p>
+ <h3 style={{fontWeight:800,fontSize:18,color:P,margin:"0 0 4px"}}>Action Required</h3>
+ <p style={{fontSize:13,color:"#6b7280",margin:"0 0 14px"}}>Supplier will be notified with your comments.</p>
  <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Manager Comments *</label>
- <textarea value={rejReason} onChange={e=>setRejReason(e.target.value)} placeholder="e.g. The requested time slot is fully booked." autoFocus style={{width:"100%",border:"1px solid #e5e7eb",borderRadius:12,padding:12,fontSize:14,resize:"none",height:100,outline:"none",boxSizing:"border-box",background:"#f9fafb"}}/>
- <div style={{display:"flex",gap:10,marginTop:14}}>
- <button onClick={()=>setRejectId(null)} style={{flex:1,padding:12,border:"1px solid #e5e7eb",borderRadius:12,fontSize:14,fontWeight:600,color:"#6b7280",background:"transparent",cursor:"pointer"}}>Cancel</button>
- <button onClick={handleRejectSubmit} disabled={!rejReason.trim()} style={{flex:1,padding:12,background:"#dc2626",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer",opacity:!rejReason.trim()?0.4:1}}>Reject & Notify</button>
+ <textarea value={rejReason} onChange={e=>setRejReason(e.target.value)} placeholder="e.g. Please change delivery time to afternoon slot (after 1 PM)" autoFocus style={{width:"100%",border:"1px solid #e5e7eb",borderRadius:12,padding:12,fontSize:14,resize:"none",height:100,outline:"none",boxSizing:"border-box",background:"#f9fafb"}}/>
+ <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:14}}>
+ <div style={{display:"flex",gap:10}}>
+ <button onClick={handleReturnSubmit} disabled={!rejReason.trim()} style={{flex:1,padding:12,background:"#f59e0b",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer",opacity:!rejReason.trim()?0.4:1}}>↩️ Return for Revision</button>
+ <button onClick={handleRejectSubmit} disabled={!rejReason.trim()} style={{flex:1,padding:12,background:"#dc2626",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer",opacity:!rejReason.trim()?0.4:1}}>❌ Reject</button>
+ </div>
+ <button onClick={()=>setRejectId(null)} style={{width:"100%",padding:12,border:"1px solid #e5e7eb",borderRadius:12,fontSize:14,fontWeight:600,color:"#6b7280",background:"transparent",cursor:"pointer"}}>Cancel</button>
  </div>
  </div>
  </div>
