@@ -37,30 +37,6 @@ const LS_APPTS = "be_wh_appts_v3";
 const LS_EMAILS = "be_wh_emails_v3";
 const LS_CONFIG = "be_wh_config_v3";
 const LS_TRANSACTIONS = "be_wh_transactions_v3";
-const LS_JSONBIN = "be_wh_jsonbin_v1";
-
-// JSONBin sync helpers
-const JSONBIN_BASE = "https://api.jsonbin.io/v3/b";
-async function jbFetch(binId, apiKey){
- try{
- const r=await fetch(`${JSONBIN_BASE}/${binId}/latest`,{headers:{"X-Master-Key":apiKey,"X-Bin-Meta":"false"}});
- if(!r.ok)return null;
- return await r.json();
- }catch{return null;}
-}
-async function jbSave(binId, apiKey, data){
- try{
- await fetch(`${JSONBIN_BASE}/${binId}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":apiKey},body:JSON.stringify(data)});
- }catch(e){console.error("JSONBin save error:",e);}
-}
-async function jbCreate(apiKey, data){
- try{
- const r=await fetch(JSONBIN_BASE,{method:"POST",headers:{"Content-Type":"application/json","X-Master-Key":apiKey,"X-Bin-Name":"BE-Warehouse-Data","X-Collection-Id":""},body:JSON.stringify(data)});
- if(!r.ok)return null;
- const j=await r.json();
- return j.metadata?.id||null;
- }catch{return null;}
-}
 
 const BAHRAIN_HOLIDAYS = {
  "2026-01-01":"New Year's Day",
@@ -1349,11 +1325,10 @@ function EmailLog({ emailLog, isMobile }) {
  );
 }
 
-function SettingsPanel({ config, onChange, isMobile, jbCfg, onJbCfg, jbStatus, onJbSync, onJbCreate }) {
+function SettingsPanel({ config, onChange, isMobile }) {
  function set(k){return e=>onChange(c=>({...c,[k]:e.target.value}));}
  const inp = {width:"100%",border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,background:"#f9fafb",outline:"none",boxSizing:"border-box"};
  const ok = config.serviceId&&config.templateId&&config.publicKey;
- const jbOk = jbCfg?.apiKey&&jbCfg?.binId;
  return(
  <div style={{padding:isMobile?16:28}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Settings</h1>
@@ -1375,55 +1350,6 @@ function SettingsPanel({ config, onChange, isMobile, jbCfg, onJbCfg, jbStatus, o
  ))}
  <div style={{padding:12,borderRadius:12,border:`1px solid ${ok?"#6ee7b7":"#fcd34d"}`,background:ok?"#d1fae5":"#fffbeb",fontSize:13,color:ok?"#065f46":"#92400e"}}>
  {ok ? "✅ EmailJS configured." : "⚠️ Not configured. Fill in all three required fields."}
- </div>
-
- {/* JSONBin Cloud Sync Section */}
- <div style={{marginTop:24,background:"#fff",borderRadius:16,padding:20,boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
- <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
- <span style={{fontSize:20}}>☁️</span>
- <div>
- <div style={{fontWeight:700,fontSize:15,color:"#111827"}}>Cloud Sync — JSONBin.io</div>
- <div style={{fontSize:11,color:"#6b7280"}}>Sync data across all devices automatically</div>
- </div>
- {jbOk&&<span style={{marginLeft:"auto",fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:99,background:jbStatus==="ok"?"#d1fae5":jbStatus==="error"?"#fee2e2":"#fef3c7",color:jbStatus==="ok"?"#065f46":jbStatus==="error"?"#991b1b":"#92400e"}}>{jbStatus==="ok"?"✅ Synced":jbStatus==="error"?"⚠️ Error":"⏳ Syncing"}</span>}
- </div>
-
- <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:10,padding:"10px 12px",marginBottom:14,fontSize:12,color:"#1e40af",lineHeight:1.6}}>
- <strong>Setup (2 minutes):</strong><br/>
- 1. Go to <strong>jsonbin.io</strong> → Sign up free<br/>
- 2. Click <strong>"CREATE BIN"</strong> → copy the <strong>Bin ID</strong><br/>
- 3. Go to <strong>API Keys</strong> → copy your <strong>Master Key</strong><br/>
- 4. Paste both below → click <strong>Save & Sync</strong>
- </div>
-
- {[["Master API Key","apiKey","X-Master-Key from jsonbin.io…"],["Bin ID","binId","e.g. 64f2a1b3dc74654018a..."]].map(([label,key,ph])=>(
- <div key={key} style={{marginBottom:12}}>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{label}</label>
- <input value={jbCfg?.[key]||""} onChange={e=>onJbCfg(p=>({...p,[key]:e.target.value}))} placeholder={ph} type={key==="apiKey"?"password":"text"} style={inp}/>
- </div>
- ))}
-
- <div style={{display:"flex",gap:10,marginTop:14,flexWrap:"wrap"}}>
- {!jbCfg?.binId&&jbCfg?.apiKey&&(
- <button onClick={onJbCreate} style={{flex:1,padding:"11px",background:"#4f46e5",color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>
- ✨ Create New Bin & Save
- </button>
- )}
- {jbOk&&(
- <>
- <button onClick={onJbSync} style={{flex:1,padding:"11px",background:"#059669",color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>
- 🔄 Pull Latest from Cloud
- </button>
- </>
- )}
- {!jbOk&&jbCfg?.apiKey&&jbCfg?.binId&&(
- <button onClick={onJbSync} style={{flex:1,padding:"11px",background:"#4f46e5",color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>
- ☁️ Save & Connect
- </button>
- )}
- </div>
- {jbOk&&<p style={{fontSize:11,color:"#6b7280",marginTop:10,textAlign:"center"}}>Data auto-syncs across all devices every time changes are made.</p>}
- </div>
  </div>
  </div>
  </div>
@@ -1923,17 +1849,17 @@ function TeamLeadPanel({ appointments, isMobile }) {
  const [searchQ,setSearchQ]=useState("");
  const now = new Date();
  const approved = appointments.filter(a=>a.status==="approved"&&(!searchQ||matchesAppt(a,searchQ)));
- 
+
  const completed = approved.filter(a=>a.deliveryStatus==="completed");
  const failed = approved.filter(a=>a.deliveryStatus==="failed");
  const awaiting = approved.filter(a=>a.deliveryStatus==="awaiting_delivery"||!a.deliveryStatus);
- 
+
  // Check if overdue (past date+time but not completed/failed)
  const overdue = awaiting.filter(a=>{
  const aptDateTime = new Date(a.date+"T"+a.time);
  return aptDateTime < now;
  });
- 
+
  const upcoming = awaiting.filter(a=>{
  const aptDateTime = new Date(a.date+"T"+a.time);
  return aptDateTime >= now;
@@ -1943,7 +1869,7 @@ function TeamLeadPanel({ appointments, isMobile }) {
  const bgColor = isOverdue ? "#fef2f2" : a.deliveryStatus==="completed" ? "#f0fdf4" : a.deliveryStatus==="failed" ? "#fff1f2" : "#fefce8";
  const borderColor = isOverdue ? "#fecaca" : a.deliveryStatus==="completed" ? "#bbf7d0" : a.deliveryStatus==="failed" ? "#fecaca" : "#fde68a";
  const icon = isOverdue ? "⚠️" : a.deliveryStatus==="completed" ? "✅" : a.deliveryStatus==="failed" ? "❌" : "📦";
- 
+
  return(
  <div style={{background:bgColor,border:`1px solid ${borderColor}`,borderRadius:14,padding:isMobile?12:16}}>
  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
@@ -2097,42 +2023,12 @@ function App() {
  const [transactions,setTransactions]=useState(()=>{
  try{const s=localStorage.getItem(LS_TRANSACTIONS);return s?JSON.parse(s):[];}catch{return [];}
  });
- const [jbCfg,setJbCfg]=useState(()=>{
- try{const s=localStorage.getItem(LS_JSONBIN);return s?JSON.parse(s):{apiKey:"",binId:""};}catch{return {apiKey:"",binId:""};}
- });
- const [jbStatus,setJbStatus]=useState("idle"); // idle | syncing | ok | error
- const jbSaveTimeout=useRef(null);
-
- // Load from JSONBin on mount if configured
- useEffect(()=>{
- if(!jbCfg.apiKey||!jbCfg.binId)return;
- setJbStatus("syncing");
- jbFetch(jbCfg.binId,jbCfg.apiKey).then(data=>{
- if(!data){setJbStatus("error");return;}
- if(data.appts){setAppts(data.appts);localStorage.setItem(LS_APPTS,JSON.stringify(data.appts));}
- if(data.emailLog){setEmailLog(data.emailLog);localStorage.setItem(LS_EMAILS,JSON.stringify(data.emailLog));}
- if(data.transactions){setTransactions(data.transactions);localStorage.setItem(LS_TRANSACTIONS,JSON.stringify(data.transactions));}
- setJbStatus("ok");
- });
- },[]);
-
- // Auto-save to JSONBin (debounced 2s) when data changes
- useEffect(()=>{
- if(!jbCfg.apiKey||!jbCfg.binId)return;
- if(jbSaveTimeout.current)clearTimeout(jbSaveTimeout.current);
- jbSaveTimeout.current=setTimeout(()=>{
- setJbStatus("syncing");
- jbSave(jbCfg.binId,jbCfg.apiKey,{appts,emailLog,transactions}).then(()=>setJbStatus("ok")).catch(()=>setJbStatus("error"));
- },2000);
- return ()=>{if(jbSaveTimeout.current)clearTimeout(jbSaveTimeout.current);};
- },[appts,emailLog,transactions]);
 
  // === LOCALSTORAGE PERSISTENCE ===
  useEffect(()=>{try{localStorage.setItem(LS_APPTS,JSON.stringify(appts));}catch(e){}},[appts]);
  useEffect(()=>{try{localStorage.setItem(LS_EMAILS,JSON.stringify(emailLog));}catch(e){}},[emailLog]);
  useEffect(()=>{try{localStorage.setItem(LS_CONFIG,JSON.stringify(config));}catch(e){}},[config]);
  useEffect(()=>{try{localStorage.setItem(LS_TRANSACTIONS,JSON.stringify(transactions));}catch(e){}},[transactions]);
- useEffect(()=>{try{localStorage.setItem(LS_JSONBIN,JSON.stringify(jbCfg));}catch(e){}},[jbCfg]);
 
  const [toast,setToast]=useState(null);
  const [rejectId,setRejectId]=useState(null);
@@ -2342,7 +2238,6 @@ function App() {
  </div>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
  {!isMobile && <span style={{color:"rgba(255,255,255,0.5)",fontSize:12}}>{adminEmail}</span>}
- {jbCfg.apiKey&&jbCfg.binId&&<span style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:jbStatus==="ok"?"rgba(16,185,129,0.2)":jbStatus==="error"?"rgba(239,68,68,0.2)":jbStatus==="syncing"?"rgba(200,150,42,0.2)":"rgba(255,255,255,0.1)",color:jbStatus==="ok"?"#6ee7b7":jbStatus==="error"?"#fca5a5":jbStatus==="syncing"?"#fcd34d":"rgba(255,255,255,0.5)",border:`1px solid ${jbStatus==="ok"?"rgba(16,185,129,0.3)":jbStatus==="error"?"rgba(239,68,68,0.3)":"rgba(255,255,255,0.1)"}`}}>{jbStatus==="ok"?"☁️ Synced":jbStatus==="error"?"⚠️ Sync Error":jbStatus==="syncing"?"⏳ Syncing…":"☁️ Cloud"}</span>}
  <button onClick={()=>{setPage("landing");setView("dashboard");setAdminEmail("");sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");}} style={{color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
  </div>
  </header>
@@ -2394,7 +2289,7 @@ function App() {
  {view==="calendar" && <CalendarView appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="emails" && <EmailLog emailLog={orgFilter==="BE"?emailLog:emailLog.filter(e=>(e.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
  {view==="history" && <TransactionsHistory transactions={orgFilter==="BE"?transactions:transactions.filter(t=>(t.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
- {view==="settings" && <SettingsPanel config={config} onChange={setConfig} isMobile={isMobile} jbCfg={jbCfg} onJbCfg={setJbCfg} jbStatus={jbStatus} onJbSync={()=>{if(!jbCfg.apiKey||!jbCfg.binId)return;setJbStatus("syncing");jbFetch(jbCfg.binId,jbCfg.apiKey).then(data=>{if(!data){setJbStatus("error");return;}if(data.appts)setAppts(data.appts);if(data.emailLog)setEmailLog(data.emailLog);if(data.transactions)setTransactions(data.transactions);setJbStatus("ok");});}} onJbCreate={async()=>{if(!jbCfg.apiKey)return;setJbStatus("syncing");const id=await jbCreate(jbCfg.apiKey,{appts,emailLog,transactions});if(id){setJbCfg(p=>({...p,binId:id}));setJbStatus("ok");}else setJbStatus("error");}}/>}
+ {view==="settings" && <SettingsPanel config={config} onChange={setConfig} isMobile={isMobile}/>}
  </div>
  <div style={{borderTop:"1px solid rgba(255,255,255,0.08)",padding:isMobile?"12px 16px":"12px 28px",display:"flex",alignItems:"center",flexWrap:"wrap",gap:isMobile?10:24,justifyContent:"space-between"}}>
  <span style={{color:"rgba(255,255,255,0.3)",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:0.5,flexShrink:0}}>Support</span>
