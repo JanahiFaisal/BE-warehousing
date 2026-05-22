@@ -69,6 +69,23 @@ const addDays = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+n); return
 const toLocs = v => Array.isArray(v) ? v : (v ? [v] : []);
 const todayStr = () => new Date().toISOString().split("T")[0];
 const genPin = () => String(Math.floor(1000 + Math.random() * 9000));
+
+// Universal appointment search — matches any field in the request
+const matchesAppt = (a, q) => {
+ if(!q) return true;
+ const s = q.toLowerCase();
+ return [
+ a.id, a.supplierName, a.supplierEmail, a.deliveryTo,
+ a.date, a.time, String(a.totalOrders||""), String(a.totalLines||""),
+ a.status, a.priority||"", a.additionalNotes||"",
+ a.managerComments||"", a.revisionComments||"",
+ a.emergencyJustification||"", a.failureReason||"",
+ ...(a.poNumbers||[]),
+ ...(Array.isArray(a.storageLocation)?a.storageLocation:[]),
+ ...(Array.isArray(a.offloadingEquipment)?a.offloadingEquipment:[]),
+ fmtDate(a.date)
+ ].some(v => String(v||"").toLowerCase().includes(s));
+};
 const nextAptId = (existing, sbu) => {
  const max = (existing||[]).reduce((m,a) => {
  if (!a.id || !a.id.startsWith(sbu + "-")) return m;
@@ -531,12 +548,7 @@ function SupplierTracker({ appointments, onBack }) {
  function doSearch(){
  const q=query.trim().toLowerCase();
  if(!q)return;
- const found=appointments.filter(a=>
- a.id.toLowerCase()===q||
- a.supplierEmail.toLowerCase()===q||
- a.supplierName.toLowerCase().includes(q)||
- (a.poNumbers||[]).some(p=>p.toLowerCase().includes(q))
- ).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+ const found=appointments.filter(a=>matchesAppt(a,q)).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
  setResults(found);
  setSearched(true);
  setPinInputs({});setPinErrors({});setUnlocked({});
@@ -568,7 +580,7 @@ function SupplierTracker({ appointments, onBack }) {
 
  <div style={{background:"#fff",borderRadius:20,padding:isMobile?16:20,marginBottom:20}}>
  <div style={{display:"flex",flexDirection:isMobile?"column":"row",gap:10}}>
- <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder="e.g. BE-0001 or dispatch@company.com" style={{flex:1,border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,background:"#f9fafb",outline:"none"}}/>
+ <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder="Search by any field — ID, name, email, PO, date, status…" style={{flex:1,border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,background:"#f9fafb",outline:"none"}}/>
  <button onClick={doSearch} style={{padding:"11px 20px",background:P,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer"}}>Search</button>
  </div>
  </div>
@@ -740,7 +752,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  const [statFs,setStatFs]=useState([]);
  const [emergencyOnly,setEmergencyOnly]=useState(false);
  function togStat(s){setStatFs(p=>p.includes(s)?p.filter(x=>x!==s):[...p,s]);}
- const rows=useMemo(()=>appointments.filter(a=>{if(searchQ&&!a.supplierName.toLowerCase().includes(searchQ.toLowerCase())&&!a.supplierEmail.toLowerCase().includes(searchQ.toLowerCase())&&!a.id.toLowerCase().includes(searchQ.toLowerCase()))return false;if(statFs.length&&!statFs.includes(a.status))return false;if(emergencyOnly&&a.priority!=="emergency")return false;return true;}).sort((a,b)=>{if(a.priority==="emergency"&&b.priority!=="emergency")return -1;if(b.priority==="emergency"&&a.priority!=="emergency")return 1;return new Date(b.createdAt)-new Date(a.createdAt);}),[appointments,searchQ,statFs,emergencyOnly]);
+ const rows=useMemo(()=>appointments.filter(a=>{if(searchQ&&!matchesAppt(a,searchQ))return false;if(statFs.length&&!statFs.includes(a.status))return false;if(emergencyOnly&&a.priority!=="emergency")return false;return true;}).sort((a,b)=>{if(a.priority==="emergency"&&b.priority!=="emergency")return -1;if(b.priority==="emergency"&&a.priority!=="emergency")return 1;return new Date(b.createdAt)-new Date(a.createdAt);}),[appointments,searchQ,statFs,emergencyOnly]);
  const emergencyRows=rows.filter(a=>a.priority==="emergency"&&a.status==="pending");
  const standardRows=rows.filter(a=>a.priority!=="emergency"||a.status!=="pending");
  const sc={pending:"#f59e0b",approved:"#10b981",rejected:"#ef4444",revision_required:"#fb923c"};
@@ -749,7 +761,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Admin Panel</h1>
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Review and action delivery appointment requests</p>
  <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:14,padding:14,marginBottom:14,display:"flex",flexDirection:isMobile?"column":"row",gap:10,alignItems:isMobile?"stretch":"center"}}>
- <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by ID, supplier name or email…" style={{flex:1,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
+ <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, name, email, date, PO, status, notes…" style={{flex:1,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
  <button onClick={()=>setEmergencyOnly(p=>!p)} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${emergencyOnly?"#dc2626":"rgba(255,255,255,0.15)"}`,background:emergencyOnly?"#dc2626":"rgba(255,255,255,0.07)",color:emergencyOnly?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,cursor:"pointer"}}>🚨 Emergency</button>
  {["pending","approved","rejected","revision_required"].map(s=>{const on=statFs.includes(s);return(<button key={s} onClick={()=>togStat(s)} style={{flex:isMobile?1:undefined,padding:"8px 12px",borderRadius:10,border:`1px solid ${on?sc[s]:"rgba(255,255,255,0.15)"}`,background:on?sc[s]:"rgba(255,255,255,0.07)",color:on?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600,cursor:"pointer",textTransform:"capitalize"}}>{s==="revision_required"?"Revision":s}</button>);})}
@@ -1180,11 +1192,15 @@ function EmailLog({ emailLog, isMobile }) {
 
  return Object.keys(grouped).filter(aptId => {
  const emails = grouped[aptId];
- return aptId.toLowerCase().includes(q) || 
- emails.some(e => 
- e.subject.toLowerCase().includes(q) || 
- e.recipient.toLowerCase().includes(q)
- );
+ const appt = emails[0]; // use first email's data for appt fields
+ return aptId.toLowerCase().includes(q) ||
+ emails.some(e =>
+ e.subject.toLowerCase().includes(q) ||
+ e.recipient.toLowerCase().includes(q) ||
+ (e.body||"").toLowerCase().includes(q)
+ ) ||
+ (appt.supplierName||"").toLowerCase().includes(q) ||
+ (appt.supplierEmail||"").toLowerCase().includes(q);
  }).sort((a,b) => {
  const aLatest = new Date(grouped[a][0]?.timestamp);
  const bLatest = new Date(grouped[b][0]?.timestamp);
@@ -1216,7 +1232,7 @@ function EmailLog({ emailLog, isMobile }) {
  <div style={{background:"#fff",borderRadius:16,padding:isMobile?12:16}}>
  <input 
  type="text"
- placeholder="Search conversations by ID, email, or subject..."
+ placeholder="Search by any field — ID, supplier, email, subject, body…"
  value={searchQ}
  onChange={e=>setSearchQ(e.target.value)}
  style={{width:"100%",border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:13,outline:"none",background:"#f9fafb"}}
@@ -1679,7 +1695,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  if(emergencyOnly&&!(t.details||"").includes("🚨"))return false;
  if(searchQ){
  const q=searchQ.toLowerCase();
- if(!t.appointmentId.toLowerCase().includes(q)&&!t.actorEmail.toLowerCase().includes(q)&&!t.actor.toLowerCase().includes(q)&&!(t.supplierName||"").toLowerCase().includes(q)&&!(t.details||"").toLowerCase().includes(q))return false;
+ if(![t.appointmentId,t.actorEmail,t.actor,t.supplierName||"",t.deliveryTo||"",t.details||"",t.action,fmtTs(t.timestamp)].some(v=>String(v).toLowerCase().includes(q)))return false;
  }
  return true;
  }).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
@@ -1723,7 +1739,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  </div>
 
  <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:14,padding:14,marginBottom:14,display:"flex",flexDirection:"column",gap:10}}>
- <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by appointment ID, actor, email, or details…" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
+ <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, supplier, actor, action, date, details…" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
  <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
  <select value={actionFilter} onChange={e=>setActionFilter(e.target.value)} style={inpDark}>
  <option value="all">All actions</option>
