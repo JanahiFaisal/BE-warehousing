@@ -1653,6 +1653,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  approve:{bg:"#f0fdf4",color:"#15803d",border:"#bbf7d0",label:"✅ Approved",icon:"✅"},
  reject:{bg:"#fef2f2",color:"#b91c1c",border:"#fecaca",label:"❌ Rejected",icon:"❌"},
  return_for_revision:{bg:"#fef3c7",color:"#92400e",border:"#fcd34d",label:"↩️ Returned",icon:"↩️"},
+ resubmission:{bg:"#f0f9ff",color:"#0369a1",border:"#bae6fd",label:"🔄 Resubmission",icon:"🔄"},
  delivery_complete:{bg:"#d1fae5",color:"#065f46",border:"#6ee7b7",label:"✅ Delivered",icon:"✅"},
  delivery_failed:{bg:"#fee2e2",color:"#991b1b",border:"#fca5a5",label:"❌ Failed Delivery",icon:"❌"},
  };
@@ -1684,7 +1685,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  }).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
  },[transactions,searchQ,actionFilter,supplierFilter,dFrom,dTo,emergencyOnly]);
 
- const counts={create:0,approve:0,reject:0,return_for_revision:0,delivery_complete:0,delivery_failed:0};
+ const counts={create:0,resubmission:0,approve:0,reject:0,return_for_revision:0,delivery_complete:0,delivery_failed:0};
  transactions.forEach(t=>{if(counts[t.action]!==undefined)counts[t.action]++;});
 
  function exportCSV(){
@@ -1712,8 +1713,8 @@ function TransactionsHistory({ transactions, isMobile }) {
  </div>
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Full audit log of every action performed in the system</p>
 
- <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(6,1fr)",gap:12,marginBottom:16}}>
- {[{key:"create",label:"Created",color:"#a5b4fc"},{key:"approve",label:"Approved",color:"#6ee7b7"},{key:"reject",label:"Rejected",color:"#fca5a5"},{key:"return_for_revision",label:"Returned",color:"#fcd34d"},{key:"delivery_complete",label:"Delivered",color:"#86efac"},{key:"delivery_failed",label:"Failed",color:"#f87171"}].map(s=>(
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(7,1fr)",gap:12,marginBottom:16}}>
+ {[{key:"create",label:"Created",color:"#a5b4fc"},{key:"resubmission",label:"Resubmission",color:"#7dd3fc"},{key:"approve",label:"Approved",color:"#6ee7b7"},{key:"reject",label:"Rejected",color:"#fca5a5"},{key:"return_for_revision",label:"Returned",color:"#fcd34d"},{key:"delivery_complete",label:"Delivered",color:"#86efac"},{key:"delivery_failed",label:"Failed",color:"#f87171"}].map(s=>(
  <div key={s.key} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:14,padding:isMobile?12:16}}>
  <div style={{color:s.color,fontSize:isMobile?22:26,fontWeight:800}}>{counts[s.key]}</div>
  <div style={{color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:500,marginTop:2}}>{s.label}</div>
@@ -1727,6 +1728,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  <select value={actionFilter} onChange={e=>setActionFilter(e.target.value)} style={inpDark}>
  <option value="all">All actions</option>
  <option value="create">📝 Created</option>
+ <option value="resubmission">🔄 Resubmission</option>
  <option value="approve">✅ Approved</option>
  <option value="reject">❌ Rejected</option>
  <option value="return_for_revision">↩️ Returned</option>
@@ -2074,7 +2076,7 @@ function App() {
  };
  setAppts(p=>p.map(a=>a.id===editingId?{...a,...updates}:a));
  logEmail("submission", {...existing,...updates});
- logTransaction("create", {...existing,...updates}, {actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:"Resubmitted after revision"});
+ logTransaction("resubmission", {...existing,...updates}, {actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:"🔄 Resubmission after revision"});
  setEditingId(null);
  return {id:existing.id,pin:existing.pin};
  }
