@@ -346,6 +346,40 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,marginBottom:20}}>{editingAppointment?`Revising appointment ${editingAppointment.id} — Make your changes and resubmit.`:"All requests are subject to warehouse approval."}</p>
  <div style={{background:"#fff",borderRadius:20,padding:isMobile?20:28,display:"flex",flexDirection:"column",gap:18}}>
 
+ {/* Priority Selector — TOP OF FORM */}
+ <div>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Delivery Priority *</label>
+ <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+ <button type="button" onClick={()=>{set("isEmergency")(false);set("emergencyJustification")("");set("emergencyDeclared")(false);setDateErr("");}} style={{padding:"14px 12px",borderRadius:12,border:`2px solid ${!f.isEmergency?"#6366f1":"#e5e7eb"}`,background:!f.isEmergency?"#eef2ff":"#f9fafb",cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}>
+ <div style={{fontWeight:700,fontSize:13,color:!f.isEmergency?"#4f46e5":"#6b7280",marginBottom:3}}>📦 Standard</div>
+ <div style={{fontSize:11,color:!f.isEmergency?"#6366f1":"#9ca3af",lineHeight:1.4}}>Normal scheduling process with full review</div>
+ </button>
+ <button type="button" onClick={()=>set("isEmergency")(true)} style={{padding:"14px 12px",borderRadius:12,border:`2px solid ${f.isEmergency?"#dc2626":"#e5e7eb"}`,background:f.isEmergency?"#fff5f5":"#f9fafb",cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}>
+ <div style={{fontWeight:700,fontSize:13,color:f.isEmergency?"#dc2626":"#6b7280",marginBottom:3}}>🚨 Emergency</div>
+ <div style={{fontSize:11,color:f.isEmergency?"#ef4444":"#9ca3af",lineHeight:1.4}}>Urgent — bypasses slots, holidays & dates</div>
+ </button>
+ </div>
+ {f.isEmergency&&(
+ <div style={{marginTop:12,display:"flex",flexDirection:"column",gap:10}}>
+ <div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:10,padding:"10px 12px"}}>
+ <div style={{fontSize:11,fontWeight:700,color:"#dc2626",marginBottom:2}}>⚠️ Emergency Access — All restrictions bypassed. Permanently logged for management review.</div>
+ </div>
+ <div>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#dc2626",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Emergency Justification * <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(min 20 characters)</span></label>
+ <textarea value={f.emergencyJustification} onChange={e=>set("emergencyJustification")(e.target.value)} placeholder="e.g. Compressor unit 3 failure — production at risk. Urgent replacement parts required immediately." style={{...inp,height:80,resize:"none",borderColor:f.emergencyJustification.trim().length>0&&f.emergencyJustification.trim().length<20?"#f87171":"#e5e7eb"}}/>
+ {f.emergencyJustification.trim().length>0&&f.emergencyJustification.trim().length<20&&<p style={{fontSize:11,color:"#dc2626",margin:"4px 0 0"}}>⛔ {20-f.emergencyJustification.trim().length} more characters needed</p>}
+ </div>
+ <label style={{display:"flex",alignItems:"flex-start",gap:10,cursor:"pointer",background:"#fff",border:"1px solid #fecaca",borderRadius:10,padding:"12px 14px"}}>
+ <input type="checkbox" checked={f.emergencyDeclared} onChange={e=>set("emergencyDeclared")(e.target.checked)} style={{marginTop:3,width:16,height:16,accentColor:"#dc2626",flexShrink:0}}/>
+ <div style={{fontSize:12,color:"#374151",lineHeight:1.6}}>
+ <span style={{fontWeight:700,color:"#dc2626"}}>Declaration: </span>
+ I declare that this is a genuine emergency and I understand that misuse is subject to review and consequences per <span style={{fontWeight:700}}>Bapco Energies Warehouse Policy</span>. I accept full responsibility for this declaration.
+ </div>
+ </label>
+ </div>
+ )}
+ </div>
+
  <div>
  <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Supplier / Company Name *</label>
  <input style={inp} value={f.supplierName} onChange={setE("supplierName")} placeholder="e.g. Gulf Trading Co."/>
@@ -474,42 +508,6 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  <div>
  <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Additional Notes</label>
  <textarea style={{...inp,height:80,resize:"none"}} value={f.additionalNotes} onChange={setE("additionalNotes")} placeholder="Special requirements (optional)"/>
- </div>
-
- {/* Emergency Section */}
- <div style={{borderRadius:14,border:`2px solid ${f.isEmergency?"#dc2626":"#e5e7eb"}`,background:f.isEmergency?"#fff5f5":"#f9fafb",padding:16,transition:"all 0.2s"}}>
- <label style={{display:"flex",alignItems:"flex-start",gap:10,cursor:"pointer"}}>
- <input type="checkbox" checked={f.isEmergency} onChange={e=>{set("isEmergency")(e.target.checked);if(!e.target.checked){set("emergencyJustification")("");set("emergencyDeclared")(false);setDateErr("");}}} style={{marginTop:3,width:16,height:16,accentColor:"#dc2626",flexShrink:0}}/>
- <div>
- <div style={{fontWeight:700,fontSize:13,color:f.isEmergency?"#dc2626":"#374151"}}>🚨 This is an Emergency / Urgent Delivery</div>
- <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>Check this only if the delivery cannot follow the standard scheduling process</div>
- </div>
- </label>
-
- {f.isEmergency&&(
- <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:12}}>
- <div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:10,padding:"10px 12px"}}>
- <div style={{fontSize:11,fontWeight:700,color:"#dc2626",marginBottom:4}}>⚠️ Emergency Access Granted — Date, time, holidays and slot limits are bypassed.</div>
- <div style={{fontSize:11,color:"#991b1b"}}>All emergency requests are permanently logged and subject to management review.</div>
- </div>
-
- <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"#dc2626",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Emergency Justification * <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(minimum 20 characters)</span></label>
- <textarea value={f.emergencyJustification} onChange={e=>set("emergencyJustification")(e.target.value)} placeholder="e.g. Compressor unit 3 failure — production at risk. Urgent replacement parts required immediately." style={{...inp,height:90,resize:"none",borderColor:f.emergencyJustification.trim().length>0&&f.emergencyJustification.trim().length<20?"#f87171":"#e5e7eb"}}/>
- {f.emergencyJustification.trim().length>0&&f.emergencyJustification.trim().length<20&&(
- <p style={{fontSize:11,color:"#dc2626",margin:"4px 0 0"}}>⛔ Please provide more detail ({20-f.emergencyJustification.trim().length} more characters needed)</p>
- )}
- </div>
-
- <label style={{display:"flex",alignItems:"flex-start",gap:10,cursor:"pointer",background:"#fff",border:"1px solid #fecaca",borderRadius:10,padding:"12px 14px"}}>
- <input type="checkbox" checked={f.emergencyDeclared} onChange={e=>set("emergencyDeclared")(e.target.checked)} style={{marginTop:3,width:16,height:16,accentColor:"#dc2626",flexShrink:0}}/>
- <div style={{fontSize:12,color:"#374151",lineHeight:1.6}}>
- <span style={{fontWeight:700,color:"#dc2626"}}>Declaration: </span>
- I declare that this is a genuine emergency delivery and I understand that misuse of this feature is subject to review and consequences per <span style={{fontWeight:700}}>Bapco Energies Warehouse Policy</span>. I accept full responsibility for this emergency declaration.
- </div>
- </label>
- </div>
- )}
  </div>
 
  <button disabled={!valid} onClick={()=>{const r=onSubmit({...f});if(r)setResult(r);}} style={{padding:"14px 24px",background:valid?P:"#9ca3af",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:valid?"pointer":"not-allowed",width:"100%"}}>
