@@ -2108,27 +2108,47 @@ function App() {
  });
  const [jbStatus,setJbStatus]=useState("idle"); // idle | syncing | ok | error
  const jbSaveTimeout=useRef(null);
+ const jbPollRef=useRef(null);
+ const isSaving=useRef(false);
 
- // Load from JSONBin on mount if configured
- useEffect(()=>{
+ // Pull latest data from JSONBin
+ function jbPull(){
  if(!jbCfg.apiKey||!jbCfg.binId)return;
- setJbStatus("syncing");
  jbFetch(jbCfg.binId,jbCfg.apiKey).then(data=>{
  if(!data){setJbStatus("error");return;}
  if(data.appts){setAppts(data.appts);localStorage.setItem(LS_APPTS,JSON.stringify(data.appts));}
  if(data.emailLog){setEmailLog(data.emailLog);localStorage.setItem(LS_EMAILS,JSON.stringify(data.emailLog));}
  if(data.transactions){setTransactions(data.transactions);localStorage.setItem(LS_TRANSACTIONS,JSON.stringify(data.transactions));}
  setJbStatus("ok");
- });
+ }).catch(()=>setJbStatus("error"));
+ }
+
+ // Load from JSONBin on mount if configured
+ useEffect(()=>{
+ if(!jbCfg.apiKey||!jbCfg.binId)return;
+ setJbStatus("syncing");
+ jbPull();
  },[]);
+
+ // Auto-poll every 30 seconds to pick up changes from other devices
+ useEffect(()=>{
+ if(!jbCfg.apiKey||!jbCfg.binId)return;
+ jbPollRef.current=setInterval(()=>{
+ if(!isSaving.current)jbPull();
+ },30000);
+ return ()=>clearInterval(jbPollRef.current);
+ },[jbCfg.apiKey,jbCfg.binId]);
 
  // Auto-save to JSONBin (debounced 2s) when data changes
  useEffect(()=>{
  if(!jbCfg.apiKey||!jbCfg.binId)return;
  if(jbSaveTimeout.current)clearTimeout(jbSaveTimeout.current);
+ isSaving.current=true;
  jbSaveTimeout.current=setTimeout(()=>{
  setJbStatus("syncing");
- jbSave(jbCfg.binId,jbCfg.apiKey,{appts,emailLog,transactions}).then(()=>setJbStatus("ok")).catch(()=>setJbStatus("error"));
+ jbSave(jbCfg.binId,jbCfg.apiKey,{appts,emailLog,transactions})
+ .then(()=>{setJbStatus("ok");isSaving.current=false;})
+ .catch(()=>{setJbStatus("error");isSaving.current=false;});
  },2000);
  return ()=>{if(jbSaveTimeout.current)clearTimeout(jbSaveTimeout.current);};
  },[appts,emailLog,transactions]);
@@ -2400,7 +2420,7 @@ function App() {
  {view==="calendar" && <CalendarView appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="emails" && <EmailLog emailLog={orgFilter==="BE"?emailLog:emailLog.filter(e=>(e.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
  {view==="history" && <TransactionsHistory transactions={orgFilter==="BE"?transactions:transactions.filter(t=>(t.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
- {view==="settings" && <SettingsPanel config={config} onChange={setConfig} isMobile={isMobile} jbCfg={jbCfg} onJbCfg={setJbCfg} jbStatus={jbStatus} onJbSync={()=>{if(!jbCfg.apiKey||!jbCfg.binId)return;setJbStatus("syncing");jbFetch(jbCfg.binId,jbCfg.apiKey).then(data=>{if(!data){setJbStatus("error");return;}if(data.appts)setAppts(data.appts);if(data.emailLog)setEmailLog(data.emailLog);if(data.transactions)setTransactions(data.transactions);setJbStatus("ok");});}} onJbCreate={async()=>{if(!jbCfg.apiKey)return;setJbStatus("syncing");const id=await jbCreate(jbCfg.apiKey,{appts,emailLog,transactions});if(id){setJbCfg(p=>({...p,binId:id}));setJbStatus("ok");}else setJbStatus("error");}}/>}
+ {view==="settings" && <SettingsPanel config={config} onChange={setConfig} isMobile={isMobile} jbCfg={jbCfg} onJbCfg={setJbCfg} jbStatus={jbStatus} onJbSync={()=>{if(!jbCfg.apiKey||!jbCfg.binId)return;setJbStatus("syncing");jbPull();}} onJbCreate={async()=>{if(!jbCfg.apiKey)return;setJbStatus("syncing");const id=await jbCreate(jbCfg.apiKey,{appts,emailLog,transactions});if(id){setJbCfg(p=>({...p,binId:id}));setJbStatus("ok");}else setJbStatus("error");}}/>}
  </div>
  <div style={{borderTop:"1px solid rgba(255,255,255,0.08)",padding:isMobile?"12px 16px":"12px 28px",display:"flex",alignItems:"center",flexWrap:"wrap",gap:isMobile?10:24,justifyContent:"space-between"}}>
  <span style={{color:"rgba(255,255,255,0.3)",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:0.5,flexShrink:0}}>Support</span>
