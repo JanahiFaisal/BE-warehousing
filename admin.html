@@ -807,7 +807,8 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  // Apply initial filter from dashboard card click
  useEffect(()=>{
  if(initialFilter){setStatFs([initialFilter]);onFilterUsed&&onFilterUsed();}
- },[initialFilter]);if(searchQ&&!matchesAppt(a,searchQ))return false;if(statFs.length&&!statFs.includes(a.status))return false;if(emergencyOnly&&a.priority!=="emergency")return false;return true;}).sort((a,b)=>{if(a.priority==="emergency"&&b.priority!=="emergency")return -1;if(b.priority==="emergency"&&a.priority!=="emergency")return 1;return new Date(b.createdAt)-new Date(a.createdAt);}),[appointments,searchQ,statFs,emergencyOnly]);
+ },[initialFilter]);
+ const rows=useMemo(()=>appointments.filter(a=>{if(searchQ&&!matchesAppt(a,searchQ))return false;if(statFs.length&&!statFs.includes(a.status))return false;if(emergencyOnly&&a.priority!=="emergency")return false;return true;}).sort((a,b)=>{if(a.priority==="emergency"&&b.priority!=="emergency")return -1;if(b.priority==="emergency"&&a.priority!=="emergency")return 1;return new Date(b.createdAt)-new Date(a.createdAt);}),[appointments,searchQ,statFs,emergencyOnly]);
  const emergencyRows=rows.filter(a=>a.priority==="emergency"&&a.status==="pending");
  const standardRows=rows.filter(a=>a.priority!=="emergency"||a.status!=="pending");
  const sc={pending:"#f59e0b",approved:"#10b981",rejected:"#ef4444",revision_required:"#fb923c"};
@@ -1922,8 +1923,7 @@ function TransactionsHistory({ transactions, isMobile, onDeleteGroup }) {
  <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{transactions.length} total</span>
  <button onClick={exportCSV} disabled={filtered.length===0} style={{padding:"6px 12px",background:A,color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:filtered.length===0?"not-allowed":"pointer",opacity:filtered.length===0?0.5:1}}>⬇ Export CSV</button>
  {!superMode?(
- <button onClick={()=>setSuperErr("")} style={{padding:"6px 12px",background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.3)",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",color:"#fca5a5"}}
- onClickCapture={e=>{e.stopPropagation();const pw=prompt("Enter Super User password:");if(!pw)return;if(isSuperUser(pw)){setSuperMode(true);setSuperErr("");}else setSuperErr("Incorrect password");}}>
+ <button onClick={()=>{const pw=prompt("Enter Super User password:");if(!pw)return;if(isSuperUser(pw)){setSuperMode(true);setSuperErr("");}else setSuperErr("Incorrect password");}} style={{padding:"6px 12px",background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.3)",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",color:"#fca5a5"}}>
  🔐 Super User
  </button>
  ):(
