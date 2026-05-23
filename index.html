@@ -321,12 +321,10 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  function slotCount(slot){if(!f.date)return 0;return(appointments||[]).filter(a=>a.date===f.date&&a.time===slot&&a.status!=="rejected").length;}
 
  const slotFull = f.time && !f.isEmergency && slotCount(f.time)>=2;
- const declared = parseInt(f.totalOrders,10);
  const tagCount = f.poNumbers.length;
- const hasDeclared = f.isEmergency || (f.totalOrders!==""&&!isNaN(declared));
- const mismatch = !f.isEmergency && hasDeclared && declared!==tagCount;
+ const hasDeclared = f.isEmergency || tagCount>0;
  const emergencyValid = !f.isEmergency||(f.emergencyJustification.trim().length>=20&&f.emergencyDeclared);
- const valid = (f.supplierName&&f.supplierEmail&&f.deliveryTo&&f.date&&!dateErr&&f.time&&!slotFull&&hasDeclared&&!mismatch&&(f.isEmergency||tagCount>0)&&(f.isEmergency||f.totalLines)&&f.storageLocation.length>0&&f.needsEquipment!==null&&(!f.needsEquipment||f.offloadingEquipment.length>0)&&emergencyValid);
+ const valid = (f.supplierName&&f.supplierEmail&&f.deliveryTo&&f.date&&!dateErr&&f.time&&!slotFull&&hasDeclared&&(f.isEmergency||tagCount>0)&&(f.isEmergency||f.totalLines)&&f.storageLocation.length>0&&f.needsEquipment!==null&&(!f.needsEquipment||f.offloadingEquipment.length>0)&&emergencyValid);
 
  function handleDate(e){const v=e.target.value;set("date")(v);if(f.isEmergency){setDateErr("");return;}if(v<today)setDateErr("Cannot book a past date.");else if(isWeekend(v))setDateErr("Friday and Saturday are non-working days.");else if(isHoliday(v))setDateErr("🇧🇭 Public holiday — "+holidayName(v)+". Please pick another date.");else setDateErr("");if(f.time&&isSlotPast(f.time,v))set("time")("");}
  function addPO(raw){const v=raw.trim().toUpperCase().replace(/,/g,"");if(!v||f.poNumbers.some(t=>t.toUpperCase()===v)){setPoVal("");return;}set("poNumbers")([...f.poNumbers,v]);setPoVal("");}
@@ -445,21 +443,9 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  </div>
  </div>
 
- <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:14}}>
- <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Total Orders {f.isEmergency?"(optional)":"*"}</label>
- <input type="number" min="1" style={{...inp,borderColor:mismatch?"#f87171":"#e5e7eb"}} value={f.totalOrders} onChange={setE("totalOrders")} placeholder="e.g. 5"/>
- {mismatch && <p style={{fontSize:12,color:"#dc2626",margin:"5px 0 0"}}>⚠ {declared} declared, {tagCount} POs added.</p>}
- </div>
- <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Total Lines {f.isEmergency?"(optional)":"*"}</label>
- <input type="number" min="1" style={inp} value={f.totalLines} onChange={setE("totalLines")} placeholder="e.g. 23"/>
- </div>
- </div>
-
  <div>
  <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>PO Numbers {f.isEmergency?"(optional)":"*"} <span style={{fontWeight:400,textTransform:"none",fontSize:12}}>(press Enter to add)</span></label>
- <div onClick={()=>poRef.current&&poRef.current.focus()} style={{minHeight:52,border:`1px solid ${mismatch?"#f87171":"#e5e7eb"}`,borderRadius:12,padding:"8px 12px",display:"flex",flexWrap:"wrap",gap:6,alignItems:"center",background:"#f9fafb",cursor:"text"}}>
+ <div onClick={()=>poRef.current&&poRef.current.focus()} style={{minHeight:52,border:"1px solid #e5e7eb",borderRadius:12,padding:"8px 12px",display:"flex",flexWrap:"wrap",gap:6,alignItems:"center",background:"#f9fafb",cursor:"text"}}>
  {f.poNumbers.map(t=>(
  <span key={t} style={{display:"flex",alignItems:"center",gap:4,background:"#eef2ff",border:"1px solid #c7d2fe",color:"#3730a3",fontSize:12,fontWeight:700,padding:"5px 9px",borderRadius:8}}>
  #{t}
@@ -468,7 +454,21 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  ))}
  <input ref={poRef} value={poVal} onChange={e=>setPoVal(e.target.value)} onKeyDown={onPoKey} onBlur={()=>addPO(poVal)} placeholder={f.poNumbers.length===0?"Type PO number, press Enter…":"Add another…"} style={{flex:1,minWidth:140,background:"transparent",border:"none",outline:"none",fontSize:13,color:"#374151"}}/>
  </div>
- {tagCount>0&&!mismatch&&hasDeclared && <p style={{fontSize:12,color:"#059669",margin:"5px 0 0"}}>✓ {tagCount} PO{tagCount!==1?"s":""} added — matches Total Orders.</p>}
+ {tagCount>0&&<p style={{fontSize:12,color:"#059669",margin:"5px 0 0"}}>✓ {tagCount} PO{tagCount!==1?"s":""} added — Total Orders set automatically.</p>}
+ </div>
+
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:14}}>
+ <div>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Total Orders</label>
+ <div style={{...inp,background:"#f3f4f6",color:"#6b7280",display:"flex",alignItems:"center",gap:8,cursor:"default"}}>
+ <span style={{fontWeight:700,color:"#374151",fontSize:15}}>{tagCount||"—"}</span>
+ <span style={{fontSize:12,color:"#9ca3af"}}>{tagCount>0?"auto-calculated from PO tags":"add PO numbers above"}</span>
+ </div>
+ </div>
+ <div>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Total Lines {f.isEmergency?"(optional)":"*"}</label>
+ <input type="number" min="1" style={inp} value={f.totalLines} onChange={setE("totalLines")} placeholder="e.g. 23"/>
+ </div>
  </div>
 
  <div>
@@ -814,7 +814,7 @@ function SupplierApp() {
   if(editingId){
    const existing=appts.find(a=>a.id===editingId);
    if(!existing)return {id:editingId,pin:"0000"};
-   const updates={supplierName:data.supplierName,supplierEmail:data.supplierEmail,deliveryTo:data.deliveryTo,date:data.date,time:data.time,totalOrders:Number(data.totalOrders),totalLines:Number(data.totalLines),poNumbers:data.poNumbers||[],offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],storageLocation:data.storageLocation,additionalNotes:data.additionalNotes,status:"pending",revisionComments:null,updatedAt:new Date().toISOString()};
+   const updates={supplierName:data.supplierName,supplierEmail:data.supplierEmail,deliveryTo:data.deliveryTo,date:data.date,time:data.time,totalOrders:(data.poNumbers||[]).length||0,totalLines:Number(data.totalLines),poNumbers:data.poNumbers||[],offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],storageLocation:data.storageLocation,additionalNotes:data.additionalNotes,status:"pending",revisionComments:null,updatedAt:new Date().toISOString()};
    const updated={...existing,...updates};
    const newAppts=appts.map(a=>a.id===editingId?updated:a);
    const emailDoc=logEmail("submission",updated);
@@ -826,7 +826,7 @@ function SupplierApp() {
   }
   const id=nextAptId(appts,data.deliveryTo);
   const pin=genPin();
-  const newAppt={id,pin,supplierName:data.supplierName,supplierEmail:data.supplierEmail,deliveryTo:data.deliveryTo,date:data.date,time:data.time,totalOrders:Number(data.totalOrders),totalLines:Number(data.totalLines),poNumbers:data.poNumbers||[],offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],storageLocation:data.storageLocation,additionalNotes:data.additionalNotes,attachments:data.attachments||[],status:"pending",deliveryStatus:"pending",priority:data.isEmergency?"emergency":"standard",emergencyJustification:data.isEmergency?data.emergencyJustification:"",managerComments:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  const newAppt={id,pin,supplierName:data.supplierName,supplierEmail:data.supplierEmail,deliveryTo:data.deliveryTo,date:data.date,time:data.time,totalOrders:(data.poNumbers||[]).length||0,totalLines:Number(data.totalLines),poNumbers:data.poNumbers||[],offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],storageLocation:data.storageLocation,additionalNotes:data.additionalNotes,attachments:data.attachments||[],status:"pending",deliveryStatus:"pending",priority:data.isEmergency?"emergency":"standard",emergencyJustification:data.isEmergency?data.emergencyJustification:"",managerComments:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
   const newAppts=[newAppt,...appts];
   const emailDoc=logEmail("submission",newAppt);
   const tx=logTransaction("create",newAppt,{actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:data.isEmergency?"🚨 EMERGENCY: "+data.emergencyJustification:"New appointment submitted"});
