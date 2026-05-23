@@ -667,7 +667,8 @@ function SupplierTracker({ appointments, onBack }) {
  <div style={{fontSize:36,marginBottom:10}}>🔐</div>
  <p style={{fontSize:13,color:"#6b7280",margin:0}}>Enter your 4-digit PIN to view appointment details</p>
  </div>
- <div style={{display:"flex",gap:10,maxWidth:300,margin:"0 auto",justifyContent:"center"}}>
+ <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10,margin:"0 auto"}}>
+ <div style={{display:"flex",gap:10,width:"100%",maxWidth:220}}>
  <input
  type="text"
  inputMode="numeric"
@@ -676,11 +677,12 @@ function SupplierTracker({ appointments, onBack }) {
  value={pinInputs[a.id]||""}
  onChange={e=>handlePinInput(a.id,e.target.value)}
  onKeyDown={e=>e.key==="Enter"&&verifyPin(a)}
- style={{flex:1,border:`2px solid ${pinErrors[a.id]?"#f87171":"#d1d5db"}`,borderRadius:12,padding:"13px",fontSize:22,textAlign:"center",outline:"none",letterSpacing:10,fontWeight:800,color:P,background:"#f9fafb"}}
+ style={{flex:1,border:`2px solid ${pinErrors[a.id]?"#f87171":"#d1d5db"}`,borderRadius:12,padding:"11px",fontSize:20,textAlign:"center",outline:"none",letterSpacing:8,fontWeight:800,color:P,background:"#f9fafb",width:"100%"}}
  />
- <button onClick={()=>verifyPin(a)} style={{padding:"13px 18px",background:P,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer",flexShrink:0}}>
+ <button onClick={()=>verifyPin(a)} style={{padding:"11px 16px",background:P,color:"#fff",border:"none",borderRadius:12,fontSize:13,fontWeight:600,cursor:"pointer",flexShrink:0}}>
  Unlock
  </button>
+ </div>
  </div>
  {pinErrors[a.id]&&<p style={{fontSize:12,color:"#dc2626",textAlign:"center",margin:"10px 0 0"}}>⛔ {pinErrors[a.id]}</p>}
  </div>
