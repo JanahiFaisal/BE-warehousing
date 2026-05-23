@@ -33,13 +33,11 @@ const sbuName = code => { const s = SBUS.find(x=>x.code===code); return s?s.name
 const SLOTS = ["07:00","07:30","08:00","08:30","09:30","10:00","10:30","11:00","11:30","12:30","13:00","13:30"];
 const ADMIN_PWD = "Bapco@123456";
 const ADMIN_EMAIL = "janahifaisal2@gmail.com";
-const SUPER_PWD = "BapcoSuper@2026";
 const LS_CREDS = "be_wh_creds_v1";
 function getAdminCreds(){
  try{const s=localStorage.getItem(LS_CREDS);return s?JSON.parse(s):{password:ADMIN_PWD,nickname:"Admin"};}
  catch{return {password:ADMIN_PWD,nickname:"Admin"};}
 }
-function isSuperUser(pwd){ return pwd===(getAdminCreds().superPwd||SUPER_PWD); }
 const LS_APPTS = "be_wh_appts_v3";
 const LS_EMAILS = "be_wh_emails_v3";
 const LS_CONFIG = "be_wh_config_v3";
@@ -1828,7 +1826,7 @@ function OrgFilter({ value, onChange, isMobile }) {
  );
 }
 
-function TransactionsHistory({ transactions, isMobile, onDeleteGroup }) {
+function TransactionsHistory({ transactions, isMobile }) {
  const [searchQ,setSearchQ]=useState("");
  const [actionFilter,setActionFilter]=useState("all");
  const [supplierFilter,setSupplierFilter]=useState("");
@@ -1836,9 +1834,6 @@ function TransactionsHistory({ transactions, isMobile, onDeleteGroup }) {
  const [dFrom,setDFrom]=useState("");
  const [dTo,setDTo]=useState("");
  const [emergencyOnly,setEmergencyOnly]=useState(false);
- const [superMode,setSuperMode]=useState(false);
- const [superPwdInput,setSuperPwdInput]=useState("");
- const [superErr,setSuperErr]=useState("");
 
  const actionCfg={
  create:{bg:"#eff6ff",color:"#1d4ed8",border:"#bfdbfe",label:"📝 Created",icon:"📝"},
@@ -1922,17 +1917,8 @@ function TransactionsHistory({ transactions, isMobile, onDeleteGroup }) {
  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
  <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{transactions.length} total</span>
  <button onClick={exportCSV} disabled={filtered.length===0} style={{padding:"6px 12px",background:A,color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:filtered.length===0?"not-allowed":"pointer",opacity:filtered.length===0?0.5:1}}>⬇ Export CSV</button>
- {!superMode?(
- <button onClick={()=>{const pw=prompt("Enter Super User password:");if(!pw)return;if(isSuperUser(pw)){setSuperMode(true);setSuperErr("");}else setSuperErr("Incorrect password");}} style={{padding:"6px 12px",background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.3)",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",color:"#fca5a5"}}>
- 🔐 Super User
- </button>
- ):(
- <button onClick={()=>setSuperMode(false)} style={{padding:"6px 12px",background:"#dc2626",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",color:"#fff"}}>🔐 Exit Super Mode</button>
- )}
  </div>
  </div>
- {superErr&&<p style={{color:"#fca5a5",fontSize:12,margin:"0 0 8px"}}>⛔ {superErr}</p>}
- {superMode&&<div style={{background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.3)",borderRadius:10,padding:"8px 14px",marginBottom:12,fontSize:12,color:"#fca5a5"}}>🔐 Super User Mode — Delete buttons are now visible. Click ❌ on any group to delete its transactions.</div>}
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Full audit log — grouped by appointment</p>
 
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(7,1fr)",gap:12,marginBottom:16}}>
@@ -1986,7 +1972,7 @@ function TransactionsHistory({ transactions, isMobile, onDeleteGroup }) {
  const lastCfg=lastActionCfg(txList);
  const isEmergency=txList.some(t=>(t.details||"").includes("🚨"));
  return(
- <div key={aptId} style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${isEmergency?"rgba(220,38,38,0.4)":"rgba(255,255,255,0.1)"}`,borderRadius:16,overflow:"hidden",position:"relative"}}>
+ <div key={aptId} style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${isEmergency?"rgba(220,38,38,0.4)":"rgba(255,255,255,0.1)"}`,borderRadius:16,overflow:"hidden"}}>
  {/* Parent Card Header — clickable */}
  <button onClick={()=>toggleGroup(aptId)} style={{width:"100%",padding:isMobile?"12px 14px":"14px 18px",display:"flex",alignItems:"center",gap:12,background:"transparent",border:"none",cursor:"pointer",textAlign:"left"}}>
  <div style={{flex:1,minWidth:0}}>
@@ -2005,9 +1991,6 @@ function TransactionsHistory({ transactions, isMobile, onDeleteGroup }) {
  </div>
  <span style={{color:"rgba(255,255,255,0.4)",fontSize:18,flexShrink:0,transition:"transform 0.2s",display:"inline-block",transform:isOpen?"rotate(180deg)":"rotate(0deg)"}}>▾</span>
  </button>
- {superMode&&(
- <button onClick={e=>{e.stopPropagation();if(window.confirm(`Delete all ${txList.length} transactions for ${aptId}?`)){onDeleteGroup(aptId);}}} style={{position:"absolute",top:12,right:44,background:"#dc2626",color:"#fff",border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",zIndex:2}}>❌ Delete</button>
- )}
 
  {/* Timeline — shown when open */}
  {isOpen&&(
@@ -2547,7 +2530,7 @@ function App() {
  {view==="statistics" && <StatisticsPanel appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="calendar" && <CalendarView appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="emails" && <EmailLog emailLog={orgFilter==="BE"?emailLog:emailLog.filter(e=>(e.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
- {view==="history" && <TransactionsHistory transactions={orgFilter==="BE"?transactions:transactions.filter(t=>(t.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile} onDeleteGroup={aptId=>{setTransactions(p=>p.filter(t=>t.appointmentId!==aptId));showToast("🗑️ Transactions deleted for "+aptId);}}/>}
+ {view==="history" && <TransactionsHistory transactions={orgFilter==="BE"?transactions:transactions.filter(t=>(t.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
  {view==="settings" && <SettingsPanel config={config} onChange={setConfig} isMobile={isMobile} jbCfg={jbCfg} onJbCfg={setJbCfg} jbStatus={jbStatus} onJbSync={()=>{if(!jbCfg.apiKey||!jbCfg.binId)return;setJbStatus("syncing");jbPull();}} onJbCreate={async()=>{if(!jbCfg.apiKey)return;setJbStatus("syncing");const id=await jbCreate(jbCfg.apiKey,{appts,emailLog,transactions});if(id){setJbCfg(p=>({...p,binId:id}));setJbStatus("ok");}else setJbStatus("error");}}/>}
  </div>
  <div style={{borderTop:"1px solid rgba(255,255,255,0.08)",padding:isMobile?"12px 16px":"12px 28px",display:"flex",alignItems:"center",flexWrap:"wrap",gap:isMobile?10:24,justifyContent:"space-between"}}>
