@@ -2398,24 +2398,28 @@ function App() {
  if(!rejReason.trim())return;
  const a=appts.find(x=>x.id===rejectId);
  if(!a)return;
+ setConfirmDlg({msg:`Reject ${a.id}?`,sub:`"${rejReason.trim()}"`,label:"❌ Reject",color:"#dc2626",onConfirm:()=>{
  const updates={status:"rejected",managerComments:rejReason,updatedAt:new Date().toISOString()};
  setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  logEmail("rejection", a, {reason:rejReason});
  logTransaction("reject", a, {actor:getAdminCreds().nickname||"Admin",actorEmail:adminEmail||ADMIN_EMAIL,note:rejReason});
  showToast("Appointment rejected");
- setRejectId(null);setRejReason("");setLoading(null);
+ setRejectId(null);setRejReason("");setLoading(null);setConfirmDlg(null);
+ }});
  }
 
  function handleReturnSubmit(){
  if(!rejReason.trim())return;
  const a=appts.find(x=>x.id===rejectId);
  if(!a)return;
+ setConfirmDlg({msg:`Return ${a.id} for Revision?`,sub:`"${rejReason.trim()}"`,label:"↩️ Return",color:"#f59e0b",onConfirm:()=>{
  const updates={status:"revision_required",revisionComments:rejReason,revisionHistory:[...(a.revisionHistory||[]),{timestamp:new Date().toISOString(),comments:rejReason,requestedBy:`${getAdminCreds().nickname||"Admin"} (${adminEmail||ADMIN_EMAIL})`}],updatedAt:new Date().toISOString()};
  setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  logEmail("revision", a, {reason:rejReason});
  logTransaction("return_for_revision", a, {actor:getAdminCreds().nickname||"Admin",actorEmail:adminEmail||ADMIN_EMAIL,note:rejReason});
  showToast("↩️ Returned to supplier for revision");
- setRejectId(null);setRejReason("");setLoading(null);
+ setRejectId(null);setRejReason("");setLoading(null);setConfirmDlg(null);
+ }});
  }
 
  function handleDeliveryComplete(a){
