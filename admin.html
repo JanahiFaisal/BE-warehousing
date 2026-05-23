@@ -3,7 +3,7 @@
 <head>
  <meta charset="UTF-8"/>
  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
- <title>BE Warehouse — Admin Portal</title>
+ <title>BE Warehouse Appointments</title>
  <style>
  *{box-sizing:border-box;margin:0;padding:0;}
  body{font-family:system-ui,-apple-system,sans-serif;}
@@ -33,11 +33,13 @@ const sbuName = code => { const s = SBUS.find(x=>x.code===code); return s?s.name
 const SLOTS = ["07:00","07:30","08:00","08:30","09:30","10:00","10:30","11:00","11:30","12:30","13:00","13:30"];
 const ADMIN_PWD = "Bapco@123456";
 const ADMIN_EMAIL = "janahifaisal2@gmail.com";
+const SUPER_PWD = "BapcoSuper@2026";
 const LS_CREDS = "be_wh_creds_v1";
 function getAdminCreds(){
  try{const s=localStorage.getItem(LS_CREDS);return s?JSON.parse(s):{password:ADMIN_PWD,nickname:"Admin"};}
  catch{return {password:ADMIN_PWD,nickname:"Admin"};}
 }
+function isSuperUser(pwd){ return pwd===(getAdminCreds().superPwd||SUPER_PWD); }
 const LS_APPTS = "be_wh_appts_v3";
 const LS_EMAILS = "be_wh_emails_v3";
 const LS_CONFIG = "be_wh_config_v3";
@@ -137,6 +139,22 @@ function useWindowSize() {
 
 function Logo({ large }) {
  return null;
+}
+
+function ConfirmModal({ msg, sub, confirmLabel="Confirm", confirmColor="#059669", onConfirm, onCancel }){
+ return(
+ <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:99,padding:16}}>
+ <div style={{background:"#fff",borderRadius:20,padding:24,width:"100%",maxWidth:380,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+ <div style={{fontSize:32,textAlign:"center",marginBottom:12}}>⚠️</div>
+ <h3 style={{fontWeight:800,fontSize:17,color:"#111827",margin:"0 0 6px",textAlign:"center"}}>{msg}</h3>
+ {sub&&<p style={{fontSize:13,color:"#6b7280",margin:"0 0 20px",textAlign:"center",lineHeight:1.5}}>{sub}</p>}
+ <div style={{display:"flex",gap:10,marginTop:20}}>
+ <button onClick={onCancel} style={{flex:1,padding:"11px",border:"1px solid #e5e7eb",borderRadius:12,fontSize:14,fontWeight:600,color:"#6b7280",background:"transparent",cursor:"pointer"}}>Cancel</button>
+ <button onClick={onConfirm} style={{flex:1,padding:"11px",background:confirmColor,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:700,cursor:"pointer"}}>{confirmLabel}</button>
+ </div>
+ </div>
+ </div>
+ );
 }
 
 function StatusBadge({ status }) {
@@ -338,12 +356,10 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  function slotCount(slot){if(!f.date)return 0;return(appointments||[]).filter(a=>a.date===f.date&&a.time===slot&&a.status!=="rejected").length;}
 
  const slotFull = f.time && !f.isEmergency && slotCount(f.time)>=2;
- const declared = parseInt(f.totalOrders,10);
  const tagCount = f.poNumbers.length;
- const hasDeclared = f.isEmergency || (f.totalOrders!==""&&!isNaN(declared));
- const mismatch = !f.isEmergency && hasDeclared && declared!==tagCount;
+ const hasDeclared = f.isEmergency || tagCount>0;
  const emergencyValid = !f.isEmergency||(f.emergencyJustification.trim().length>=20&&f.emergencyDeclared);
- const valid = (f.supplierName&&f.supplierEmail&&f.deliveryTo&&f.date&&!dateErr&&f.time&&!slotFull&&hasDeclared&&!mismatch&&(f.isEmergency||tagCount>0)&&(f.isEmergency||f.totalLines)&&f.storageLocation.length>0&&f.needsEquipment!==null&&(!f.needsEquipment||f.offloadingEquipment.length>0)&&emergencyValid);
+ const valid = (f.supplierName&&f.supplierEmail&&f.deliveryTo&&f.date&&!dateErr&&f.time&&!slotFull&&hasDeclared&&(f.isEmergency||f.totalLines)&&f.storageLocation.length>0&&f.needsEquipment!==null&&(!f.needsEquipment||f.offloadingEquipment.length>0)&&emergencyValid);
 
  function handleDate(e){const v=e.target.value;set("date")(v);if(f.isEmergency){setDateErr("");return;}if(v<today)setDateErr("Cannot book a past date.");else if(isWeekend(v))setDateErr("Friday and Saturday are non-working days.");else if(isHoliday(v))setDateErr("🇧🇭 Public holiday — "+holidayName(v)+". Please pick another date.");else setDateErr("");if(f.time&&isSlotPast(f.time,v))set("time")("");}
  function addPO(raw){const v=raw.trim().toUpperCase().replace(/,/g,"");if(!v||f.poNumbers.some(t=>t.toUpperCase()===v)){setPoVal("");return;}set("poNumbers")([...f.poNumbers,v]);setPoVal("");}
@@ -462,21 +478,9 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  </div>
  </div>
 
- <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:14}}>
- <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Total Orders {f.isEmergency?"(optional)":"*"}</label>
- <input type="number" min="1" style={{...inp,borderColor:mismatch?"#f87171":"#e5e7eb"}} value={f.totalOrders} onChange={setE("totalOrders")} placeholder="e.g. 5"/>
- {mismatch && <p style={{fontSize:12,color:"#dc2626",margin:"5px 0 0"}}>⚠ {declared} declared, {tagCount} POs added.</p>}
- </div>
- <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Total Lines {f.isEmergency?"(optional)":"*"}</label>
- <input type="number" min="1" style={inp} value={f.totalLines} onChange={setE("totalLines")} placeholder="e.g. 23"/>
- </div>
- </div>
-
  <div>
  <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>PO Numbers {f.isEmergency?"(optional)":"*"} <span style={{fontWeight:400,textTransform:"none",fontSize:12}}>(press Enter to add)</span></label>
- <div onClick={()=>poRef.current&&poRef.current.focus()} style={{minHeight:52,border:`1px solid ${mismatch?"#f87171":"#e5e7eb"}`,borderRadius:12,padding:"8px 12px",display:"flex",flexWrap:"wrap",gap:6,alignItems:"center",background:"#f9fafb",cursor:"text"}}>
+ <div onClick={()=>poRef.current&&poRef.current.focus()} style={{minHeight:52,border:"1px solid #e5e7eb",borderRadius:12,padding:"8px 12px",display:"flex",flexWrap:"wrap",gap:6,alignItems:"center",background:"#f9fafb",cursor:"text"}}>
  {f.poNumbers.map(t=>(
  <span key={t} style={{display:"flex",alignItems:"center",gap:4,background:"#eef2ff",border:"1px solid #c7d2fe",color:"#3730a3",fontSize:12,fontWeight:700,padding:"5px 9px",borderRadius:8}}>
  #{t}
@@ -485,7 +489,21 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  ))}
  <input ref={poRef} value={poVal} onChange={e=>setPoVal(e.target.value)} onKeyDown={onPoKey} onBlur={()=>addPO(poVal)} placeholder={f.poNumbers.length===0?"Type PO number, press Enter…":"Add another…"} style={{flex:1,minWidth:140,background:"transparent",border:"none",outline:"none",fontSize:13,color:"#374151"}}/>
  </div>
- {tagCount>0&&!mismatch&&hasDeclared && <p style={{fontSize:12,color:"#059669",margin:"5px 0 0"}}>✓ {tagCount} PO{tagCount!==1?"s":""} added — matches Total Orders.</p>}
+ {tagCount>0&&<p style={{fontSize:12,color:"#059669",margin:"5px 0 0"}}>✓ {tagCount} PO{tagCount!==1?"s":""} added — Total Orders set automatically.</p>}
+ </div>
+
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:14}}>
+ <div>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Total Orders</label>
+ <div style={{...inp,background:"#f3f4f6",color:"#6b7280",display:"flex",alignItems:"center",gap:8,cursor:"default"}}>
+ <span style={{fontWeight:700,color:"#374151",fontSize:15}}>{tagCount||"—"}</span>
+ <span style={{fontSize:12,color:"#9ca3af"}}>{tagCount>0?"auto-calculated from PO tags":"add PO numbers above"}</span>
+ </div>
+ </div>
+ <div>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Total Lines {f.isEmergency?"(optional)":"*"}</label>
+ <input type="number" min="1" style={inp} value={f.totalLines} onChange={setE("totalLines")} placeholder="e.g. 23"/>
+ </div>
  </div>
 
  <div>
@@ -739,7 +757,7 @@ function SupplierTracker({ appointments, onBack }) {
  );
 }
 
-function Dashboard({ appointments, setView, isMobile }) {
+function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
  const [searchQ,setSearchQ]=useState("");
  const filtered=searchQ?appointments.filter(a=>matchesAppt(a,searchQ)):[...appointments].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6);
  const counts={pending:appointments.filter(a=>a.status==="pending").length,approved:appointments.filter(a=>a.status==="approved").length,rejected:appointments.filter(a=>a.status==="rejected").length};
@@ -750,10 +768,11 @@ function Dashboard({ appointments, setView, isMobile }) {
  <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, name, email, date, PO, status, notes…" style={{width:"100%",marginBottom:16,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr",gap:12,marginBottom:20}}>
  {[{label:"Pending",key:"pending",bg:"rgba(245,158,11,0.15)",bd:"rgba(245,158,11,0.3)",color:"#fcd34d"},{label:"Approved",key:"approved",bg:"rgba(16,185,129,0.15)",bd:"rgba(16,185,129,0.3)",color:"#6ee7b7"},{label:"Rejected",key:"rejected",bg:"rgba(239,68,68,0.15)",bd:"rgba(239,68,68,0.3)",color:"#fca5a5"}].map(({label,key,bg,bd,color})=>(
- <div key={key} style={{background:bg,border:`1px solid ${bd}`,borderRadius:14,padding:isMobile?14:20}}>
+ <button key={key} onClick={()=>{setAdminFilter(key);setView("admin");}} style={{background:bg,border:`1px solid ${bd}`,borderRadius:14,padding:isMobile?14:20,textAlign:"left",cursor:"pointer",transition:"transform 0.1s"}}>
  <div style={{color,fontSize:isMobile?26:32,fontWeight:800}}>{counts[key]}</div>
  <div style={{color:"rgba(255,255,255,0.65)",fontSize:12,fontWeight:500,marginTop:2}}>{label}</div>
- </div>
+ <div style={{color:"rgba(255,255,255,0.3)",fontSize:10,marginTop:4}}>Click to view →</div>
+ </button>
  ))}
  </div>
  <div style={{background:"rgba(255,255,255,0.08)",borderRadius:16,border:"1px solid rgba(255,255,255,0.12)"}}>
@@ -779,12 +798,16 @@ function Dashboard({ appointments, setView, isMobile }) {
  );
 }
 
-function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobile }) {
+function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobile, initialFilter, onFilterUsed }) {
  const [searchQ,setSearchQ]=useState("");
  const [statFs,setStatFs]=useState([]);
  const [emergencyOnly,setEmergencyOnly]=useState(false);
  function togStat(s){setStatFs(p=>p.includes(s)?p.filter(x=>x!==s):[...p,s]);}
- const rows=useMemo(()=>appointments.filter(a=>{if(searchQ&&!matchesAppt(a,searchQ))return false;if(statFs.length&&!statFs.includes(a.status))return false;if(emergencyOnly&&a.priority!=="emergency")return false;return true;}).sort((a,b)=>{if(a.priority==="emergency"&&b.priority!=="emergency")return -1;if(b.priority==="emergency"&&a.priority!=="emergency")return 1;return new Date(b.createdAt)-new Date(a.createdAt);}),[appointments,searchQ,statFs,emergencyOnly]);
+
+ // Apply initial filter from dashboard card click
+ useEffect(()=>{
+ if(initialFilter){setStatFs([initialFilter]);onFilterUsed&&onFilterUsed();}
+ },[initialFilter]);if(searchQ&&!matchesAppt(a,searchQ))return false;if(statFs.length&&!statFs.includes(a.status))return false;if(emergencyOnly&&a.priority!=="emergency")return false;return true;}).sort((a,b)=>{if(a.priority==="emergency"&&b.priority!=="emergency")return -1;if(b.priority==="emergency"&&a.priority!=="emergency")return 1;return new Date(b.createdAt)-new Date(a.createdAt);}),[appointments,searchQ,statFs,emergencyOnly]);
  const emergencyRows=rows.filter(a=>a.priority==="emergency"&&a.status==="pending");
  const standardRows=rows.filter(a=>a.priority!=="emergency"||a.status!=="pending");
  const sc={pending:"#f59e0b",approved:"#10b981",rejected:"#ef4444",revision_required:"#fb923c"};
@@ -1804,7 +1827,7 @@ function OrgFilter({ value, onChange, isMobile }) {
  );
 }
 
-function TransactionsHistory({ transactions, isMobile }) {
+function TransactionsHistory({ transactions, isMobile, onDeleteGroup }) {
  const [searchQ,setSearchQ]=useState("");
  const [actionFilter,setActionFilter]=useState("all");
  const [supplierFilter,setSupplierFilter]=useState("");
@@ -1812,6 +1835,9 @@ function TransactionsHistory({ transactions, isMobile }) {
  const [dFrom,setDFrom]=useState("");
  const [dTo,setDTo]=useState("");
  const [emergencyOnly,setEmergencyOnly]=useState(false);
+ const [superMode,setSuperMode]=useState(false);
+ const [superPwdInput,setSuperPwdInput]=useState("");
+ const [superErr,setSuperErr]=useState("");
 
  const actionCfg={
  create:{bg:"#eff6ff",color:"#1d4ed8",border:"#bfdbfe",label:"📝 Created",icon:"📝"},
@@ -1895,8 +1921,18 @@ function TransactionsHistory({ transactions, isMobile }) {
  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
  <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{transactions.length} total</span>
  <button onClick={exportCSV} disabled={filtered.length===0} style={{padding:"6px 12px",background:A,color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:filtered.length===0?"not-allowed":"pointer",opacity:filtered.length===0?0.5:1}}>⬇ Export CSV</button>
+ {!superMode?(
+ <button onClick={()=>setSuperErr("")} style={{padding:"6px 12px",background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.3)",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",color:"#fca5a5"}}
+ onClickCapture={e=>{e.stopPropagation();const pw=prompt("Enter Super User password:");if(!pw)return;if(isSuperUser(pw)){setSuperMode(true);setSuperErr("");}else setSuperErr("Incorrect password");}}>
+ 🔐 Super User
+ </button>
+ ):(
+ <button onClick={()=>setSuperMode(false)} style={{padding:"6px 12px",background:"#dc2626",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:"pointer",color:"#fff"}}>🔐 Exit Super Mode</button>
+ )}
  </div>
  </div>
+ {superErr&&<p style={{color:"#fca5a5",fontSize:12,margin:"0 0 8px"}}>⛔ {superErr}</p>}
+ {superMode&&<div style={{background:"rgba(220,38,38,0.15)",border:"1px solid rgba(220,38,38,0.3)",borderRadius:10,padding:"8px 14px",marginBottom:12,fontSize:12,color:"#fca5a5"}}>🔐 Super User Mode — Delete buttons are now visible. Click ❌ on any group to delete its transactions.</div>}
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Full audit log — grouped by appointment</p>
 
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(7,1fr)",gap:12,marginBottom:16}}>
@@ -1950,7 +1986,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  const lastCfg=lastActionCfg(txList);
  const isEmergency=txList.some(t=>(t.details||"").includes("🚨"));
  return(
- <div key={aptId} style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${isEmergency?"rgba(220,38,38,0.4)":"rgba(255,255,255,0.1)"}`,borderRadius:16,overflow:"hidden"}}>
+ <div key={aptId} style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${isEmergency?"rgba(220,38,38,0.4)":"rgba(255,255,255,0.1)"}`,borderRadius:16,overflow:"hidden",position:"relative"}}>
  {/* Parent Card Header — clickable */}
  <button onClick={()=>toggleGroup(aptId)} style={{width:"100%",padding:isMobile?"12px 14px":"14px 18px",display:"flex",alignItems:"center",gap:12,background:"transparent",border:"none",cursor:"pointer",textAlign:"left"}}>
  <div style={{flex:1,minWidth:0}}>
@@ -1969,6 +2005,9 @@ function TransactionsHistory({ transactions, isMobile }) {
  </div>
  <span style={{color:"rgba(255,255,255,0.4)",fontSize:18,flexShrink:0,transition:"transform 0.2s",display:"inline-block",transform:isOpen?"rotate(180deg)":"rotate(0deg)"}}>▾</span>
  </button>
+ {superMode&&(
+ <button onClick={e=>{e.stopPropagation();if(window.confirm(`Delete all ${txList.length} transactions for ${aptId}?`)){onDeleteGroup(aptId);}}} style={{position:"absolute",top:12,right:44,background:"#dc2626",color:"#fff",border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer",zIndex:2}}>❌ Delete</button>
+ )}
 
  {/* Timeline — shown when open */}
  {isOpen&&(
@@ -2162,11 +2201,13 @@ function TeamLeadPanel({ appointments, isMobile }) {
 
 function App() {
  const { isMobile, isTablet } = useWindowSize();
- const [page,setPage]=useState(()=>sessionStorage.getItem("be_page")||"admin-login");
+ const [page,setPage]=useState(()=>sessionStorage.getItem("be_page")||"landing");
  const [view,setView]=useState(()=>sessionStorage.getItem("be_view")||"dashboard");
  const [navOpen,setNavOpen]=useState(false);
  const [adminEmail,setAdminEmail]=useState(()=>sessionStorage.getItem("be_admin_email")||"");
  const [editingId,setEditingId]=useState(null);
+ const [confirm,setConfirm]=useState(null);
+ const [adminFilter,setAdminFilter]=useState(null); // {msg,sub,label,color,onConfirm}
 
  // Persist session state across reloads
  useEffect(()=>{sessionStorage.setItem("be_page",page);},[page]);
@@ -2302,7 +2343,7 @@ function App() {
  deliveryTo:data.deliveryTo,
  date:data.date,
  time:data.time,
- totalOrders:Number(data.totalOrders),
+ totalOrders:(data.poNumbers||[]).length||Number(data.totalOrders)||0,
  totalLines:Number(data.totalLines),
  poNumbers:data.poNumbers||[],
  offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],
@@ -2328,7 +2369,7 @@ function App() {
  deliveryTo:data.deliveryTo,
  date:data.date,
  time:data.time,
- totalOrders:Number(data.totalOrders),
+ totalOrders:(data.poNumbers||[]).length||Number(data.totalOrders)||0,
  totalLines:Number(data.totalLines),
  poNumbers:data.poNumbers||[],
  offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],
@@ -2350,12 +2391,15 @@ function App() {
  }
 
  function handleApprove(a){
+ setConfirm({msg:`Approve ${a.id}?`,sub:`${a.supplierName} — ${fmtDate(a.date)} ${a.time}`,label:"✓ Approve",color:"#059669",onConfirm:()=>{
  const updates={status:"approved",deliveryStatus:"awaiting_delivery",updatedAt:new Date().toISOString()};
  setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  logEmail("approval", a);
  logTransaction("approve", a, {actor:getAdminCreds().nickname||"Admin",actorEmail:adminEmail||ADMIN_EMAIL,note:"Appointment approved"});
  showToast("✅ Appointment approved");
- setLoading(null);
+ setLoading(null);setConfirm(null);
+ }});
+ }
  }
 
  function handleRejectSubmit(){
@@ -2383,20 +2427,23 @@ function App() {
  }
 
  function handleDeliveryComplete(a){
- if(!confirm("✅ Confirm delivery completed for "+a.id+"?"))return;
+ setConfirm({msg:`Mark ${a.id} as Completed?`,sub:"This confirms the delivery was received successfully.",label:"✅ Completed",color:"#10b981",onConfirm:()=>{
  const updates={deliveryStatus:"completed",completedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
  setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  logTransaction("delivery_complete", a, {actor:getAdminCreds().nickname||"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery completed successfully"});
- showToast("✅ Delivery marked as completed");
+ showToast("✅ Delivery marked as completed");setConfirm(null);
+ }});
  }
 
  function handleDeliveryFailed(a){
  const reason=prompt("❌ Reason for delivery failure:");
  if(!reason||!reason.trim())return;
+ setConfirm({msg:`Mark ${a.id} as Failed?`,sub:`Reason: "${reason.trim()}"`,label:"❌ Mark Failed",color:"#dc2626",onConfirm:()=>{
  const updates={deliveryStatus:"failed",failureReason:reason.trim(),failedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
  setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  logTransaction("delivery_failed", a, {actor:getAdminCreds().nickname||"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery failed: "+reason});
- showToast("❌ Delivery marked as failed");
+ showToast("❌ Delivery marked as failed");setConfirm(null);
+ }});
  }
 
  // Make handlers globally accessible for calendar modal
@@ -2422,8 +2469,7 @@ function App() {
  if(page==="landing") return <Landing onSupplier={()=>{setEditingId(null);setPage("supplier");}} onAdmin={()=>setPage("admin-login")} onTracker={()=>setPage("tracker")}/>;
  if(page==="supplier") return <SupplierForm onSubmit={handleBook} onBack={()=>{setEditingId(null);setPage("landing");}} appointments={appts} editingAppointment={editingAppt}/>;
  if(page==="tracker") return <SupplierTracker appointments={appts} onBack={()=>setPage("landing")}/>;
- if(page==="landing"||page==="supplier"||page==="tracker") {sessionStorage.setItem("be_page","admin-login");return <AdminLogin onLogin={e=>{setAdminEmail(e);setPage("admin");setView("dashboard");}} onBack={()=>{window.location.href="index.html";}}/>;}
- if(page==="admin-login") return <AdminLogin onLogin={e=>{setAdminEmail(e);setPage("admin");setView("dashboard");}} onBack={()=>{window.location.href="index.html";}}/>;
+ if(page==="admin-login") return <AdminLogin onLogin={e=>{setAdminEmail(e);setPage("admin");setView("dashboard");}} onBack={()=>setPage("landing")}/>;
 
  const pending = appts.filter(a=>a.status==="pending");
  const emergencyCount = pending.filter(a=>a.priority==="emergency").length;
@@ -2496,13 +2542,13 @@ function App() {
  <main style={{flex:1,overflowY:"auto",background:BG,display:"flex",flexDirection:"column"}}>
  <OrgFilter value={orgFilter} onChange={setOrgFilter} isMobile={isMobile}/>
  <div style={{flex:1}}>
- {view==="dashboard" && <Dashboard appointments={filteredAppts} setView={setView} isMobile={isMobile}/>}
- {view==="admin" && <AdminPanel appointments={filteredAppts} onApprove={handleApprove} onReject={id=>{setRejectId(id);setRejReason("");}} onView={setViewId} loading={loading} isMobile={isMobile}/>}
+ {view==="dashboard" && <Dashboard appointments={filteredAppts} setView={setView} setAdminFilter={setAdminFilter} isMobile={isMobile}/>}
+ {view==="admin" && <AdminPanel appointments={filteredAppts} onApprove={handleApprove} onReject={id=>{setRejectId(id);setRejReason("");}} onView={setViewId} loading={loading} isMobile={isMobile} initialFilter={adminFilter} onFilterUsed={()=>setAdminFilter(null)}/>}
  {view==="teamlead" && <TeamLeadPanel appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="statistics" && <StatisticsPanel appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="calendar" && <CalendarView appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="emails" && <EmailLog emailLog={orgFilter==="BE"?emailLog:emailLog.filter(e=>(e.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
- {view==="history" && <TransactionsHistory transactions={orgFilter==="BE"?transactions:transactions.filter(t=>(t.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
+ {view==="history" && <TransactionsHistory transactions={orgFilter==="BE"?transactions:transactions.filter(t=>(t.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile} onDeleteGroup={aptId=>{setTransactions(p=>p.filter(t=>t.appointmentId!==aptId));showToast("🗑️ Transactions deleted for "+aptId);}}/>}
  {view==="settings" && <SettingsPanel config={config} onChange={setConfig} isMobile={isMobile} jbCfg={jbCfg} onJbCfg={setJbCfg} jbStatus={jbStatus} onJbSync={()=>{if(!jbCfg.apiKey||!jbCfg.binId)return;setJbStatus("syncing");jbPull();}} onJbCreate={async()=>{if(!jbCfg.apiKey)return;setJbStatus("syncing");const id=await jbCreate(jbCfg.apiKey,{appts,emailLog,transactions});if(id){setJbCfg(p=>({...p,binId:id}));setJbStatus("ok");}else setJbStatus("error");}}/>}
  </div>
  <div style={{borderTop:"1px solid rgba(255,255,255,0.08)",padding:isMobile?"12px 16px":"12px 28px",display:"flex",alignItems:"center",flexWrap:"wrap",gap:isMobile?10:24,justifyContent:"space-between"}}>
@@ -2530,6 +2576,7 @@ function App() {
  </div>
  )}
 
+ {confirm&&<ConfirmModal msg={confirm.msg} sub={confirm.sub} confirmLabel={confirm.label} confirmColor={confirm.color} onConfirm={confirm.onConfirm} onCancel={()=>setConfirm(null)}/>}
  {rejectId && (
  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:isMobile?"flex-end":"center",justifyContent:"center",zIndex:40,padding:isMobile?0:16}}>
  <div style={{background:"#fff",borderRadius:isMobile?"24px 24px 0 0":"24px",padding:22,width:"100%",maxWidth:isMobile?"100%":420}}>
