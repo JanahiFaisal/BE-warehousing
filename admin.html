@@ -805,7 +805,7 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
 
 function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobile, initialFilter, onFilterUsed }) {
  const [searchQ,setSearchQ]=useState("");
- const [statFs,setStatFs]=useState([]);
+ const [statFs,setStatFs]=useState(["pending"]);
  const [emergencyOnly,setEmergencyOnly]=useState(false);
  function togStat(s){setStatFs(p=>p.includes(s)?p.filter(x=>x!==s):[...p,s]);}
 
