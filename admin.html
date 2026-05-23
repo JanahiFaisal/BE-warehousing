@@ -760,15 +760,20 @@ function SupplierTracker({ appointments, onBack }) {
 function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
  const [searchQ,setSearchQ]=useState("");
  const filtered=searchQ?appointments.filter(a=>matchesAppt(a,searchQ)):[...appointments].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6);
- const counts={pending:appointments.filter(a=>a.status==="pending").length,approved:appointments.filter(a=>a.status==="approved").length,rejected:appointments.filter(a=>a.status==="rejected").length};
+ const counts={pending:appointments.filter(a=>a.status==="pending").length,approved:appointments.filter(a=>a.status==="approved").length,rejected:appointments.filter(a=>a.status==="rejected").length,revision:appointments.filter(a=>a.status==="revision_required").length};
  return(
  <div style={{padding:isMobile?16:28}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Dashboard</h1>
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Warehouse delivery appointments overview</p>
  <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, name, email, date, PO, status, notes…" style={{width:"100%",marginBottom:16,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
- <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr 1fr",gap:12,marginBottom:20}}>
- {[{label:"Pending",key:"pending",bg:"rgba(245,158,11,0.15)",bd:"rgba(245,158,11,0.3)",color:"#fcd34d"},{label:"Approved",key:"approved",bg:"rgba(16,185,129,0.15)",bd:"rgba(16,185,129,0.3)",color:"#6ee7b7"},{label:"Rejected",key:"rejected",bg:"rgba(239,68,68,0.15)",bd:"rgba(239,68,68,0.3)",color:"#fca5a5"}].map(({label,key,bg,bd,color})=>(
- <button key={key} onClick={()=>{setAdminFilter(key);setView("admin");}} style={{background:bg,border:`1px solid ${bd}`,borderRadius:14,padding:isMobile?14:20,textAlign:"left",cursor:"pointer",transition:"transform 0.1s"}}>
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12,marginBottom:20}}>
+ {[
+ {label:"⏳ Pending",key:"pending",bg:"rgba(245,158,11,0.15)",bd:"rgba(245,158,11,0.3)",color:"#fcd34d",filter:"pending"},
+ {label:"✓ Approved",key:"approved",bg:"rgba(16,185,129,0.15)",bd:"rgba(16,185,129,0.3)",color:"#6ee7b7",filter:"approved"},
+ {label:"↩️ Revision",key:"revision",bg:"rgba(251,146,60,0.15)",bd:"rgba(251,146,60,0.3)",color:"#fb923c",filter:"revision_required"},
+ {label:"✕ Rejected",key:"rejected",bg:"rgba(239,68,68,0.15)",bd:"rgba(239,68,68,0.3)",color:"#fca5a5",filter:"rejected"},
+ ].map(({label,key,bg,bd,color,filter})=>(
+ <button key={key} onClick={()=>{setAdminFilter(filter);setView("admin");}} style={{background:bg,border:`1px solid ${bd}`,borderRadius:14,padding:isMobile?14:20,textAlign:"left",cursor:"pointer",transition:"transform 0.1s"}}>
  <div style={{color,fontSize:isMobile?26:32,fontWeight:800}}>{counts[key]}</div>
  <div style={{color:"rgba(255,255,255,0.65)",fontSize:12,fontWeight:500,marginTop:2}}>{label}</div>
  <div style={{color:"rgba(255,255,255,0.3)",fontSize:10,marginTop:4}}>Click to view →</div>
@@ -820,7 +825,16 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, name, email, date, PO, status, notes…" style={{flex:1,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
  <button onClick={()=>setEmergencyOnly(p=>!p)} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${emergencyOnly?"#dc2626":"rgba(255,255,255,0.15)"}`,background:emergencyOnly?"#dc2626":"rgba(255,255,255,0.07)",color:emergencyOnly?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,cursor:"pointer"}}>🚨 Emergency</button>
- {["pending","approved","rejected","revision_required"].map(s=>{const on=statFs.includes(s);return(<button key={s} onClick={()=>togStat(s)} style={{flex:isMobile?1:undefined,padding:"8px 12px",borderRadius:10,border:`1px solid ${on?sc[s]:"rgba(255,255,255,0.15)"}`,background:on?sc[s]:"rgba(255,255,255,0.07)",color:on?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600,cursor:"pointer",textTransform:"capitalize"}}>{s==="revision_required"?"Revision":s}</button>);})}
+ {[
+ {s:"pending", label:"⏳ Pending"},
+ {s:"approved", label:"✓ Approved"},
+ {s:"rejected", label:"✕ Rejected"},
+ {s:"revision_required", label:"↩️ Revision"},
+ ].map(({s,label})=>{const on=statFs.includes(s);return(
+ <button key={s} onClick={()=>togStat(s)} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${on?sc[s]:"rgba(255,255,255,0.15)"}`,background:on?sc[s]:"rgba(255,255,255,0.07)",color:on?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{label}</button>
+ );})}
+ </div>
+ </div>
  </div>
  </div>
 
