@@ -2087,8 +2087,14 @@ function TeamLeadPanel({ appointments, isMobile }) {
  </div>
  )}
  {isOverdue&&(
- <div style={{fontSize:11,color:"#b91c1c",fontWeight:700,background:"#fee2e2",padding:"8px 10px",borderRadius:8}}>
+ <div style={{fontSize:11,color:"#b91c1c",fontWeight:700,background:"#fee2e2",padding:"8px 10px",borderRadius:8,marginBottom:10}}>
  ⚠️ OVERDUE - Delivery not confirmed yet
+ </div>
+ )}
+ {(isOverdue||(a.deliveryStatus==="awaiting_delivery"&&!isOverdue))&&(
+ <div style={{display:"flex",gap:8,marginTop:8}}>
+ <button onClick={()=>window.handleDeliveryComplete&&window.handleDeliveryComplete(a)} style={{flex:1,padding:"9px",background:"#10b981",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer"}}>✅ Mark Complete</button>
+ <button onClick={()=>window.handleDeliveryFailed&&window.handleDeliveryFailed(a)} style={{flex:1,padding:"9px",background:"#ef4444",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer"}}>❌ Mark Failed</button>
  </div>
  )}
  </div>
