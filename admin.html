@@ -1563,17 +1563,18 @@ function BarRow({ label, count, max, color, sublabel }) {
  );
 }
 
-function StatCard({ label, value, sub, color }) {
+function StatCard({ label, value, sub, color, onClick }) {
  return (
- <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:"18px 20px"}}>
+ <div onClick={onClick} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:"18px 20px",cursor:onClick?"pointer":"default"}}>
  <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>{label}</div>
  <div style={{fontSize:28,fontWeight:800,color:color||"#fff",marginBottom:4,lineHeight:1}}>{value}</div>
  {sub && <div style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>{sub}</div>}
+ {onClick&&<div style={{fontSize:9,color:"rgba(255,255,255,0.25)",marginTop:6}}>Click to filter →</div>}
  </div>
  );
 }
 
-function StatisticsPanel({ appointments, isMobile }) {
+function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  const [dFrom,setDFrom]=useState("");
  const [dTo,setDTo]=useState("");
  const [searchQ,setSearchQ]=useState("");
@@ -1646,10 +1647,10 @@ function StatisticsPanel({ appointments, isMobile }) {
  </div>
 
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(5,1fr)",gap:12,marginBottom:24}}>
- <StatCard label="Total" value={total} sub="all appointments"/>
- <StatCard label="Approved" value={approved} sub={total?Math.round(approved/total*100)+"%":"-"} color="#6ee7b7"/>
- <StatCard label="Pending" value={pending} sub="awaiting review" color="#fcd34d"/>
- <StatCard label="Rejected" value={rejected} sub={total?Math.round(rejected/total*100)+"%":"-"} color="#fca5a5"/>
+ <StatCard label="Total" value={total} sub="all appointments" onClick={()=>{setAdminFilter&&setAdminFilter(null);setView&&setView("admin");}}/>
+ <StatCard label="Approved" value={approved} sub={total?Math.round(approved/total*100)+"%":"-"} color="#6ee7b7" onClick={()=>{setAdminFilter&&setAdminFilter("approved");setView&&setView("admin");}}/>
+ <StatCard label="Pending" value={pending} sub="awaiting review" color="#fcd34d" onClick={()=>{setAdminFilter&&setAdminFilter("pending");setView&&setView("admin");}}/>
+ <StatCard label="Rejected" value={rejected} sub={total?Math.round(rejected/total*100)+"%":"-"} color="#fca5a5" onClick={()=>{setAdminFilter&&setAdminFilter("rejected");setView&&setView("admin");}}/>
  <StatCard label="Total Orders" value={totalOrders} sub="across all apts" color="#a5b4fc"/>
  </div>
 
@@ -2109,17 +2110,18 @@ function TeamLeadPanel({ appointments, isMobile }) {
 
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12,marginBottom:20}}>
  {[
- {label:"Completed",count:completed.length,color:"#6ee7b7",icon:"✅"},
- {label:"Overdue",count:overdue.length,color:"#fca5a5",icon:"⚠️"},
- {label:"Upcoming",count:upcoming.length,color:"#fde68a",icon:"📦"},
- {label:"Failed",count:failed.length,color:"#f87171",icon:"❌"}
+ {label:"Completed",count:completed.length,color:"#6ee7b7",icon:"✅",filter:"completed"},
+ {label:"Overdue",count:overdue.length,color:"#fca5a5",icon:"⚠️",filter:"overdue"},
+ {label:"Upcoming",count:upcoming.length,color:"#fde68a",icon:"📦",filter:"upcoming"},
+ {label:"Failed",count:failed.length,color:"#f87171",icon:"❌",filter:"failed"}
  ].map(s=>(
- <div key={s.label} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:14,padding:isMobile?12:16}}>
+ <button key={s.label} onClick={()=>setStatusFilter(p=>p===s.filter?"all":s.filter)} style={{background:statusFilter===s.filter?"rgba(255,255,255,0.15)":"rgba(255,255,255,0.07)",border:`1px solid ${statusFilter===s.filter?"rgba(255,255,255,0.4)":"rgba(255,255,255,0.1)"}`,borderRadius:14,padding:isMobile?12:16,textAlign:"left",cursor:"pointer",transition:"all 0.15s"}}>
  <div style={{fontSize:isMobile?11:12,color:"rgba(255,255,255,0.6)",marginBottom:4,display:"flex",alignItems:"center",gap:6}}>
  <span>{s.icon}</span><span>{s.label}</span>
  </div>
  <div style={{fontSize:isMobile?24:28,fontWeight:800,color:s.color}}>{s.count}</div>
- </div>
+ <div style={{fontSize:9,color:"rgba(255,255,255,0.3)",marginTop:4}}>{statusFilter===s.filter?"Click to clear":"Click to filter"}</div>
+ </button>
  ))}
  </div>
 
@@ -2535,7 +2537,7 @@ function App() {
  {view==="dashboard" && <Dashboard appointments={filteredAppts} setView={setView} setAdminFilter={setAdminFilter} isMobile={isMobile}/>}
  {view==="admin" && <AdminPanel appointments={filteredAppts} onApprove={handleApprove} onReject={id=>{setRejectId(id);setRejReason("");}} onView={setViewId} loading={loading} isMobile={isMobile} initialFilter={adminFilter} onFilterUsed={()=>setAdminFilter(null)}/>}
  {view==="teamlead" && <TeamLeadPanel appointments={filteredAppts} isMobile={isMobile}/>}
- {view==="statistics" && <StatisticsPanel appointments={filteredAppts} isMobile={isMobile}/>}
+ {view==="statistics" && <StatisticsPanel appointments={filteredAppts} isMobile={isMobile} setView={setView} setAdminFilter={setAdminFilter}/>}
  {view==="calendar" && <CalendarView appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="emails" && <EmailLog emailLog={orgFilter==="BE"?emailLog:emailLog.filter(e=>(e.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
  {view==="history" && <TransactionsHistory transactions={orgFilter==="BE"?transactions:transactions.filter(t=>(t.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
