@@ -2206,7 +2206,7 @@ function App() {
  const [navOpen,setNavOpen]=useState(false);
  const [adminEmail,setAdminEmail]=useState(()=>sessionStorage.getItem("be_admin_email")||"");
  const [editingId,setEditingId]=useState(null);
- const [confirm,setConfirm]=useState(null);
+ const [confirmDlg,setConfirmDlg]=useState(null);
  const [adminFilter,setAdminFilter]=useState(null); // {msg,sub,label,color,onConfirm}
 
  // Persist session state across reloads
@@ -2391,13 +2391,13 @@ function App() {
  }
 
  function handleApprove(a){
- setConfirm({msg:`Approve ${a.id}?`,sub:`${a.supplierName} — ${fmtDate(a.date)} ${a.time}`,label:"✓ Approve",color:"#059669",onConfirm:()=>{
+ setConfirmDlg({msg:`Approve ${a.id}?`,sub:`${a.supplierName} — ${fmtDate(a.date)} ${a.time}`,label:"✓ Approve",color:"#059669",onConfirm:()=>{
  const updates={status:"approved",deliveryStatus:"awaiting_delivery",updatedAt:new Date().toISOString()};
  setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  logEmail("approval", a);
  logTransaction("approve", a, {actor:getAdminCreds().nickname||"Admin",actorEmail:adminEmail||ADMIN_EMAIL,note:"Appointment approved"});
  showToast("✅ Appointment approved");
- setLoading(null);setConfirm(null);
+ setLoading(null);setConfirmDlg(null);
  }});
  }
 
@@ -2426,22 +2426,22 @@ function App() {
  }
 
  function handleDeliveryComplete(a){
- setConfirm({msg:`Mark ${a.id} as Completed?`,sub:"This confirms the delivery was received successfully.",label:"✅ Completed",color:"#10b981",onConfirm:()=>{
+ setConfirmDlg({msg:`Mark ${a.id} as Completed?`,sub:"This confirms the delivery was received successfully.",label:"✅ Completed",color:"#10b981",onConfirm:()=>{
  const updates={deliveryStatus:"completed",completedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
  setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  logTransaction("delivery_complete", a, {actor:getAdminCreds().nickname||"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery completed successfully"});
- showToast("✅ Delivery marked as completed");setConfirm(null);
+ showToast("✅ Delivery marked as completed");setConfirmDlg(null);
  }});
  }
 
  function handleDeliveryFailed(a){
  const reason=prompt("❌ Reason for delivery failure:");
  if(!reason||!reason.trim())return;
- setConfirm({msg:`Mark ${a.id} as Failed?`,sub:`Reason: "${reason.trim()}"`,label:"❌ Mark Failed",color:"#dc2626",onConfirm:()=>{
+ setConfirmDlg({msg:`Mark ${a.id} as Failed?`,sub:`Reason: "${reason.trim()}"`,label:"❌ Mark Failed",color:"#dc2626",onConfirm:()=>{
  const updates={deliveryStatus:"failed",failureReason:reason.trim(),failedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
  setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  logTransaction("delivery_failed", a, {actor:getAdminCreds().nickname||"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery failed: "+reason});
- showToast("❌ Delivery marked as failed");setConfirm(null);
+ showToast("❌ Delivery marked as failed");setConfirmDlg(null);
  }});
  }
 
@@ -2575,7 +2575,7 @@ function App() {
  </div>
  )}
 
- {confirm&&<ConfirmModal msg={confirm.msg} sub={confirm.sub} confirmLabel={confirm.label} confirmColor={confirm.color} onConfirm={confirm.onConfirm} onCancel={()=>setConfirm(null)}/>}
+ {confirmDlg&&<ConfirmModal msg={confirmDlg.msg} sub={confirmDlg.sub} confirmLabel={confirmDlg.label} confirmColor={confirmDlg.color} onConfirm={confirmDlg.onConfirm} onCancel={()=>setConfirmDlg(null)}/>}
  {rejectId && (
  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:isMobile?"flex-end":"center",justifyContent:"center",zIndex:40,padding:isMobile?0:16}}>
  <div style={{background:"#fff",borderRadius:isMobile?"24px 24px 0 0":"24px",padding:22,width:"100%",maxWidth:isMobile?"100%":420}}>
