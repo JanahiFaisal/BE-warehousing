@@ -43,6 +43,21 @@ const LS_EMAILS = "be_wh_emails_v3";
 const LS_CONFIG = "be_wh_config_v3";
 const LS_TRANSACTIONS = "be_wh_transactions_v3";
 
+// Resend Email Configuration
+const RESEND_KEY = "re_BCj6aL7Y_DMmsCnTiGr3fCMxqWmKvriNa";
+const RESEND_FROM = "BE Warehouse <janahi.aou@gmail.com>";
+const ADMIN_ALERT_EMAIL = "Janahifaisal2@gmail.com";
+
+async function sendEmail(to, subject, body){
+ try{
+ await fetch("https://api.resend.com/emails",{
+ method:"POST",
+ headers:{"Authorization":`Bearer ${RESEND_KEY}`,"Content-Type":"application/json"},
+ body:JSON.stringify({from:RESEND_FROM,to:Array.isArray(to)?to:[to],subject,text:body})
+ });
+ }catch(e){console.error("Resend error:",e);}
+}
+
 // Supabase helpers
 async function sbGetAll(table){
  try{const {data,error}=await window.supabase.from(table).select('data');if(error)throw error;return (data||[]).map(r=>r.data);}catch(e){console.error('sbGetAll',table,e);return null;}
@@ -777,9 +792,18 @@ function SupplierApp() {
  function logEmail(type,appt,extra={}){
   const body=buildEmailBody(type,appt,extra);
   const subjects={submission:appt.priority==="emergency"?`🚨 URGENT – Emergency Delivery Request – ${appt.id}`:`Appointment Request Received – ${appt.id}`};
-  const emailDoc={id:Date.now()+Math.random(),timestamp:new Date().toISOString(),type,recipient:appt.supplierEmail,appointmentId:appt.id,subject:subjects[type]||`Notification – ${appt.id}`,body,status:"sent",pin:type==="submission"?appt.pin:null,...extra};
+  const subject=subjects[type]||`Notification – ${appt.id}`;
+  const emailDoc={id:Date.now()+Math.random(),timestamp:new Date().toISOString(),type,recipient:appt.supplierEmail,appointmentId:appt.id,subject,body,status:"sent",pin:type==="submission"?appt.pin:null,...extra};
   setEmailLog(p=>[emailDoc,...p]);
   sbUpsert("emails",emailDoc.id,emailDoc);
+  // Send to supplier
+  if(appt.supplierEmail) sendEmail(appt.supplierEmail,subject,body);
+  // Send admin alert for new bookings
+  if(type==="submission"){
+   const adminSubject=appt.priority==="emergency"?`🚨 URGENT – Emergency Delivery Request – ${appt.id}`:`📦 New Delivery Request – ${appt.id} – ${appt.supplierName}`;
+   const adminBody=appt.priority==="emergency"?`URGENT — Emergency delivery request received.\n\nSupplier: ${appt.supplierName}\nEmail: ${appt.supplierEmail}\nID: ${appt.id}\nDate: ${fmtDate(appt.date)}\nTime: ${appt.time}\nDelivery To: ${appt.deliveryTo}\n\nEmergency Justification:\n${appt.emergencyJustification}\n\nPlease review immediately.`:`New delivery request submitted and awaiting review.\n\nSupplier: ${appt.supplierName}\nEmail: ${appt.supplierEmail}\nID: ${appt.id}\nDate: ${fmtDate(appt.date)}\nTime: ${appt.time}\nDelivery To: ${appt.deliveryTo}\nPO Numbers: ${(appt.poNumbers||[]).join(", ")||"—"}\n\nPlease log in to the admin portal to review.`;
+   sendEmail(ADMIN_ALERT_EMAIL,adminSubject,adminBody);
+  }
   return emailDoc;
  }
 
