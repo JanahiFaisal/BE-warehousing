@@ -57,6 +57,11 @@ const EMAILJS_TEMPLATE = "template_oyucprx";
 const EMAILJS_PUBLIC_KEY = "bU8GSOLMKocGcmjkp";
 const ADMIN_ALERT_EMAIL = "Janahifaisal2@gmail.com";
 const SECURITY_EMAIL = "Janahifaisal2@gmail.com";
+const LS_EMAIL_CFG = "be_wh_email_cfg_v1";
+function getEmailCfg(){
+ try{const s=localStorage.getItem(LS_EMAIL_CFG);return s?JSON.parse(s):{adminEmail:ADMIN_ALERT_EMAIL,securityEmail:SECURITY_EMAIL};}
+ catch{return {adminEmail:ADMIN_ALERT_EMAIL,securityEmail:SECURITY_EMAIL};}
+}
 
 async function sendEmail(to, subject, body){
  try{
@@ -1426,6 +1431,25 @@ function EmailLog({ emailLog, isMobile }) {
  );
 }
 
+function EmailSaveButton({ getInp }){
+ const [msg,setMsg]=useState(null);
+ function save(){
+ const {adminEmail,securityEmail}=getInp();
+ if(!adminEmail||!securityEmail){setMsg({type:"error",text:"Both emails are required."});return;}
+ localStorage.setItem(LS_EMAIL_CFG,JSON.stringify({adminEmail,securityEmail}));
+ setMsg({type:"ok",text:"✅ Recipients saved successfully!"});
+ setTimeout(()=>setMsg(null),3000);
+ }
+ return(
+ <div>
+ {msg&&<div style={{padding:"10px 12px",borderRadius:10,background:msg.type==="ok"?"#d1fae5":"#fee2e2",border:`1px solid ${msg.type==="ok"?"#6ee7b7":"#fca5a5"}`,fontSize:13,color:msg.type==="ok"?"#065f46":"#991b1b",marginBottom:10}}>{msg.text}</div>}
+ <button onClick={save} style={{width:"100%",padding:"12px",background:"#07114C",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:700,cursor:"pointer"}}>
+ 💾 Save Recipients
+ </button>
+ </div>
+ );
+}
+
 function SettingsPanel({ config, onChange, isMobile }) {
  function set(k){return e=>onChange(c=>({...c,[k]:e.target.value}));}
  const inp = {width:"100%",border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,background:"#f9fafb",outline:"none",boxSizing:"border-box"};
@@ -1457,27 +1481,61 @@ function SettingsPanel({ config, onChange, isMobile }) {
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 20px"}}>System configuration</p>
  <div style={{maxWidth:480,display:"flex",flexDirection:"column",gap:16}}>
 
- {/* Email — Resend */}
+ {/* Email Recipients Card */}
  <div style={{background:"#fff",borderRadius:16,padding:isMobile?16:20}}>
- <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+ <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
  <span style={{fontSize:20}}>📧</span>
  <div>
- <div style={{fontWeight:700,fontSize:15,color:"#111827"}}>Email Notifications — Resend</div>
- <div style={{fontSize:11,color:"#6b7280"}}>Powered by Resend — emails sent automatically</div>
+ <div style={{fontWeight:700,fontSize:15,color:"#111827"}}>Email Configuration</div>
+ <div style={{fontSize:11,color:"#6b7280"}}>Manage recipients — changes take effect immediately</div>
  </div>
  </div>
- <div style={{background:"#d1fae5",border:"1px solid #6ee7b7",borderRadius:10,padding:"10px 12px",fontSize:13,color:"#065f46",fontWeight:600,marginBottom:8}}>
- ✅ Active — Emails sending via Resend
+
+ {/* Admin Email */}
+ <div style={{marginBottom:14}}>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
+ Admin Alert Email
+ <span style={{fontWeight:400,textTransform:"none",color:"#9ca3af",marginLeft:6}}>receives new booking alerts</span>
+ </label>
+ <input
+ type="email"
+ defaultValue={getEmailCfg().adminEmail}
+ id="adminEmailInput"
+ placeholder="admin@example.com"
+ style={inp}
+ />
  </div>
- <div style={{fontSize:12,color:"#6b7280",lineHeight:1.8}}>
- <strong style={{color:"#374151"}}>Routing:</strong><br/>
+
+ {/* Security Email */}
+ <div style={{marginBottom:14}}>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
+ Security Email
+ <span style={{fontWeight:400,textTransform:"none",color:"#9ca3af",marginLeft:6}}>receives approval notifications</span>
+ </label>
+ <input
+ type="email"
+ defaultValue={getEmailCfg().securityEmail}
+ id="securityEmailInput"
+ placeholder="security@example.com"
+ style={inp}
+ />
+ </div>
+
+ {/* Routing Summary */}
+ <div style={{background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:10,padding:"10px 12px",fontSize:12,color:"#6b7280",lineHeight:1.8,marginBottom:14}}>
+ <strong style={{color:"#374151"}}>Email Routing:</strong><br/>
  📦 New booking → Supplier + Admin<br/>
  🚨 Emergency → Supplier + Admin (urgent)<br/>
- ✅ Approved → Supplier + Security team<br/>
+ ✅ Approved → Supplier + Security<br/>
  ❌ Rejected → Supplier only<br/>
  ↩️ Revision → Supplier only<br/>
- 🚚 Delivery complete/failed → Supplier only
+ 🚚 Delivery → Supplier only
  </div>
+
+ <EmailSaveButton getInp={()=>({
+ adminEmail:document.getElementById("adminEmailInput")?.value,
+ securityEmail:document.getElementById("securityEmailInput")?.value
+ })}/>
  </div>
  <div style={{background:"#fff",borderRadius:16,padding:isMobile?16:20}}>
  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
@@ -2377,14 +2435,16 @@ function App() {
  const adminBody=appt.priority==="emergency"
  ?`URGENT — Emergency delivery request received.\n\nSupplier: ${appt.supplierName}\nEmail: ${appt.supplierEmail}\nID: ${appt.id}\nDate: ${fmtDate(appt.date)}\nTime: ${appt.time}\nDelivery To: ${appt.deliveryTo}\n\nEmergency Justification:\n${appt.emergencyJustification}\n\nPlease review immediately in the admin portal.`
  :`A new delivery appointment request has been submitted and is awaiting your review.\n\nSupplier: ${appt.supplierName}\nEmail: ${appt.supplierEmail}\nID: ${appt.id}\nDate: ${fmtDate(appt.date)}\nTime: ${appt.time}\nDelivery To: ${appt.deliveryTo}\nTotal Orders: ${appt.totalOrders}\nPO Numbers: ${(appt.poNumbers||[]).join(", ")||"—"}\n\nPlease log in to the admin portal to review this request.`;
- sendEmail(ADMIN_ALERT_EMAIL, adminSubject, adminBody);
+ const cfg=getEmailCfg();
+ sendEmail(cfg.adminEmail||ADMIN_ALERT_EMAIL, adminSubject, adminBody);
  }
 
  // 3. Security gets notified on approval — different body
  if(type==="approval"){
+ const cfg=getEmailCfg();
  const secSubject=`Security Notification – Approved Delivery – ${appt.id}`;
  const secBody=`Dear Security Team,\n\nPlease be informed that the following delivery appointment has been approved and is expected at the warehouse.\n\nDelivery Details:\n─────────────────────────────\nReference ID: ${appt.id}\nSupplier: ${appt.supplierName}\nDelivery To: ${appt.deliveryTo}\nDate: ${fmtDate(appt.date)}\nTime: ${appt.time}\nTotal Orders: ${appt.totalOrders}\nTotal Lines: ${appt.totalLines}\nPO Numbers: ${(appt.poNumbers||[]).join(", ")||"—"}\nStorage Location: ${Array.isArray(appt.storageLocation)?appt.storageLocation.join(", "):appt.storageLocation||"—"}\nEquipment Required: ${appt.offloadingEquipment&&appt.offloadingEquipment.length>0?appt.offloadingEquipment.join(", "):"Not required"}\n${appt.priority==="emergency"?"\n⚠️ EMERGENCY DELIVERY — This was submitted as an urgent request.\n":""}\nPlease ensure the necessary security arrangements are in place for the above delivery.\n\nKind regards,\nBE Warehouse Operations\nBapco Energies`;
- sendEmail(SECURITY_EMAIL, secSubject, secBody);
+ sendEmail(cfg.securityEmail||SECURITY_EMAIL, secSubject, secBody);
  }
  }
 
