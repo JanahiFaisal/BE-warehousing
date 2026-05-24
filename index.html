@@ -63,24 +63,6 @@ async function sendEmail(to, subject, body){
  }catch(e){console.error("Email error:",e);}
 }
 
-async function sendEmail(to, subject, body){
- try{
- const r=await fetch("https://api.web3forms.com/submit",{
- method:"POST",
- headers:{"Content-Type":"application/json"},
- body:JSON.stringify({
- access_key:WEB3FORMS_KEY,
- to:Array.isArray(to)?to.join(","):to,
- subject,
- message:body,
- from_name:"BE Warehouse"
- })
- });
- const d=await r.json();
- console.log("Email sent:",d);
- }catch(e){console.error("Email error:",e);}
-}
-
 // Supabase helpers
 async function sbGetAll(table){
  try{const {data,error}=await window.supabase.from(table).select('data');if(error)throw error;return (data||[]).map(r=>r.data);}catch(e){console.error('sbGetAll',table,e);return null;}
