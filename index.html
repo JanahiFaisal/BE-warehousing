@@ -47,15 +47,16 @@ const LS_TRANSACTIONS = "be_wh_transactions_v3";
 const RESEND_KEY = "re_BCj6aL7Y_DMmsCnTiGr3fCMxqWmKvriNa";
 const RESEND_FROM = "BE Warehouse <noreply@faisal-app.space>";
 const ADMIN_ALERT_EMAIL = "Janahifaisal2@gmail.com";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrenBrcnp0bWxsenhkb3JyamN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MjAxMDcsImV4cCI6MjA5NTE5NjEwN30.BsZOkNknbEF0Ds0W8mPmNjeJadp5InXOacE1pJAGbeE";
 
 async function sendEmail(to, subject, body){
  try{
- await fetch("https://api.resend.com/emails",{
+ await fetch("https://ekzpkrztmllzxdorrjcv.supabase.co/functions/v1/smooth-handler",{
  method:"POST",
- headers:{"Authorization":`Bearer ${RESEND_KEY}`,"Content-Type":"application/json"},
- body:JSON.stringify({from:RESEND_FROM,to:Array.isArray(to)?to:[to],subject,text:body})
+ headers:{"Content-Type":"application/json","Authorization":`Bearer ${SUPA_KEY}`},
+ body:JSON.stringify({to,subject,text:body})
  });
- }catch(e){console.error("Resend error:",e);}
+ }catch(e){console.error("Email error:",e);}
 }
 
 // Supabase helpers
