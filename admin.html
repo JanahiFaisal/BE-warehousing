@@ -50,6 +50,22 @@ const LS_CONFIG = "be_wh_config_v3";
 const LS_TRANSACTIONS = "be_wh_transactions_v3";
 const LS_JSONBIN = "be_wh_jsonbin_v1";
 
+// Resend Email Configuration
+const RESEND_KEY = "re_BCj6aL7Y_DMmsCnTiGr3fCMxqWmKvriNa";
+const RESEND_FROM = "BE Warehouse <janahi.aou@gmail.com>";
+const ADMIN_ALERT_EMAIL = "Janahifaisal2@gmail.com";
+const SECURITY_EMAIL = "Janahifaisal2@gmail.com";
+
+async function sendEmail(to, subject, body){
+ try{
+ await fetch("https://api.resend.com/emails",{
+ method:"POST",
+ headers:{"Authorization":`Bearer ${RESEND_KEY}`,"Content-Type":"application/json"},
+ body:JSON.stringify({from:RESEND_FROM,to:Array.isArray(to)?to:[to],subject,text:body})
+ });
+ }catch(e){console.error("Resend error:",e);}
+}
+
 // Supabase helpers
 async function sbGetAll(table){
  try{
@@ -1823,6 +1839,46 @@ Status: Revision Required
 Kind regards,
 BE Warehouse Operations
 Bapco Energies`;}
+ if(type==="delivery_complete"){return`Dear ${appt.supplierName},
+
+We are pleased to confirm that your delivery has been successfully received and processed at our warehouse.
+
+Delivery Details:
+─────────────────────────────
+Reference ID: ${appt.id}
+Date: ${fmtDate(appt.date)}
+Time: ${appt.time}
+Delivery To: ${appt.deliveryTo}
+Completed At: ${appt.completedAt?new Date(appt.completedAt).toLocaleString("en-GB"):"—"}
+
+Status: Delivery Completed ✅
+
+Thank you for your cooperation. We look forward to serving you again.
+
+Kind regards,
+BE Warehouse Operations
+Bapco Energies`;}
+ if(type==="delivery_failed"){return`Dear ${appt.supplierName},
+
+Unfortunately, we were unable to process your delivery for the following appointment.
+
+Delivery Details:
+─────────────────────────────
+Reference ID: ${appt.id}
+Date: ${fmtDate(appt.date)}
+Time: ${appt.time}
+Delivery To: ${appt.deliveryTo}
+
+Reason:
+${extra.reason||appt.failureReason||"—"}
+
+Please contact us at warehouse@bapcoenergies.com or call 17757483 to reschedule or discuss next steps.
+
+Status: Delivery Failed ❌
+
+Kind regards,
+BE Warehouse Operations
+Bapco Energies`;}
  return "";
 }
 
@@ -2283,6 +2339,8 @@ function App() {
  approval:`Appointment Approved – ${appt.id}`,
  rejection:`Appointment Status Update – ${appt.id}`,
  revision:`Action Required – ${appt.id} Needs Revision`,
+ delivery_complete:`Delivery Confirmed – ${appt.id}`,
+ delivery_failed:`Delivery Failed – ${appt.id}`,
  };
  const body=buildEmailBody(type, appt, extra);
  const emailDoc={
@@ -2299,6 +2357,31 @@ function App() {
  };
  setEmailLog(p=>[emailDoc,...p]);
  sbUpsert("emails",emailDoc.id,emailDoc);
+
+ // === RESEND EMAIL ROUTING ===
+
+ // 1. Supplier always gets their email
+ if(appt.supplierEmail){
+ sendEmail(appt.supplierEmail, emailDoc.subject, body);
+ }
+
+ // 2. Admin gets alert for new bookings (standard + emergency)
+ if(type==="submission"){
+ const adminSubject=appt.priority==="emergency"
+ ?`🚨 URGENT – Emergency Delivery Request Received – ${appt.id}`
+ :`📦 New Delivery Request – ${appt.id} – ${appt.supplierName}`;
+ const adminBody=appt.priority==="emergency"
+ ?`URGENT — Emergency delivery request received.\n\nSupplier: ${appt.supplierName}\nEmail: ${appt.supplierEmail}\nID: ${appt.id}\nDate: ${fmtDate(appt.date)}\nTime: ${appt.time}\nDelivery To: ${appt.deliveryTo}\n\nEmergency Justification:\n${appt.emergencyJustification}\n\nPlease review immediately in the admin portal.`
+ :`A new delivery appointment request has been submitted and is awaiting your review.\n\nSupplier: ${appt.supplierName}\nEmail: ${appt.supplierEmail}\nID: ${appt.id}\nDate: ${fmtDate(appt.date)}\nTime: ${appt.time}\nDelivery To: ${appt.deliveryTo}\nTotal Orders: ${appt.totalOrders}\nPO Numbers: ${(appt.poNumbers||[]).join(", ")||"—"}\n\nPlease log in to the admin portal to review this request.`;
+ sendEmail(ADMIN_ALERT_EMAIL, adminSubject, adminBody);
+ }
+
+ // 3. Security gets notified on approval — different body
+ if(type==="approval"){
+ const secSubject=`Security Notification – Approved Delivery – ${appt.id}`;
+ const secBody=`Dear Security Team,\n\nPlease be informed that the following delivery appointment has been approved and is expected at the warehouse.\n\nDelivery Details:\n─────────────────────────────\nReference ID: ${appt.id}\nSupplier: ${appt.supplierName}\nDelivery To: ${appt.deliveryTo}\nDate: ${fmtDate(appt.date)}\nTime: ${appt.time}\nTotal Orders: ${appt.totalOrders}\nTotal Lines: ${appt.totalLines}\nPO Numbers: ${(appt.poNumbers||[]).join(", ")||"—"}\nStorage Location: ${Array.isArray(appt.storageLocation)?appt.storageLocation.join(", "):appt.storageLocation||"—"}\nEquipment Required: ${appt.offloadingEquipment&&appt.offloadingEquipment.length>0?appt.offloadingEquipment.join(", "):"Not required"}\n${appt.priority==="emergency"?"\n⚠️ EMERGENCY DELIVERY — This was submitted as an urgent request.\n":""}\nPlease ensure the necessary security arrangements are in place for the above delivery.\n\nKind regards,\nBE Warehouse Operations\nBapco Energies`;
+ sendEmail(SECURITY_EMAIL, secSubject, secBody);
+ }
  }
 
  function logTransaction(action, appt, details={}){
@@ -2425,6 +2508,7 @@ function App() {
  setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  sbUpdate("appointments",a.id,updates);
  logTransaction("delivery_complete", a, {actor:getAdminCreds().nickname||"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery completed successfully"});
+ logEmail("delivery_complete",{...a,...updates},{});
  showToast("Delivery marked as completed");setConfirmDlg(null);
  }});
  }
@@ -2437,6 +2521,7 @@ function App() {
  setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));
  sbUpdate("appointments",a.id,updates);
  logTransaction("delivery_failed", a, {actor:getAdminCreds().nickname||"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery failed: "+reason});
+ logEmail("delivery_failed",{...a,...updates},{reason:reason.trim()});
  showToast("Delivery marked as failed");setConfirmDlg(null);
  }});
  }
