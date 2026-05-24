@@ -58,11 +58,13 @@ const SECURITY_EMAIL = "Janahifaisal2@gmail.com";
 
 async function sendEmail(to, subject, body){
  try{
- await fetch("https://ekzpkrztmllzxdorrjcv.supabase.co/functions/v1/send-email",{
+ const r=await fetch("https://ekzpkrztmllzxdorrjcv.supabase.co/functions/v1/send-email",{
  method:"POST",
- headers:{"Content-Type":"application/json","Authorization":`Bearer ${SUPA_KEY}`},
+ headers:{"Content-Type":"application/json"},
  body:JSON.stringify({to,subject,text:body})
  });
+ const d=await r.json();
+ console.log("Email sent:",d);
  }catch(e){console.error("Email error:",e);}
 }
 
