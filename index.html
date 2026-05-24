@@ -6,6 +6,7 @@
  <title>BE Warehouse — Book a Delivery</title>
  <style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:system-ui,-apple-system,sans-serif;}input,select,textarea,button{font-family:inherit;}</style>
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
  <script>
  const SUPA_URL = "https://ekzpkrztmllzxdorrjcv.supabase.co";
  const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrenBrcnp0bWxsenhkb3JyamN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MjAxMDcsImV4cCI6MjA5NTE5NjEwN30.BsZOkNknbEF0Ds0W8mPmNjeJadp5InXOacE1pJAGbeE";
@@ -43,18 +44,37 @@ const LS_EMAILS = "be_wh_emails_v3";
 const LS_CONFIG = "be_wh_config_v3";
 const LS_TRANSACTIONS = "be_wh_transactions_v3";
 
-// Resend Email Configuration
-const RESEND_KEY = "re_BCj6aL7Y_DMmsCnTiGr3fCMxqWmKvriNa";
-const RESEND_FROM = "BE Warehouse <noreply@faisal-app.space>";
+// EmailJS Configuration
+const EMAILJS_SERVICE = "service_k0di6md";
+const EMAILJS_TEMPLATE = "template_oyucprx";
+const EMAILJS_PUBLIC_KEY = "bU8GSOLMKocGcmjkp";
 const ADMIN_ALERT_EMAIL = "Janahifaisal2@gmail.com";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrenBrcnp0bWxsenhkb3JyamN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MjAxMDcsImV4cCI6MjA5NTE5NjEwN30.BsZOkNknbEF0Ds0W8mPmNjeJadp5InXOacE1pJAGbeE";
 
 async function sendEmail(to, subject, body){
  try{
- const r=await fetch("https://ekzpkrztmllzxdorrjcv.supabase.co/functions/v1/send-email",{
+ const r=await emailjs.send(
+ EMAILJS_SERVICE,
+ EMAILJS_TEMPLATE,
+ {to:Array.isArray(to)?to.join(","):to, subject, message:body},
+ EMAILJS_PUBLIC_KEY
+ );
+ console.log("Email sent:",r);
+ }catch(e){console.error("Email error:",e);}
+}
+
+async function sendEmail(to, subject, body){
+ try{
+ const r=await fetch("https://api.web3forms.com/submit",{
  method:"POST",
  headers:{"Content-Type":"application/json"},
- body:JSON.stringify({to,subject,text:body})
+ body:JSON.stringify({
+ access_key:WEB3FORMS_KEY,
+ to:Array.isArray(to)?to.join(","):to,
+ subject,
+ message:body,
+ from_name:"BE Warehouse"
+ })
  });
  const d=await r.json();
  console.log("Email sent:",d);
