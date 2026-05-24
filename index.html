@@ -51,7 +51,7 @@ const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 
 async function sendEmail(to, subject, body){
  try{
- await fetch("https://ekzpkrztmllzxdorrjcv.supabase.co/functions/v1/smooth-handler",{
+ await fetch("https://ekzpkrztmllzxdorrjcv.supabase.co/functions/v1/send-email",{
  method:"POST",
  headers:{"Content-Type":"application/json","Authorization":`Bearer ${SUPA_KEY}`},
  body:JSON.stringify({to,subject,text:body})
