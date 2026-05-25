@@ -323,8 +323,16 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  function toggleEq(eq){setF(p=>({...p,offloadingEquipment:p.offloadingEquipment.includes(eq)?p.offloadingEquipment.filter(x=>x!==eq):[...p.offloadingEquipment,eq]}));}
 
  function handleFiles(e) {
- const files = Array.from(e.target.files).map(file=>({name:file.name,size:file.size,type:file.type}));
- setF(p=>({...p,attachments:[...p.attachments,...files.filter(nf=>!p.attachments.some(ef=>ef.name===nf.name))]}));
+ const rawFiles = Array.from(e.target.files);
+ rawFiles.forEach(file=>{
+ if(f.attachments.some(ef=>ef.name===file.name))return;
+ const reader=new FileReader();
+ reader.onload=ev=>{
+ const dataUrl=ev.target.result;
+ setF(p=>({...p,attachments:[...p.attachments,{name:file.name,size:file.size,type:file.type,dataUrl}]}));
+ };
+ reader.readAsDataURL(file);
+ });
  e.target.value="";
  }
  function removeAttachment(name){setF(p=>({...p,attachments:p.attachments.filter(f=>f.name!==name)}));}
