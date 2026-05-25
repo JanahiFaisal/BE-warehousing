@@ -388,9 +388,22 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  function toggleStorage(loc){setF(p=>{const c=p.storageLocation;return{...p,storageLocation:c.includes(loc)?c.filter(x=>x!==loc):[...c,loc]};});}
  function toggleEq(eq){setF(p=>({...p,offloadingEquipment:p.offloadingEquipment.includes(eq)?p.offloadingEquipment.filter(x=>x!==eq):[...p.offloadingEquipment,eq]}));}
 
- function handleFiles(e) {
- const files = Array.from(e.target.files).map(file=>({name:file.name,size:file.size,type:file.type}));
- setF(p=>({...p,attachments:[...p.attachments,...files.filter(nf=>!p.attachments.some(ef=>ef.name===nf.name))]}));
+ async function handleFiles(e) {
+ const rawFiles = Array.from(e.target.files);
+ for(const file of rawFiles){
+ if(f.attachments.some(ef=>ef.name===file.name))continue;
+ try{
+ const filePath=`${Date.now()}_${file.name.replace(/\s+/g,"_")}`;
+ const {data,error}=await window.supabase.storage.from("attachments").upload(filePath,file,{cacheControl:"3600",upsert:false});
+ if(error)throw error;
+ const {data:urlData}=window.supabase.storage.from("attachments").getPublicUrl(filePath);
+ const fileObj={name:file.name,size:file.size,type:file.type,url:urlData.publicUrl,path:filePath};
+ setF(p=>({...p,attachments:[...p.attachments,fileObj]}));
+ }catch(err){
+ console.error("Upload error:",err);
+ alert(`Failed to upload ${file.name}. Please try again.`);
+ }
+ }
  e.target.value="";
  }
  function removeAttachment(name){setF(p=>({...p,attachments:p.attachments.filter(f=>f.name!==name)}));}
@@ -599,6 +612,7 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  📎 Choose Files
  </button>
  {f.attachments.length===0&&<p style={{fontSize:12,color:"#9ca3af",margin:"8px 0 0"}}>PDF, Word, Excel or images • Optional</p>}
+ {f.attachments.some(a=>!a.url)&&<p style={{fontSize:12,color:"#f59e0b",margin:"8px 0 0"}}>⏳ Uploading...</p>}
  </div>
  {f.attachments.length>0&&(
  <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:6}}>
@@ -2385,6 +2399,26 @@ function App() {
  };
  },[]);
 
+ // 24-hour reminder emails for approved appointments
+ useEffect(()=>{
+ if(!appts.length)return;
+ const LS_REMINDERS="be_wh_reminders_sent";
+ const sent=JSON.parse(localStorage.getItem(LS_REMINDERS)||"[]");
+ const now=new Date();
+ appts.forEach(a=>{
+ if(a.status!=="approved"||a.deliveryStatus==="completed"||a.deliveryStatus==="failed")return;
+ if(sent.includes(a.id))return;
+ const delivery=new Date(`${a.date}T${a.time}`);
+ const hoursUntil=(delivery-now)/3600000;
+ if(hoursUntil>0&&hoursUntil<=24){
+ const subject=`Reminder: Your Delivery Appointment Tomorrow — ${a.id}`;
+ const body=`Dear ${a.supplierName},\n\nThis is a reminder that your delivery appointment is scheduled for tomorrow.\n\nAppointment Details:\n─────────────────────────────\nReference ID: ${a.id}\nDate: ${fmtDate(a.date)}\nTime: ${a.time}\nDelivery To: ${a.deliveryTo}\nTotal Orders: ${a.totalOrders}\nPO Numbers: ${(a.poNumbers||[]).join(", ")||"—"}\nStorage Location: ${Array.isArray(a.storageLocation)?a.storageLocation.join(", "):a.storageLocation||"—"}\n\nPlease ensure your delivery is on time and all documentation is ready.\n\nKind regards,\nBE Warehouse Operations\nBapco Energies`;
+ sendEmail(a.supplierEmail, subject, body);
+ localStorage.setItem(LS_REMINDERS, JSON.stringify([...sent, a.id]));
+ }
+ });
+ },[appts]);
+
  // Real-time subscriptions — instant sync across all devices
  useEffect(()=>{
  const subA=window.supabase.channel("appts-changes").on("postgres_changes",{event:"*",schema:"public",table:"appointments"},payload=>{
@@ -2815,7 +2849,11 @@ function App() {
  {viewApt.attachments.map(file=>(
  <div key={file.name} style={{display:"flex",alignItems:"center",gap:8,fontSize:13,color:"#374151"}}>
  <span>{file.type&&file.type.includes("pdf")?"📄":file.type&&file.type.includes("image")?"🖼️":"📎"}</span>
- <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{file.name}</span>
+ {file.url?(
+ <a href={file.url} target="_blank" rel="noreferrer" style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#0369a1",textDecoration:"underline",cursor:"pointer",fontWeight:600}}>{file.name}</a>
+ ):(
+ <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#9ca3af"}}>{file.name} (unavailable)</span>
+ )}
  <span style={{fontSize:11,color:"#9ca3af",flexShrink:0}}>{fmtBytes(file.size)}</span>
  </div>
  ))}
