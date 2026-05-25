@@ -2349,15 +2349,40 @@ function App() {
  });
  const [syncStatus,setSyncStatus]=useState("idle");
 
- // Load all data from Supabase on mount
- useEffect(()=>{
- setSyncStatus("syncing");
+ // B — Pull function (reusable for background + manual + focus)
+ function pullFromSupabase(silent=false){
+ if(!silent) setSyncStatus("syncing");
  Promise.all([sbGetAll("appointments"),sbGetAll("emails"),sbGetAll("transactions")]).then(([a,e,t])=>{
  if(a){setAppts(a.sort((x,y)=>new Date(y.createdAt)-new Date(x.createdAt)));localStorage.setItem(LS_APPTS,JSON.stringify(a));}
  if(e){setEmailLog(e.sort((x,y)=>new Date(y.timestamp)-new Date(x.timestamp)));localStorage.setItem(LS_EMAILS,JSON.stringify(e));}
  if(t){setTransactions(t.sort((x,y)=>new Date(y.timestamp)-new Date(x.timestamp)));localStorage.setItem(LS_TRANSACTIONS,JSON.stringify(t));}
  setSyncStatus("ok");
  }).catch(()=>setSyncStatus("error"));
+ }
+
+ // B — Show cached data instantly on mount, then sync in background
+ useEffect(()=>{
+ // Show localStorage instantly
+ try{
+ const ca=localStorage.getItem(LS_APPTS);
+ const ce=localStorage.getItem(LS_EMAILS);
+ const ct=localStorage.getItem(LS_TRANSACTIONS);
+ if(ca)setAppts(JSON.parse(ca));
+ if(ce)setEmailLog(JSON.parse(ce));
+ if(ct)setTransactions(JSON.parse(ct));
+ }catch(e){}
+ // Then sync from Supabase silently
+ pullFromSupabase(true);
+ },[]);
+
+ // D — Auto-refresh when tab gets focus
+ useEffect(()=>{
+ function onFocus(){ pullFromSupabase(true); }
+ window.addEventListener("focus", onFocus);
+ document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") pullFromSupabase(true); });
+ return ()=>{
+ window.removeEventListener("focus", onFocus);
+ };
  },[]);
 
  // Real-time subscriptions — instant sync across all devices
@@ -2642,6 +2667,7 @@ function App() {
  <div style={{display:"flex",alignItems:"center",gap:10}}>
  {!isMobile && <span style={{color:"rgba(255,255,255,0.5)",fontSize:12}}>{adminEmail}</span>}
  <span style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:syncStatus==="ok"?"rgba(16,185,129,0.2)":syncStatus==="error"?"rgba(239,68,68,0.2)":"rgba(200,150,42,0.2)",color:syncStatus==="ok"?"#6ee7b7":syncStatus==="error"?"#fca5a5":"#fcd34d",border:"1px solid rgba(255,255,255,0.1)"}}>{syncStatus==="ok"?"☁️ Synced":syncStatus==="error"?"⚠️ Sync Error":"⏳ Syncing…"}</span>
+ <button onClick={()=>pullFromSupabase(false)} title="Refresh data" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,padding:"4px 10px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700}}>🔄</button>
  <button onClick={()=>{setPage("landing");setView("dashboard");setAdminEmail("");sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");}} style={{color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
  </div>
  </header>
