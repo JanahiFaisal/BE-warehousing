@@ -553,7 +553,7 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  <textarea style={{...inp,height:80,resize:"none"}} value={f.additionalNotes} onChange={setE("additionalNotes")} placeholder="Special requirements (optional)"/>
  </div>
 
- <button disabled={!valid} onClick={()=>{const r=onSubmit({...f});if(r)setResult(r);}} style={{padding:"14px 24px",background:valid?P:"#9ca3af",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:valid?"pointer":"not-allowed",width:"100%"}}>
+ <button disabled={!valid} onClick={()=>{const r=onSubmit({...f});if(r&&r.then)r.then(res=>{if(res)setResult(res);});else if(r)setResult(r);}} style={{padding:"14px 24px",background:valid?P:"#9ca3af",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:valid?"pointer":"not-allowed",width:"100%"}}>
  {editingAppointment?"↩️ Resubmit for Review":"Submit for Approval"}
  </button>
  </div>
@@ -819,28 +819,32 @@ function SupplierApp() {
   return tx;
  }
 
- function handleBook(data){
+ async function handleBook(data){
   if(editingId){
    const existing=appts.find(a=>a.id===editingId);
    if(!existing)return {id:editingId,pin:"0000"};
    const updates={supplierName:data.supplierName,supplierEmail:data.supplierEmail,deliveryTo:data.deliveryTo,date:data.date,time:data.time,totalOrders:(data.poNumbers||[]).length||0,totalLines:Number(data.totalLines),poNumbers:data.poNumbers||[],offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],storageLocation:data.storageLocation,additionalNotes:data.additionalNotes,status:"pending",revisionComments:null,updatedAt:new Date().toISOString()};
    const updated={...existing,...updates};
-   const newAppts=appts.map(a=>a.id===editingId?updated:a);
-   const emailDoc=logEmail("submission",updated);
-   const tx=logTransaction("resubmission",updated,{actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:"🔄 Resubmission after revision"});
-   setAppts(newAppts);
-   sbUpsert("appointments",existing.id,updated);
+   setAppts(p=>p.map(a=>a.id===editingId?updated:a));
+   await sbUpsert("appointments",existing.id,updated);
+   logEmail("submission",updated);
+   logTransaction("resubmission",updated,{actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:"Resubmission after revision"});
    setEditingId(null);
    return {id:existing.id,pin:existing.pin};
   }
-  const id=nextAptId(appts,data.deliveryTo);
-  const pin=genPin();
+
+  // Fetch latest count from Supabase to avoid race condition on ID generation
+  const latest = await sbGetAll("appointments");
+  const baseAppts = latest || appts;
+  const id = nextAptId(baseAppts, data.deliveryTo);
+  const pin = genPin();
   const newAppt={id,pin,supplierName:data.supplierName,supplierEmail:data.supplierEmail,deliveryTo:data.deliveryTo,date:data.date,time:data.time,totalOrders:(data.poNumbers||[]).length||0,totalLines:Number(data.totalLines),poNumbers:data.poNumbers||[],offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],storageLocation:data.storageLocation,additionalNotes:data.additionalNotes,attachments:data.attachments||[],status:"pending",deliveryStatus:"pending",priority:data.isEmergency?"emergency":"standard",emergencyJustification:data.isEmergency?data.emergencyJustification:"",managerComments:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
-  const newAppts=[newAppt,...appts];
-  const emailDoc=logEmail("submission",newAppt);
-  const tx=logTransaction("create",newAppt,{actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:data.isEmergency?"🚨 EMERGENCY: "+data.emergencyJustification:"New appointment submitted"});
-  setAppts(newAppts);
-  sbUpsert("appointments",id,newAppt);
+  // Update local state using functional update to avoid stale state
+  if(latest) setAppts([newAppt,...latest]);
+  else setAppts(p=>[newAppt,...p]);
+  await sbUpsert("appointments",id,newAppt);
+  logEmail("submission",newAppt);
+  logTransaction("create",newAppt,{actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:data.isEmergency?"EMERGENCY: "+data.emergencyJustification:"New appointment submitted"});
   return {id,pin};
  }
 
