@@ -2600,7 +2600,7 @@ function App() {
  if(!incoming)return;
  setAppts(p=>{
  const existing=p.find(x=>x.id===incoming.id);
- const localConv=existing?.(existing.conversation||[]):[];
+ const localConv=existing?(existing.conversation||[]):[];
  const remoteConv=incoming.conversation||[];
  const merged=remoteConv.length>=localConv.length?remoteConv:localConv;
  const updated={...incoming,conversation:merged};
