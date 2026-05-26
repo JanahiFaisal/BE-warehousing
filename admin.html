@@ -11,6 +11,7 @@
  </style>
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
  <script>
  const SUPA_URL = "https://ekzpkrztmllzxdorrjcv.supabase.co";
  const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrenBrcnp0bWxsenhkb3JyamN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MjAxMDcsImV4cCI6MjA5NTE5NjEwN30.BsZOkNknbEF0Ds0W8mPmNjeJadp5InXOacE1pJAGbeE";
@@ -74,6 +75,23 @@ async function sendEmail(to, subject, body){
  console.log("Email sent:",r);
  }catch(e){console.error("Email error:",e);}
 }
+
+// Excel Export Helper
+function exportToExcel(sheets, filename){
+ const wb=XLSX.utils.book_new();
+ sheets.forEach(({name,data})=>{
+ const ws=XLSX.utils.json_to_sheet(data);
+ // Style header row width
+ const cols=data.length>0?Object.keys(data[0]).map(k=>({wch:Math.max(k.length,14)})):[];
+ ws['!cols']=cols;
+ XLSX.utils.book_append_sheet(wb,ws,name.substring(0,31));
+ });
+ XLSX.writeFile(wb,filename+".xlsx");
+}
+
+function fmtExcelDate(ds){return ds?new Date(ds).toLocaleDateString("en-GB"):"—";}
+function fmtExcelTs(iso){return iso?new Date(iso).toLocaleString("en-GB"):"—";}
+function sbuName(code){const m={BR:"Bapco Refining",BU:"Bapco Upstream",BG:"Bapco Gas",BT:"Bapco Trading"};return m[code]||code||"—";}
 
 // Supabase helpers
 async function sbGetAll(table){
@@ -958,6 +976,29 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
  <button onClick={()=>setEmergencyOnly(p=>!p)} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${emergencyOnly?"#dc2626":"rgba(255,255,255,0.15)"}`,background:emergencyOnly?"#dc2626":"rgba(255,255,255,0.07)",color:emergencyOnly?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,cursor:"pointer"}}>Emergency</button>
  {["pending","approved","rejected","revision_required"].map(s=>{const on=statFs.includes(s);return(<button key={s} onClick={()=>togStat(s)} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${on?sc[s]:"rgba(255,255,255,0.15)"}`,background:on?sc[s]:"rgba(255,255,255,0.07)",color:on?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600,cursor:"pointer"}}>{statusLabels[s]}</button>);})}
+ <button onClick={()=>{
+ const data=rows.map(a=>({
+ "ID":a.id,
+ "Supplier":a.supplierName||"—",
+ "Email":a.supplierEmail||"—",
+ "SBU":sbuName(a.deliveryTo),
+ "Date":fmtExcelDate(a.date),
+ "Time":a.time||"—",
+ "Status":(a.status||"—").replace(/_/g," "),
+ "Priority":a.priority||"standard",
+ "Total Orders":a.totalOrders||0,
+ "Total Lines":a.totalLines||0,
+ "PO Numbers":(a.poNumbers||[]).join(", ")||"—",
+ "Storage":Array.isArray(a.storageLocation)?a.storageLocation.join(", "):a.storageLocation||"—",
+ "Equipment":(a.offloadingEquipment||[]).join(", ")||"None",
+ "Notes":a.additionalNotes||"—",
+ "Created":fmtExcelTs(a.createdAt),
+ "Updated":fmtExcelTs(a.updatedAt),
+ }));
+ exportToExcel([{name:"Appointments",data}],"BE_Warehouse_Admin_"+new Date().toISOString().slice(0,10));
+ }} disabled={rows.length===0} style={{padding:"8px 12px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:rows.length===0?"not-allowed":"pointer",opacity:rows.length===0?0.5:1}}>
+ 📥 Export Excel
+ </button>
  </div>
  </div>
 
@@ -1419,6 +1460,19 @@ function EmailLog({ emailLog, isMobile }) {
  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
  <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{totalConversations} conversation{totalConversations!==1?"s":""}</span>
  <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{totalEmails} email{totalEmails!==1?"s":""}</span>
+ <button onClick={()=>{
+ const data=emailLog.map(e=>({
+ "Appointment ID":e.appointmentId||"—",
+ "Type":(e.type||"—").replace(/_/g," "),
+ "Recipient":e.recipient||"—",
+ "Subject":e.subject||"—",
+ "Timestamp":fmtExcelTs(e.timestamp),
+ "Status":e.status||"—",
+ }));
+ exportToExcel([{name:"Email Log",data}],"BE_Warehouse_Emails_"+new Date().toISOString().slice(0,10));
+ }} disabled={totalEmails===0} style={{padding:"6px 12px",background:"#059669",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:totalEmails===0?"not-allowed":"pointer",opacity:totalEmails===0?0.5:1}}>
+ 📥 Export Excel
+ </button>
  </div>
  </div>
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Grouped by appointment with full conversation history</p>
@@ -1803,8 +1857,36 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  return(
  <div style={{padding:isMobile?16:28,overflowY:"auto"}}>
  <div style={{marginBottom:24}}>
+ <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
+ <div>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:26,margin:"0 0 4px"}}>Statistics</h1>
  <p style={{color:"rgba(255,255,255,0.45)",fontSize:13,margin:0}}>Advanced delivery insights to support warehouse decisions</p>
+ </div>
+ <button onClick={()=>{
+ const data=filtered.map(a=>({
+ "ID":a.id,"Supplier":a.supplierName||"—","Email":a.supplierEmail||"—",
+ "SBU":sbuName(a.deliveryTo),"Date":fmtExcelDate(a.date),"Time":a.time||"—",
+ "Status":(a.status||"—").replace(/_/g," "),"Priority":a.priority||"standard",
+ "Delivery Status":(a.deliveryStatus||"—").replace(/_/g," "),
+ "Total Orders":a.totalOrders||0,"Total Lines":a.totalLines||0,
+ "PO Numbers":(a.poNumbers||[]).join(", ")||"—",
+ "Storage":Array.isArray(a.storageLocation)?a.storageLocation.join(", "):a.storageLocation||"—",
+ "Created":fmtExcelTs(a.createdAt),"Updated":fmtExcelTs(a.updatedAt),
+ }));
+ const summary=[
+ {"Metric":"Total Appointments","Value":total},
+ {"Metric":"Approved","Value":approved},
+ {"Metric":"Pending","Value":pending},
+ {"Metric":"Rejected","Value":rejected},
+ {"Metric":"Total Orders","Value":totalOrders},
+ {"Metric":"Busiest Slot","Value":busiestSlot?.label||"—"},
+ {"Metric":"Busiest Day","Value":busiestDay?.label||"—"},
+ ];
+ exportToExcel([{name:"Summary",data:summary},{name:"Appointments",data}],"BE_Warehouse_Statistics_"+new Date().toISOString().slice(0,10));
+ }} disabled={filtered.length===0} style={{padding:"10px 16px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:filtered.length===0?"not-allowed":"pointer",opacity:filtered.length===0?0.5:1}}>
+ 📥 Export Excel
+ </button>
+ </div>
  </div>
 
  <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:14,padding:16,marginBottom:24,display:"flex",flexWrap:"wrap",gap:12,alignItems:"center"}}>
@@ -2097,15 +2179,17 @@ function TransactionsHistory({ transactions, isMobile }) {
  transactions.forEach(t=>{if(counts[t.action]!==undefined)counts[t.action]++;});
 
  function exportCSV(){
- const rows=[["Timestamp","Action","Actor","Email","Appointment ID","Supplier","Delivery To","Details"]];
- filtered.forEach(t=>rows.push([fmtTs(t.timestamp),t.action,t.actor,t.actorEmail,t.appointmentId,t.supplierName||"",t.deliveryTo||"",t.details||""]));
- const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
- const blob=new Blob([csv],{type:"text/csv"});
- const url=URL.createObjectURL(blob);
- const a=document.createElement("a");
- a.href=url;a.download=`transactions_${todayStr()}.csv`;
- document.body.appendChild(a);a.click();a.remove();
- URL.revokeObjectURL(url);
+ const data=filtered.map(t=>({
+ "Timestamp":fmtExcelTs(t.timestamp),
+ "Action":(t.action||"—").replace(/_/g," "),
+ "Actor":t.actor||"—",
+ "Email":t.actorEmail||"—",
+ "Appointment ID":t.appointmentId||"—",
+ "Supplier":t.supplierName||"—",
+ "Delivery To":sbuName(t.deliveryTo),
+ "Details":t.details||"—",
+ }));
+ exportToExcel([{name:"Transactions",data}],"BE_Warehouse_Transactions_"+new Date().toISOString().slice(0,10));
  }
 
  const [openGroups,setOpenGroups]=useState({});
@@ -2137,7 +2221,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:0}}>Transaction History</h1>
  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
  <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{transactions.length} total</span>
- <button onClick={exportCSV} disabled={filtered.length===0} style={{padding:"6px 12px",background:A,color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:filtered.length===0?"not-allowed":"pointer",opacity:filtered.length===0?0.5:1}}>⬇ Export CSV</button>
+ <button onClick={exportCSV} disabled={filtered.length===0} style={{padding:"6px 12px",background:"#059669",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:filtered.length===0?"not-allowed":"pointer",opacity:filtered.length===0?0.5:1}}>📥 Export Excel</button>
  </div>
  </div>
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Full audit log — grouped by appointment</p>
@@ -2322,7 +2406,23 @@ function TeamLeadPanel({ appointments, isMobile }) {
 
  return(
  <div style={{padding:isMobile?16:28}}>
- <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Team Lead Dashboard</h1>
+ <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10,marginBottom:4}}>
+ <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:0}}>Team Lead Dashboard</h1>
+ <button onClick={()=>{
+ const data=filteredAppts.map(a=>({
+ "ID":a.id,"Supplier":a.supplierName||"—","SBU":sbuName(a.deliveryTo),
+ "Date":fmtExcelDate(a.date),"Time":a.time||"—",
+ "Status":(a.status||"—").replace(/_/g," "),
+ "Delivery Status":(a.deliveryStatus||"—").replace(/_/g," "),
+ "Total Orders":a.totalOrders||0,"Total Lines":a.totalLines||0,
+ "PO Numbers":(a.poNumbers||[]).join(", ")||"—",
+ "Completed At":fmtExcelTs(a.completedAt),"Failed Reason":a.failureReason||"—",
+ }));
+ exportToExcel([{name:"Deliveries",data}],"BE_Warehouse_TeamLead_"+new Date().toISOString().slice(0,10));
+ }} disabled={filteredAppts.length===0} style={{padding:"8px 14px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer"}}>
+ 📥 Export Excel
+ </button>
+ </div>
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Monitor approved deliveries and track completion status</p>
  <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, supplier, date, time, PO, notes…" style={{width:"100%",marginBottom:16,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
 
@@ -2497,7 +2597,17 @@ function App() {
  useEffect(()=>{
  const subA=window.supabase.channel("appts-changes").on("postgres_changes",{event:"*",schema:"public",table:"appointments"},payload=>{
  if(payload.eventType==="INSERT"||payload.eventType==="UPDATE"){
- setAppts(p=>{const filtered=p.filter(x=>x.id!==payload.new.data.id);return [payload.new.data,...filtered].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));});
+ const incoming=payload.new.data;
+ if(!incoming)return;
+ setAppts(p=>{
+ const existing=p.find(x=>x.id===incoming.id);
+ const localConv=existing?.(existing.conversation||[]):[];
+ const remoteConv=incoming.conversation||[];
+ const merged=remoteConv.length>=localConv.length?remoteConv:localConv;
+ const updated={...incoming,conversation:merged};
+ const filtered=p.filter(x=>x.id!==incoming.id);
+ return [updated,...filtered].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+ });
  }else if(payload.eventType==="DELETE"){
  setAppts(p=>p.filter(x=>x.id!==payload.old.id));
  }
