@@ -851,14 +851,14 @@ function SupplierApp() {
   sbGetAll("transactions").then(t=>{if(t){setTransactions(t.sort((x,y)=>new Date(y.timestamp)-new Date(x.timestamp)));localStorage.setItem(LS_TRANSACTIONS,JSON.stringify(t));}});
  },[]);
 
- // Real-time subscription for appointments (to see approvals instantly)
+ // Real-time subscription for appointments (to see approvals + admin messages instantly)
  useEffect(()=>{
-  const sub=window.supabase.channel("sup-appts").on("postgres_changes",{event:"UPDATE",schema:"public",table:"appointments"},payload=>{
-   const incoming=payload.new.data;
+  const sub=window.supabase.channel("supplier-appts-"+Date.now()).on("postgres_changes",{event:"*",schema:"public",table:"appointments"},payload=>{
+   if(payload.eventType==="DELETE")return;
+   const incoming=payload.new?.data;
    if(!incoming)return;
    setAppts(p=>p.map(a=>{
     if(a.id!==incoming.id)return a;
-    // Merge conversations — keep whichever has more messages
     const localConv=a.conversation||[];
     const remoteConv=incoming.conversation||[];
     const merged=remoteConv.length>=localConv.length?remoteConv:localConv;
