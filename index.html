@@ -857,13 +857,19 @@ function SupplierApp() {
    if(payload.eventType==="DELETE")return;
    const incoming=payload.new?.data;
    if(!incoming)return;
-   setAppts(p=>p.map(a=>{
-    if(a.id!==incoming.id)return a;
-    const localConv=a.conversation||[];
-    const remoteConv=incoming.conversation||[];
-    const merged=remoteConv.length>=localConv.length?remoteConv:localConv;
-    return {...incoming,conversation:merged};
-   }));
+   // Ignore temp appointments
+   if(/^[A-Z]+-T[A-Z0-9]+\d{3}$/.test(incoming.id))return;
+   setAppts(p=>{
+    const exists=p.find(a=>a.id===incoming.id);
+    if(payload.eventType==="INSERT"&&!exists) return [incoming,...p];
+    return p.map(a=>{
+     if(a.id!==incoming.id)return a;
+     const localConv=a.conversation||[];
+     const remoteConv=incoming.conversation||[];
+     const merged=remoteConv.length>=localConv.length?remoteConv:localConv;
+     return {...incoming,conversation:merged};
+    });
+   });
   }).subscribe();
   return ()=>sub.unsubscribe();
  },[]);
@@ -920,33 +926,34 @@ function SupplierApp() {
    return {id:existing.id,pin:existing.pin};
   }
 
-  // Generate unique ID using prefix + timestamp + random to avoid race condition
+  const pin=genPin();
   const prefix=data.deliveryTo||"BR";
   const ts=Date.now().toString(36).toUpperCase();
   const rnd=Math.floor(Math.random()*1000).toString().padStart(3,"0");
   const tempId=`${prefix}-T${ts}${rnd}`;
 
-  const pin=genPin();
-  const newAppt={id:tempId,pin,supplierName:data.supplierName,supplierEmail:data.supplierEmail,deliveryTo:data.deliveryTo,date:data.date,time:data.time,totalOrders:(data.poNumbers||[]).length||0,totalLines:Number(data.totalLines),poNumbers:data.poNumbers||[],offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],storageLocation:data.storageLocation,additionalNotes:data.additionalNotes,attachments:data.attachments||[],status:"pending",deliveryStatus:"pending",priority:data.isEmergency?"emergency":"standard",emergencyJustification:data.isEmergency?data.emergencyJustification:"",managerComments:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  // Step 1: Reserve slot with temp ID (no email/transaction yet)
+  const tempAppt={id:tempId,pin,supplierName:data.supplierName,supplierEmail:data.supplierEmail,deliveryTo:data.deliveryTo,date:data.date,time:data.time,totalOrders:(data.poNumbers||[]).length||0,totalLines:Number(data.totalLines),poNumbers:data.poNumbers||[],offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],storageLocation:data.storageLocation,additionalNotes:data.additionalNotes,attachments:data.attachments||[],status:"pending",deliveryStatus:"pending",priority:data.isEmergency?"emergency":"standard",emergencyJustification:data.isEmergency?data.emergencyJustification:"",managerComments:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  await sbUpsert("appointments",tempId,tempAppt);
 
-  // Save with temp ID first to reserve the slot
-  await sbUpsert("appointments",tempId,newAppt);
-
-  // Now fetch all to get proper sequential ID
+  // Step 2: Fetch all to get correct sequential ID
   const latest=await sbGetAll("appointments");
-  const allAppts=latest||appts;
-  const properId=nextAptId(allAppts.filter(a=>a.id!==tempId),data.deliveryTo);
+  const properId=nextAptId((latest||appts).filter(a=>a.id!==tempId),data.deliveryTo);
 
-  // Update with proper sequential ID
-  const finalAppt={...newAppt,id:properId};
+  // Step 3: Save with final ID
+  const finalAppt={...tempAppt,id:properId};
   await sbUpsert("appointments",properId,finalAppt);
 
-  // Delete temp entry
+  // Step 4: Delete temp
   try{await window.supabase.from("appointments").delete().eq("id",tempId);}catch(e){}
 
+  // Step 5: Update local state
   setAppts(p=>[finalAppt,...p.filter(a=>a.id!==tempId)]);
+
+  // Step 6: Log email + transaction ONCE with final ID
   logEmail("submission",finalAppt);
   logTransaction("create",finalAppt,{actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:data.isEmergency?"EMERGENCY: "+data.emergencyJustification:"New appointment submitted"});
+
   return {id:properId,pin};
  }
 
