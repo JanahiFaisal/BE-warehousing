@@ -253,86 +253,7 @@ function StoreBadge({ loc }) {
  );
 }
 
-// ─── HELP CONTENT ───────────────────────────────────────────
-const HELP_CONTENT = {
- supplier:{
-  title:"Supplier Guide",
-  icon:"📦",
-  sections:[
-   {title:"How to Submit a Request",steps:["Click 'Book a Delivery' on the home page","Select your SBU (BR / BU / BG / BT)","Choose a delivery date — weekends and holidays are blocked","Select a time slot — maximum 2 suppliers per slot per SBU","Add your PO numbers by typing each one and pressing Enter","Total Orders is calculated automatically from your PO tags","Select storage location and equipment requirements","Attach any supporting documents (optional)","Click Submit — you will receive a confirmation email with your Appointment ID and PIN"]},
-   {title:"How to Track Your Appointment",steps:["Click 'Track Your Appointment' on the home page","Search by your Appointment ID, email address, or PO number","Enter your 4-digit PIN to unlock full details","You can see your current status and any admin comments","Use the Conversation box to send a message to the warehouse team"]},
-   {title:"Understanding Statuses",steps:["Pending — Your request is awaiting admin review","Approved — Your delivery is confirmed for the selected date and time","Rejected — Your request was not approved. Check the reason in the tracker","Revision Required — Admin has returned your request for changes. Review comments and resubmit","Delivery Completed — Your delivery has been received successfully","Delivery Failed — There was an issue with your delivery. Contact the warehouse team"]},
-   {title:"Emergency Requests",steps:["Toggle the Emergency switch at the top of the booking form","Emergency requests bypass date restrictions, slot limits, and holidays","You must provide a written justification (minimum 20 characters)","You must check the emergency declaration checkbox","Emergency requests are flagged with a red badge and admin is notified urgently"]},
-   {title:"Need Help?",steps:["Email: Faisal.Janahi@Bapcoenergies.com","Mobile: +973 6667 6797","Office: 17757483"]},
-  ]
- },
- admin:{
-  title:"Admin Guide",
-  icon:"🛡️",
-  sections:[
-   {title:"Reviewing Requests",steps:["Open the Admin Panel from the sidebar","Pending filter is active by default showing requests awaiting review","Click 'View' on any request to see full details including attachments","Use the filter buttons to filter by status: Pending, Approved, Rejected, Revision","Use the search bar to find requests by any field","Emergency requests appear at the top with a red badge"]},
-   {title:"Taking Actions",steps:["Approve — Confirms the delivery. Supplier receives confirmation email. Security team is notified","Reject — Declines the request. Enter a reason — supplier receives rejection email","Return for Revision — Sends request back to supplier with your comments. Supplier must edit and resubmit","All actions require confirmation before executing"]},
-   {title:"Calendar View",steps:["Switch between Monthly, Weekly, and Daily views","Filter by organization (BR/BU/BG/BT) using the top filter","Filter by storage location to see specific warehouse area deliveries","Filter by delivery status (pending/completed/failed)","Click any appointment in the calendar to see details and take action","Daily view: use the date picker to jump to a specific day quickly"]},
-   {title:"Team Lead Dashboard",steps:["Shows all approved deliveries grouped by status","Click stat cards to filter: Completed / Overdue / Upcoming / Failed","Mark deliveries as Complete or Failed directly from each card","Overdue deliveries are highlighted in red — action required"]},
-   {title:"Statistics & Reports",steps:["Statistics page shows peak delivery times, busiest slots, and SBU breakdown","Use date range filter to analyze specific periods","Click stat cards to navigate to Admin Panel with that filter applied","Use Export Excel button on any page to download current data as a spreadsheet"]},
-   {title:"Conversation System",steps:["Open any appointment and scroll to the Conversation section","Type a message and press Enter or click Send","Supplier receives an email notification with your message","Supplier can reply from their tracker — you receive an email alert","Unread messages show a red NEW badge on the View button"]},
-   {title:"Settings",steps:["Change your password and nickname in Settings → Change Credentials","Your nickname appears in the Transaction History as the action performer","Update admin alert email and security email in Settings → Email Configuration","Cloud sync status shows whether Supabase is connected"]},
-  ]
- }
-};
-
-function HelpModal({ role="supplier", onClose }){
- const [activeSection,setActiveSection]=useState(0);
- const content=HELP_CONTENT[role];
- const isMobile=window.innerWidth<640;
- return(
- <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={onClose}>
- <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:680,maxHeight:"85vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 25px 60px rgba(0,0,0,0.4)"}}>
- {/* Header */}
- <div style={{background:"#07114C",padding:"20px 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
- <div style={{display:"flex",alignItems:"center",gap:12}}>
- <span style={{fontSize:24}}>{content.icon}</span>
- <div>
- <div style={{color:"#fff",fontWeight:800,fontSize:18}}>{content.title}</div>
- <div style={{color:"rgba(255,255,255,0.5)",fontSize:12}}>Select a topic below</div>
- </div>
- </div>
- <button onClick={onClose} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:10,padding:"8px 12px",color:"#fff",fontSize:18,cursor:"pointer"}}>×</button>
- </div>
- {/* Body */}
- <div style={{display:"flex",flex:1,overflow:"hidden"}}>
- {/* Sidebar */}
- <div style={{width:200,background:"#f8fafc",borderRight:"1px solid #e5e7eb",overflowY:"auto",flexShrink:0}}>
- {content.sections.map((s,i)=>(
- <button key={i} onClick={()=>setActiveSection(i)} style={{width:"100%",padding:"12px 16px",textAlign:"left",background:activeSection===i?"#07114C":"transparent",border:"none",borderBottom:"1px solid #e5e7eb",cursor:"pointer",color:activeSection===i?"#fff":"#374151",fontSize:13,fontWeight:activeSection===i?700:400,lineHeight:1.4}}>
- {s.title}
- </button>
- ))}
- </div>
- {/* Content */}
- <div style={{flex:1,overflowY:"auto",padding:24}}>
- <h3 style={{fontWeight:800,fontSize:16,color:"#07114C",margin:"0 0 16px"}}>{content.sections[activeSection].title}</h3>
- <div style={{display:"flex",flexDirection:"column",gap:12}}>
- {content.sections[activeSection].steps.map((step,i)=>(
- <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start"}}>
- <div style={{width:24,height:24,borderRadius:"50%",background:"#07114C",color:"#fff",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{i+1}</div>
- <div style={{fontSize:14,color:"#374151",lineHeight:1.6}}>{step}</div>
- </div>
- ))}
- </div>
- </div>
- </div>
- {/* Footer */}
- <div style={{padding:"14px 24px",borderTop:"1px solid #e5e7eb",background:"#f8fafc",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
- <span style={{fontSize:12,color:"#9ca3af"}}>BE Warehouse — Help Center</span>
- <button onClick={onClose} style={{padding:"8px 20px",background:"#07114C",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer"}}>Close</button>
- </div>
- </div>
- </div>
- );
-}
-
-function TopBar({ onBack, onHelp }) {
+function TopBar({ onBack }) {
  return (
  <div style={{background:BG,padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid rgba(255,255,255,0.1)",flexWrap:"wrap",gap:8}}>
  <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{color:"#fff",fontWeight:800,fontSize:13}}>BE – Warehouse</span></div>
@@ -343,7 +264,6 @@ function TopBar({ onBack, onHelp }) {
  <a href="tel:+97366676797" style={{color:"rgba(255,255,255,0.45)",fontSize:11,textDecoration:"none",display:"flex",alignItems:"center",gap:5}}>
  <span>📞</span><span>Need help?</span>
  </a>
- {onHelp&&<button onClick={onHelp} style={{color:"#C8962A",background:"rgba(200,150,42,0.15)",border:"1px solid rgba(200,150,42,0.3)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:700,padding:"5px 10px"}}>❓ Guide</button>}
  <button onClick={onBack} style={{color:"rgba(255,255,255,0.5)",background:"none",border:"none",cursor:"pointer",fontSize:12}}>← Home</button>
  </div>
  </div>
@@ -415,7 +335,6 @@ function Landing({ onSupplier, onAdmin, onTracker }) {
 }
 
 function AdminLogin({ onLogin, onBack }) {
- const [showHelp,setShowHelp]=useState(false);
  const [email,setEmail]=useState("");
  const [pwd,setPwd]=useState("");
  const [err,setErr]=useState("");
@@ -429,8 +348,7 @@ function AdminLogin({ onLogin, onBack }) {
  }
  return (
  <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",fontFamily:"system-ui,sans-serif"}}>
- {showHelp&&<HelpModal role="supplier" onClose={()=>setShowHelp(false)}/>}
- <TopBar onBack={onBack} onHelp={()=>setShowHelp(true)}/>
+ <TopBar onBack={onBack}/>
  <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
  <div style={{width:"100%",maxWidth:380}}>
  <div style={{textAlign:"center",marginBottom:24}}>
@@ -459,7 +377,6 @@ function AdminLogin({ onLogin, onBack }) {
 const BLANK = {supplierName:"",supplierEmail:"",deliveryTo:"",date:"",time:"",totalOrders:"",totalLines:"",poNumbers:[],needsEquipment:null,offloadingEquipment:[],storageLocation:[],additionalNotes:"",attachments:[],isEmergency:false,emergencyJustification:"",emergencyDeclared:false};
 
 function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
- const [showHelp,setShowHelp]=useState(false);
  const { isMobile } = useWindowSize();
  const [f,setF]=useState(editingAppointment?{
  supplierName:editingAppointment.supplierName,
@@ -528,8 +445,7 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
 
  if(result) return (
  <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",fontFamily:"system-ui,sans-serif"}}>
- {showHelp&&<HelpModal role="supplier" onClose={()=>setShowHelp(false)}/>}
- <TopBar onBack={onBack} onHelp={()=>setShowHelp(true)}/>
+ <TopBar onBack={onBack}/>
  <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
  <div style={{textAlign:"center",maxWidth:440,width:"100%"}}>
  <div style={{width:72,height:72,background:"#d1fae5",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:36}}>✅</div>
@@ -564,8 +480,9 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
 
  return (
  <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",fontFamily:"system-ui,sans-serif"}}>
- {showHelp&&<HelpModal role="supplier" onClose={()=>setShowHelp(false)}/>}
- <TopBar onBack={onBack} onHelp={()=>setShowHelp(true)}/>
+ <TopBar onBack={onBack}/>
+ <div style={{maxWidth:640,width:"100%",margin:"0 auto",padding:isMobile?"20px 16px":"28px 20px"}}>
+ <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,marginBottom:4}}>{editingAppointment?"↩️ Edit & Resubmit":"Book a Delivery"}</h1>
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,marginBottom:20}}>{editingAppointment?`Revising appointment ${editingAppointment.id} — Make your changes and resubmit.`:"All requests are subject to warehouse approval."}</p>
  <div style={{background:"#fff",borderRadius:20,padding:isMobile?20:28,display:"flex",flexDirection:"column",gap:18}}>
 
@@ -840,8 +757,7 @@ function SupplierTracker({ appointments, onBack, onSendMessage }) {
 
  return (
  <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",fontFamily:"system-ui,sans-serif"}}>
- {showHelp&&<HelpModal role="supplier" onClose={()=>setShowHelp(false)}/>}
- <TopBar onBack={onBack} onHelp={()=>setShowHelp(true)}/>
+ <TopBar onBack={onBack}/>
  <div style={{maxWidth:640,width:"100%",margin:"0 auto",padding:isMobile?"20px 16px":"28px 20px"}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,marginBottom:4}}>Track Your Appointment</h1>
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,marginBottom:20}}>Search by Appointment ID, email, supplier name, or PO number — then enter your 4-digit PIN to view details.</p>
@@ -1673,59 +1589,6 @@ function EmailSaveButton({ getInp }){
  <button onClick={save} style={{width:"100%",padding:"12px",background:"#07114C",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:700,cursor:"pointer"}}>
  💾 Save Recipients
  </button>
- </div>
- );
-}
-
-function HelpPage({ isMobile }){
- const [activeRole,setActiveRole]=useState("admin");
- const [activeSection,setActiveSection]=useState(0);
- const content=HELP_CONTENT[activeRole];
- return(
- <div style={{padding:isMobile?16:28}}>
- <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Help & Guide</h1>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 20px"}}>Step-by-step instructions for using the BE Warehouse system</p>
- {/* Role toggle */}
- <div style={{display:"flex",gap:8,marginBottom:20}}>
- {["admin","supplier"].map(r=>(
- <button key={r} onClick={()=>{setActiveRole(r);setActiveSection(0);}} style={{padding:"10px 20px",borderRadius:12,border:"none",background:activeRole===r?"#C8962A":"rgba(255,255,255,0.1)",color:activeRole===r?"#07114C":"rgba(255,255,255,0.7)",fontWeight:700,fontSize:14,cursor:"pointer"}}>
- {HELP_CONTENT[r].icon} {HELP_CONTENT[r].title}
- </button>
- ))}
- </div>
- <div style={{display:"flex",gap:16,flexDirection:isMobile?"column":"row"}}>
- {/* Section list */}
- <div style={{width:isMobile?"100%":220,flexShrink:0,display:"flex",flexDirection:"column",gap:6}}>
- {content.sections.map((s,i)=>(
- <button key={i} onClick={()=>setActiveSection(i)} style={{padding:"12px 16px",borderRadius:12,border:`1px solid ${activeSection===i?"#C8962A":"rgba(255,255,255,0.1)"}`,background:activeSection===i?"rgba(200,150,42,0.15)":"rgba(255,255,255,0.05)",color:activeSection===i?"#C8962A":"rgba(255,255,255,0.7)",fontSize:13,fontWeight:activeSection===i?700:400,cursor:"pointer",textAlign:"left"}}>
- {s.title}
- </button>
- ))}
- </div>
- {/* Steps */}
- <div style={{flex:1,background:"rgba(255,255,255,0.06)",borderRadius:16,padding:20,border:"1px solid rgba(255,255,255,0.1)"}}>
- <h3 style={{color:"#C8962A",fontWeight:800,fontSize:16,margin:"0 0 16px"}}>{content.sections[activeSection].title}</h3>
- <div style={{display:"flex",flexDirection:"column",gap:14}}>
- {content.sections[activeSection].steps.map((step,i)=>(
- <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start"}}>
- <div style={{width:26,height:26,borderRadius:"50%",background:"#C8962A",color:"#07114C",fontSize:12,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{i+1}</div>
- <div style={{fontSize:14,color:"rgba(255,255,255,0.85)",lineHeight:1.7}}>{step}</div>
- </div>
- ))}
- </div>
- </div>
- </div>
- {/* Contact */}
- <div style={{marginTop:20,background:"rgba(200,150,42,0.1)",border:"1px solid rgba(200,150,42,0.3)",borderRadius:14,padding:16}}>
- <div style={{color:"#C8962A",fontWeight:700,fontSize:13,marginBottom:8}}>Still need help? Contact us:</div>
- <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
- {[{icon:"📧",label:"Faisal.Janahi@Bapcoenergies.com",href:"mailto:Faisal.Janahi@Bapcoenergies.com"},{icon:"📱",label:"+973 6667 6797",href:"tel:+97366676797"},{icon:"📞",label:"17757483",href:"tel:17757483"}].map(({icon,label,href})=>(
- <a key={label} href={href} style={{display:"flex",alignItems:"center",gap:6,color:"rgba(255,255,255,0.7)",fontSize:13,textDecoration:"none"}}>
- <span>{icon}</span><span>{label}</span>
- </a>
- ))}
- </div>
- </div>
  </div>
  );
 }
@@ -3037,7 +2900,6 @@ function App() {
  {id:"emails",label:"Email Log",badge:emailLog.length,icon:"✉️"},
  {id:"history",label:"History",badge:transactions.length,icon:"📜"},
  {id:"settings",label:"Settings",icon:"⚙️"},
- {id:"help",label:"Help & Guide",icon:"❓"},
  ];
 
  return(
@@ -3053,7 +2915,6 @@ function App() {
  {!isMobile && <span style={{color:"rgba(255,255,255,0.5)",fontSize:12}}>{adminEmail}</span>}
  <span style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:syncStatus==="ok"?"rgba(16,185,129,0.2)":syncStatus==="error"?"rgba(239,68,68,0.2)":"rgba(200,150,42,0.2)",color:syncStatus==="ok"?"#6ee7b7":syncStatus==="error"?"#fca5a5":"#fcd34d",border:"1px solid rgba(255,255,255,0.1)"}}>{syncStatus==="ok"?"☁️ Synced":syncStatus==="error"?"⚠️ Sync Error":"⏳ Syncing…"}</span>
  <button onClick={()=>pullFromSupabase(false)} title="Refresh data" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,padding:"4px 10px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700}}>🔄</button>
- <button onClick={()=>setView("help")} style={{background:"rgba(200,150,42,0.15)",border:"1px solid rgba(200,150,42,0.3)",borderRadius:8,padding:"4px 10px",color:"#C8962A",fontSize:12,cursor:"pointer",fontWeight:700}}>❓ Guide</button>
  <button onClick={()=>{setPage("landing");setView("dashboard");setAdminEmail("");sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");}} style={{color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
  </div>
  </header>
@@ -3106,7 +2967,6 @@ function App() {
  {view==="emails" && <EmailLog emailLog={orgFilter==="BE"?emailLog:emailLog.filter(e=>(e.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
  {view==="history" && <TransactionsHistory transactions={orgFilter==="BE"?transactions:transactions.filter(t=>(t.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
  {view==="settings" && <SettingsPanel config={config} onChange={setConfig} isMobile={isMobile}/>}
- {view==="help" && <HelpPage isMobile={isMobile}/>}
  </div>
  <div style={{borderTop:"1px solid rgba(255,255,255,0.08)",padding:isMobile?"12px 16px":"12px 28px",display:"flex",alignItems:"center",flexWrap:"wrap",gap:isMobile?10:24,justifyContent:"space-between"}}>
  <span style={{color:"rgba(255,255,255,0.3)",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:0.5,flexShrink:0}}>Support</span>
