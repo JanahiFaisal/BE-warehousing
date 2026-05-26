@@ -2473,8 +2473,7 @@ function App() {
  return ()=>{ window.removeEventListener("focus", onFocus); };
  },[]);
 
- // Conversation — send message from admin or supplier
- async function handleSendMessage(aptId, message, authorName, author="admin"){
+ // 24-hour reminder emails for approved appointments
  useEffect(()=>{
  if(!appts.length)return;
  const LS_REMINDERS="be_wh_reminders_sent";
@@ -2487,14 +2486,14 @@ function App() {
  const hoursUntil=(delivery-now)/3600000;
  if(hoursUntil>0&&hoursUntil<=24){
  const subject=`Reminder: Your Delivery Appointment Tomorrow — ${a.id}`;
- const body=`Dear ${a.supplierName},\n\nThis is a reminder that your delivery appointment is scheduled for tomorrow.\n\nAppointment Details:\n─────────────────────────────\nReference ID: ${a.id}\nDate: ${fmtDate(a.date)}\nTime: ${a.time}\nDelivery To: ${a.deliveryTo}\nTotal Orders: ${a.totalOrders}\nPO Numbers: ${(a.poNumbers||[]).join(", ")||"—"}\nStorage Location: ${Array.isArray(a.storageLocation)?a.storageLocation.join(", "):a.storageLocation||"—"}\n\nPlease ensure your delivery is on time and all documentation is ready.\n\nKind regards,\nBE Warehouse Operations\nBapco Energies`;
+ const body=`Dear ${a.supplierName},\n\nThis is a reminder that your delivery appointment is scheduled for tomorrow.\n\nAppointment Details:\nReference ID: ${a.id}\nDate: ${fmtDate(a.date)}\nTime: ${a.time}\nDelivery To: ${a.deliveryTo}\nTotal Orders: ${a.totalOrders}\n\nPlease ensure your delivery is on time.\n\nKind regards,\nBE Warehouse Operations`;
  sendEmail(a.supplierEmail, subject, body);
  localStorage.setItem(LS_REMINDERS, JSON.stringify([...sent, a.id]));
  }
  });
  },[appts]);
 
- // Real-time subscriptions — instant sync across all devices
+ // Conversation — send message from admin or supplier
  useEffect(()=>{
  const subA=window.supabase.channel("appts-changes").on("postgres_changes",{event:"*",schema:"public",table:"appointments"},payload=>{
  if(payload.eventType==="INSERT"||payload.eventType==="UPDATE"){
