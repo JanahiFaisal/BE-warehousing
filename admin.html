@@ -2470,43 +2470,11 @@ function App() {
  function onFocus(){ pullFromSupabase(true); }
  window.addEventListener("focus", onFocus);
  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") pullFromSupabase(true); });
- return ()=>{
- window.removeEventListener("focus", onFocus);
- };
+ return ()=>{ window.removeEventListener("focus", onFocus); };
  },[]);
 
  // Conversation — send message from admin or supplier
  async function handleSendMessage(aptId, message, authorName, author="admin"){
- const appt=appts.find(a=>a.id===aptId);
- if(!appt)return;
- const newMsg={id:Date.now()+Math.random(),timestamp:new Date().toISOString(),author,authorName,message,read:false};
- const updated={...appt,conversation:[...(appt.conversation||[]),newMsg],updatedAt:new Date().toISOString()};
- setAppts(p=>p.map(a=>a.id===aptId?updated:a));
- await sbUpdate("appointments",aptId,{conversation:updated.conversation,updatedAt:updated.updatedAt});
- // Email notification
- if(author==="admin"){
- // Notify supplier
- const subject=`New message on your appointment ${aptId}`;
- const body=`Dear ${appt.supplierName},\n\n${authorName} has left a message on your appointment ${aptId}:\n\n"${message}"\n\nPlease log in to track your appointment and reply.\n\nKind regards,\nBE Warehouse Operations`;
- sendEmail(appt.supplierEmail, subject, body);
- } else {
- // Notify admin
- const cfg=getEmailCfg();
- const subject="New Supplier Reply: "+aptId+" — "+appt.supplierName;
- const body=`${appt.supplierName} has replied on appointment ${aptId}:\n\n"${message}"\n\nPlease log in to the admin portal to review.\n\nAppointment: ${aptId}\nSupplier: ${appt.supplierName}\nStatus: ${appt.status}`;
- sendEmail(cfg.adminEmail||ADMIN_ALERT_EMAIL, subject, body);
- }
- }
-
- // Mark conversation messages as read when admin opens view modal
- useEffect(()=>{
- if(!viewId)return;
- const appt=appts.find(a=>a.id===viewId);
- if(!appt||!appt.conversation||!appt.conversation.some(m=>!m.read&&m.author==="supplier"))return;
- const updated={...appt,conversation:appt.conversation.map(m=>m.author==="supplier"?{...m,read:true}:m)};
- setAppts(p=>p.map(a=>a.id===viewId?updated:a));
- sbUpdate("appointments",viewId,{conversation:updated.conversation});
- },[viewId]);
  useEffect(()=>{
  if(!appts.length)return;
  const LS_REMINDERS="be_wh_reminders_sent";
@@ -2555,6 +2523,36 @@ function App() {
  const [rejReason,setRejReason]=useState("");
  const [viewId,setViewId]=useState(null);
  const [loading,setLoading]=useState(null);
+
+ // Conversation — send message (defined after viewId)
+ async function handleSendMessage(aptId, message, authorName, author="admin"){
+ const appt=appts.find(a=>a.id===aptId);
+ if(!appt)return;
+ const newMsg={id:Date.now()+Math.random(),timestamp:new Date().toISOString(),author,authorName,message,read:false};
+ const updated={...appt,conversation:[...(appt.conversation||[]),newMsg],updatedAt:new Date().toISOString()};
+ setAppts(p=>p.map(a=>a.id===aptId?updated:a));
+ await sbUpdate("appointments",aptId,{conversation:updated.conversation,updatedAt:updated.updatedAt});
+ if(author==="admin"){
+ const subject="New message on your appointment "+aptId;
+ const body="Dear "+appt.supplierName+",\n\n"+authorName+" has left a message on your appointment "+aptId+":\n\n\""+message+"\"\n\nPlease log in to track your appointment and reply.\n\nKind regards,\nBE Warehouse Operations";
+ sendEmail(appt.supplierEmail, subject, body);
+ } else {
+ const cfg=getEmailCfg();
+ const subject="New Supplier Reply: "+aptId+" — "+appt.supplierName;
+ const body=appt.supplierName+" has replied on appointment "+aptId+":\n\n\""+message+"\"\n\nPlease log in to the admin portal to review.";
+ sendEmail(cfg.adminEmail||ADMIN_ALERT_EMAIL, subject, body);
+ }
+ }
+
+ // Mark messages as read when admin opens view modal
+ useEffect(()=>{
+ if(!viewId)return;
+ const appt=appts.find(a=>a.id===viewId);
+ if(!appt||!appt.conversation||!appt.conversation.some(m=>!m.read&&m.author==="supplier"))return;
+ const updated={...appt,conversation:appt.conversation.map(m=>m.author==="supplier"?{...m,read:true}:m)};
+ setAppts(p=>p.map(a=>a.id===viewId?updated:a));
+ sbUpdate("appointments",viewId,{conversation:updated.conversation});
+ },[viewId]);
  const [orgFilter,setOrgFilter]=useState("BE");
 
  const filteredAppts = useMemo(()=>orgFilter==="BE"?appts:appts.filter(a=>a.deliveryTo===orgFilter),[appts,orgFilter]);
