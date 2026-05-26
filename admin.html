@@ -91,7 +91,6 @@ function exportToExcel(sheets, filename){
 
 function fmtExcelDate(ds){return ds?new Date(ds).toLocaleDateString("en-GB"):"—";}
 function fmtExcelTs(iso){return iso?new Date(iso).toLocaleString("en-GB"):"—";}
-function sbuName(code){const m={BR:"Bapco Refining",BU:"Bapco Upstream",BG:"Bapco Gas",BT:"Bapco Trading"};return m[code]||code||"—";}
 
 // Supabase helpers
 async function sbGetAll(table){
