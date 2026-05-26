@@ -579,7 +579,56 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  );
 }
 
-function SupplierTracker({ appointments, onBack }) {
+function ConversationThread({ conversation=[], currentAuthor="supplier", authorName="", onSend, appointmentId }){
+ const [msg,setMsg]=useState("");
+ const [sending,setSending]=useState(false);
+ const endRef=useRef(null);
+ useEffect(()=>{if(endRef.current)endRef.current.scrollIntoView({behavior:"smooth"});},[conversation]);
+ async function send(){
+ if(!msg.trim()||sending)return;
+ setSending(true);
+ await onSend(msg.trim());
+ setMsg("");
+ setSending(false);
+ }
+ return(
+ <div style={{background:"#f9fafb",borderRadius:14,padding:16,border:"1px solid #e5e7eb",marginTop:12}}>
+ <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+ <span style={{fontSize:14}}>💬</span>
+ <span style={{fontWeight:700,fontSize:14,color:"#111827"}}>Conversation</span>
+ {conversation.filter(m=>!m.read&&m.author!==currentAuthor).length>0&&(
+ <span style={{background:"#ef4444",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:99}}>{conversation.filter(m=>!m.read&&m.author!==currentAuthor).length} new</span>
+ )}
+ </div>
+ {conversation.length===0&&(
+ <div style={{textAlign:"center",padding:"20px 0",color:"#9ca3af",fontSize:13}}>No messages yet.</div>
+ )}
+ <div style={{display:"flex",flexDirection:"column",gap:10,maxHeight:300,overflowY:"auto",marginBottom:12}}>
+ {conversation.map((m,i)=>{
+ const mine=m.author===currentAuthor;
+ return(
+ <div key={m.id||i} style={{display:"flex",flexDirection:"column",alignItems:mine?"flex-end":"flex-start"}}>
+ <div style={{maxWidth:"80%",background:mine?"#eef2ff":"#f3f4f6",borderRadius:mine?"14px 14px 4px 14px":"14px 14px 14px 4px",padding:"10px 14px",border:mine?"1px solid #c7d2fe":"none"}}>
+ <div style={{fontSize:11,fontWeight:700,color:mine?"#4f46e5":"#6b7280",marginBottom:4}}>
+ {m.author==="admin"?"🛡️ "+m.authorName:"📦 "+m.authorName}
+ </div>
+ <div style={{fontSize:13,color:mine?"#1e1b4b":"#374151",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{m.message}</div>
+ <div style={{fontSize:10,color:mine?"#818cf8":"#9ca3af",marginTop:4,textAlign:"right"}}>{fmtTs(m.timestamp)}</div>
+ </div>
+ </div>
+ );
+ })}
+ <div ref={endRef}/>
+ </div>
+ <div style={{display:"flex",gap:8}}>
+ <input value={msg} onChange={e=>setMsg(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()} placeholder="Type a message... (Enter to send)" style={{flex:1,border:"1px solid #e5e7eb",borderRadius:10,padding:"10px 12px",fontSize:13,background:"#fff",color:"#374151",outline:"none"}}/>
+ <button onClick={send} disabled={!msg.trim()||sending} style={{padding:"10px 16px",background:sending?"#9ca3af":"#07114C",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:msg.trim()&&!sending?"pointer":"not-allowed"}}>{sending?"...":"Send"}</button>
+ </div>
+ </div>
+ );
+}
+
+function SupplierTracker({ appointments, onBack, onSendMessage }) {
  const { isMobile } = useWindowSize();
  const [query,setQuery]=useState("");
  const [results,setResults]=useState([]);
@@ -744,6 +793,15 @@ function SupplierTracker({ appointments, onBack }) {
  </button>
  </div>
  )}
+ <ConversationThread
+ conversation={a.conversation||[]}
+ currentAuthor="supplier"
+ authorName={a.supplierName||"Supplier"}
+ appointmentId={a.id}
+ onSend={async(msg)=>{
+ if(onSendMessage) await onSendMessage(a.id, msg, a.supplierName||"Supplier");
+ }}
+ />
  </div>
  )}
  </div>
@@ -869,7 +927,20 @@ function SupplierApp() {
 
  if(page==="landing") return <Landing onSupplier={()=>setPage("supplier")} onAdmin={()=>{window.location.href="admin.html";}} onTracker={()=>setPage("tracker")}/>;
  if(page==="supplier") return <SupplierForm onSubmit={handleBook} onBack={()=>{setEditingId(null);setPage("landing");}} appointments={appts} editingAppointment={editingAppt}/>;
- if(page==="tracker") return <SupplierTracker appointments={appts} onBack={()=>setPage("landing")}/>;
+ async function handleSendMessage(aptId, message, authorName){
+  const appt=appts.find(a=>a.id===aptId);
+  if(!appt)return;
+  const newMsg={id:Date.now()+Math.random(),timestamp:new Date().toISOString(),author:"supplier",authorName,message,read:false};
+  const updated={...appt,conversation:[...(appt.conversation||[]),newMsg],updatedAt:new Date().toISOString()};
+  setAppts(p=>p.map(a=>a.id===aptId?updated:a));
+  await sbUpdate("appointments",aptId,{conversation:updated.conversation,updatedAt:updated.updatedAt});
+  // Notify admin
+  const subject=`💬 Supplier reply on ${aptId} — ${appt.supplierName}`;
+  const body=`${appt.supplierName} has sent a message on appointment ${aptId}:\n\n"${message}"\n\nPlease log in to the admin portal to review.\n\nAppointment: ${aptId}\nSupplier: ${appt.supplierName}\nStatus: ${appt.status}`;
+  sendEmail(ADMIN_ALERT_EMAIL, subject, body);
+ }
+
+ if(page==="tracker") return <SupplierTracker appointments={appts} onBack={()=>setPage("landing")} onSendMessage={handleSendMessage}/>;
  return <Landing onSupplier={()=>setPage("supplier")} onAdmin={()=>{window.location.href="admin.html";}} onTracker={()=>setPage("tracker")}/>;
 }
 
