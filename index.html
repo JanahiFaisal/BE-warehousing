@@ -924,12 +924,19 @@ function SupplierApp() {
    return {id:existing.id,pin:existing.pin};
   }
 
-  // Use timestamp+random as permanent unique ID — no temp/swap needed
+  // Get atomic sequential ID from Supabase — guaranteed unique even with simultaneous submissions
   const prefix=data.deliveryTo||"BR";
-  const unique=Date.now().toString(36).toUpperCase()+Math.floor(Math.random()*9999).toString().padStart(4,"0");
-  const id=`${prefix}-${unique}`;
-  const pin=genPin();
+  let id;
+  try{
+   const {data:seqData,error}=await window.supabase.rpc("next_apt_id",{prefix});
+   if(error||!seqData)throw error||new Error("No ID");
+   id=seqData;
+  }catch(e){
+   // Fallback to timestamp ID if RPC fails
+   id=`${prefix}-${Date.now().toString(36).toUpperCase()}${Math.floor(Math.random()*999).toString().padStart(3,"0")}`;
+  }
 
+  const pin=genPin();
   const newAppt={id,pin,supplierName:data.supplierName,supplierEmail:data.supplierEmail,deliveryTo:data.deliveryTo,date:data.date,time:data.time,totalOrders:(data.poNumbers||[]).length||0,totalLines:Number(data.totalLines),poNumbers:data.poNumbers||[],offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],storageLocation:data.storageLocation,additionalNotes:data.additionalNotes,attachments:data.attachments||[],status:"pending",deliveryStatus:"pending",priority:data.isEmergency?"emergency":"standard",emergencyJustification:data.isEmergency?data.emergencyJustification:"",managerComments:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
 
   setAppts(p=>[newAppt,...p]);
