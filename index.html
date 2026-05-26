@@ -935,7 +935,7 @@ function SupplierApp() {
   setAppts(p=>p.map(a=>a.id===aptId?updated:a));
   await sbUpdate("appointments",aptId,{conversation:updated.conversation,updatedAt:updated.updatedAt});
   // Notify admin
-  const subject=`💬 Supplier reply on ${aptId} — ${appt.supplierName}`;
+  const subject="New Supplier Reply: "+aptId+" — "+appt.supplierName;
   const body=`${appt.supplierName} has sent a message on appointment ${aptId}:\n\n"${message}"\n\nPlease log in to the admin portal to review.\n\nAppointment: ${aptId}\nSupplier: ${appt.supplierName}\nStatus: ${appt.status}`;
   sendEmail(ADMIN_ALERT_EMAIL, subject, body);
  }
