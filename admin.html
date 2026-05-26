@@ -1862,7 +1862,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  <p style={{color:"rgba(255,255,255,0.45)",fontSize:13,margin:0}}>Advanced delivery insights to support warehouse decisions</p>
  </div>
  <button onClick={()=>{
- const data=filtered.map(a=>({
+ const data=appointments.map(a=>({
  "ID":a.id,"Supplier":a.supplierName||"—","Email":a.supplierEmail||"—",
  "SBU":sbuName(a.deliveryTo),"Date":fmtExcelDate(a.date),"Time":a.time||"—",
  "Status":(a.status||"—").replace(/_/g," "),"Priority":a.priority||"standard",
@@ -1881,8 +1881,8 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  {"Metric":"Busiest Slot","Value":busiestSlot?.label||"—"},
  {"Metric":"Busiest Day","Value":busiestDay?.label||"—"},
  ];
- exportToExcel([{name:"Summary",data:summary},{name:"Appointments",data}],"BE_Warehouse_Statistics_"+new Date().toISOString().slice(0,10));
- }} disabled={filtered.length===0} style={{padding:"10px 16px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:filtered.length===0?"not-allowed":"pointer",opacity:filtered.length===0?0.5:1}}>
+ exportToExcel([{name:"Summary",data:summary},{name:"All Appointments",data}],"BE_Warehouse_Statistics_"+new Date().toISOString().slice(0,10));
+ }} disabled={appointments.length===0} style={{padding:"10px 16px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:appointments.length===0?"not-allowed":"pointer",opacity:appointments.length===0?0.5:1}}>
  📥 Export Excel
  </button>
  </div>
