@@ -430,7 +430,7 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
 
  const today = todayStr();
  function isSlotPast(slot,dateVal){const d=dateVal!==undefined?dateVal:f.date;if(!d||d>today)return false;if(d<today)return true;const now=new Date(),parts=slot.split(":");const slotMins=parseInt(parts[0],10)*60+parseInt(parts[1],10);return slotMins<=now.getHours()*60+now.getMinutes();}
- function slotCount(slot){if(!f.date)return 0;return(appointments||[]).filter(a=>a.date===f.date&&a.time===slot&&a.status!=="rejected").length;}
+ function slotCount(slot){if(!f.date||!f.deliveryTo)return 0;return(appointments||[]).filter(a=>a.date===f.date&&a.time===slot&&a.deliveryTo===f.deliveryTo&&a.status!=="rejected").length;}
 
  const slotFull = f.time && !f.isEmergency && slotCount(f.time)>=2;
  const tagCount = f.poNumbers.length;
