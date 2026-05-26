@@ -2530,7 +2530,7 @@ function App() {
  const newMsg={id:Date.now()+Math.random(),timestamp:new Date().toISOString(),author,authorName,message,read:false};
  const updated={...appt,conversation:[...(appt.conversation||[]),newMsg],updatedAt:new Date().toISOString()};
  setAppts(p=>p.map(a=>a.id===aptId?updated:a));
- await sbUpdate("appointments",aptId,{conversation:updated.conversation,updatedAt:updated.updatedAt});
+ await sbUpsert("appointments",aptId,updated);
  if(author==="admin"){
  const subject="New message on your appointment "+aptId;
  const body="Dear "+appt.supplierName+",\n\n"+authorName+" has left a message on your appointment "+aptId+":\n\n\""+message+"\"\n\nPlease log in to track your appointment and reply.\n\nKind regards,\nBE Warehouse Operations";
