@@ -659,7 +659,7 @@ function ConversationThread({ conversation=[], currentAuthor="supplier", authorN
  setSending(false);
  }
  return(
- <div style={{background:isAdmin?"rgba(255,255,255,0.04)":"#f9fafb",borderRadius:14,padding:16,border:isAdmin?"1px solid rgba(255,255,255,0.1)":"1px solid #e5e7eb"}}>
+ <div style={{background:isAdmin?"rgba(255,255,255,0.12)":"#fff",borderRadius:14,padding:16,border:isAdmin?"1px solid rgba(255,255,255,0.25)":"1px solid #d1d5db",boxShadow:isAdmin?"none":"0 1px 4px rgba(0,0,0,0.06)"}}>
  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
  <span style={{fontSize:14}}>💬</span>
  <span style={{fontWeight:700,fontSize:14,color:isAdmin?"#fff":"#111827"}}>Conversation</span>
@@ -668,19 +668,19 @@ function ConversationThread({ conversation=[], currentAuthor="supplier", authorN
  )}
  </div>
  {conversation.length===0&&(
- <div style={{textAlign:"center",padding:"20px 0",color:isAdmin?"rgba(255,255,255,0.3)":"#9ca3af",fontSize:13}}>No messages yet. Start the conversation.</div>
+ <div style={{textAlign:"center",padding:"20px 0",color:isAdmin?"rgba(255,255,255,0.5)":"#9ca3af",fontSize:13,background:isAdmin?"rgba(255,255,255,0.05)":"#f9fafb",borderRadius:10}}>No messages yet. Start the conversation.</div>
  )}
  <div style={{display:"flex",flexDirection:"column",gap:10,maxHeight:300,overflowY:"auto",marginBottom:12}}>
  {conversation.map((m,i)=>{
  const mine=m.author===currentAuthor;
  return(
  <div key={m.id||i} style={{display:"flex",flexDirection:"column",alignItems:mine?"flex-end":"flex-start"}}>
- <div style={{maxWidth:"80%",background:mine?(isAdmin?"#07114C":"#eef2ff"):isAdmin?"rgba(255,255,255,0.1)":"#f3f4f6",borderRadius:mine?"14px 14px 4px 14px":"14px 14px 14px 4px",padding:"10px 14px",border:mine?(isAdmin?"1px solid rgba(255,255,255,0.2)":"1px solid #c7d2fe"):"none"}}>
- <div style={{fontSize:11,fontWeight:700,color:mine?(isAdmin?"#a5b4fc":"#4f46e5"):isAdmin?"rgba(255,255,255,0.5)":"#6b7280",marginBottom:4}}>
+ <div style={{maxWidth:"80%",background:mine?(isAdmin?"#C8962A":"#4f46e5"):isAdmin?"rgba(255,255,255,0.15)":"#f3f4f6",borderRadius:mine?"14px 14px 4px 14px":"14px 14px 14px 4px",padding:"10px 14px",border:"none"}}>
+ <div style={{fontSize:11,fontWeight:700,color:mine?(isAdmin?"#07114C":"#fff"):isAdmin?"rgba(255,255,255,0.7)":"#6b7280",marginBottom:4}}>
  {m.author==="admin"?"🛡️ "+m.authorName:"📦 "+m.authorName}
  </div>
- <div style={{fontSize:13,color:mine?(isAdmin?"#e0e7ff":"#1e1b4b"):isAdmin?"rgba(255,255,255,0.85)":"#374151",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{m.message}</div>
- <div style={{fontSize:10,color:mine?(isAdmin?"rgba(255,255,255,0.3)":"#818cf8"):isAdmin?"rgba(255,255,255,0.3)":"#9ca3af",marginTop:4,textAlign:"right"}}>{fmtTs(m.timestamp)}</div>
+ <div style={{fontSize:13,color:mine?(isAdmin?"#07114C":"#fff"):isAdmin?"#fff":"#374151",lineHeight:1.5,whiteSpace:"pre-wrap",fontWeight:mine?500:400}}>{m.message}</div>
+ <div style={{fontSize:10,color:mine?(isAdmin?"rgba(7,17,76,0.6)":"rgba(255,255,255,0.6)"):isAdmin?"rgba(255,255,255,0.4)":"#9ca3af",marginTop:4,textAlign:"right"}}>{fmtTs(m.timestamp)}</div>
  </div>
  </div>
  );
@@ -693,9 +693,9 @@ function ConversationThread({ conversation=[], currentAuthor="supplier", authorN
  onChange={e=>setMsg(e.target.value)}
  onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
  placeholder="Type a message... (Enter to send)"
- style={{flex:1,border:isAdmin?"1px solid rgba(255,255,255,0.15)":"1px solid #e5e7eb",borderRadius:10,padding:"10px 12px",fontSize:13,background:isAdmin?"rgba(255,255,255,0.08)":"#fff",color:isAdmin?"#fff":"#374151",outline:"none"}}
+ style={{flex:1,border:isAdmin?"1px solid rgba(255,255,255,0.3)":"1px solid #d1d5db",borderRadius:10,padding:"10px 12px",fontSize:13,background:isAdmin?"rgba(255,255,255,0.15)":"#f9fafb",color:isAdmin?"#fff":"#374151",outline:"none"}}
  />
- <button onClick={send} disabled={!msg.trim()||sending} style={{padding:"10px 16px",background:sending?"#9ca3af":"#07114C",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:msg.trim()&&!sending?"pointer":"not-allowed"}}>
+ <button onClick={send} disabled={!msg.trim()||sending} style={{padding:"10px 16px",background:sending?"#9ca3af":isAdmin?"#C8962A":"#07114C",color:isAdmin&&!sending?"#07114C":"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:msg.trim()&&!sending?"pointer":"not-allowed"}}>
  {sending?"...":"Send"}
  </button>
  </div>
