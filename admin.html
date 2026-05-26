@@ -659,28 +659,28 @@ function ConversationThread({ conversation=[], currentAuthor="supplier", authorN
  setSending(false);
  }
  return(
- <div style={{background:isAdmin?"rgba(255,255,255,0.12)":"#fff",borderRadius:14,padding:16,border:isAdmin?"1px solid rgba(255,255,255,0.25)":"1px solid #d1d5db",boxShadow:isAdmin?"none":"0 1px 4px rgba(0,0,0,0.06)"}}>
+ <div style={{background:isAdmin?"#1e2a4a":"#fff",borderRadius:14,padding:16,border:isAdmin?"1px solid #3d4f7a":"1px solid #d1d5db",boxShadow:"0 1px 4px rgba(0,0,0,0.15)"}}>
  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
  <span style={{fontSize:14}}>💬</span>
- <span style={{fontWeight:700,fontSize:14,color:isAdmin?"#fff":"#111827"}}>Conversation</span>
+ <span style={{fontWeight:700,fontSize:14,color:isAdmin?"#ffffff":"#111827"}}>Conversation</span>
  {conversation.filter(m=>!m.read&&m.author!==currentAuthor).length>0&&(
  <span style={{background:"#ef4444",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:99}}>{conversation.filter(m=>!m.read&&m.author!==currentAuthor).length} new</span>
  )}
  </div>
  {conversation.length===0&&(
- <div style={{textAlign:"center",padding:"20px 0",color:isAdmin?"rgba(255,255,255,0.5)":"#9ca3af",fontSize:13,background:isAdmin?"rgba(255,255,255,0.05)":"#f9fafb",borderRadius:10}}>No messages yet. Start the conversation.</div>
+ <div style={{textAlign:"center",padding:"20px 0",color:isAdmin?"#8899bb":"#9ca3af",fontSize:13,background:isAdmin?"#162040":"#f9fafb",borderRadius:10}}>No messages yet. Start the conversation.</div>
  )}
  <div style={{display:"flex",flexDirection:"column",gap:10,maxHeight:300,overflowY:"auto",marginBottom:12}}>
  {conversation.map((m,i)=>{
  const mine=m.author===currentAuthor;
  return(
  <div key={m.id||i} style={{display:"flex",flexDirection:"column",alignItems:mine?"flex-end":"flex-start"}}>
- <div style={{maxWidth:"80%",background:mine?(isAdmin?"#C8962A":"#4f46e5"):isAdmin?"rgba(255,255,255,0.15)":"#f3f4f6",borderRadius:mine?"14px 14px 4px 14px":"14px 14px 14px 4px",padding:"10px 14px",border:"none"}}>
- <div style={{fontSize:11,fontWeight:700,color:mine?(isAdmin?"#07114C":"#fff"):isAdmin?"rgba(255,255,255,0.7)":"#6b7280",marginBottom:4}}>
+ <div style={{maxWidth:"80%",background:mine?(isAdmin?"#C8962A":"#4f46e5"):isAdmin?"#2d3f6a":"#f3f4f6",borderRadius:mine?"14px 14px 4px 14px":"14px 14px 14px 4px",padding:"10px 14px"}}>
+ <div style={{fontSize:11,fontWeight:700,color:mine?(isAdmin?"#07114C":"rgba(255,255,255,0.8)"):isAdmin?"#aabbdd":"#6b7280",marginBottom:4}}>
  {m.author==="admin"?"🛡️ "+m.authorName:"📦 "+m.authorName}
  </div>
- <div style={{fontSize:13,color:mine?(isAdmin?"#07114C":"#fff"):isAdmin?"#fff":"#374151",lineHeight:1.5,whiteSpace:"pre-wrap",fontWeight:mine?500:400}}>{m.message}</div>
- <div style={{fontSize:10,color:mine?(isAdmin?"rgba(7,17,76,0.6)":"rgba(255,255,255,0.6)"):isAdmin?"rgba(255,255,255,0.4)":"#9ca3af",marginTop:4,textAlign:"right"}}>{fmtTs(m.timestamp)}</div>
+ <div style={{fontSize:13,color:mine?(isAdmin?"#07114C":"#ffffff"):isAdmin?"#e8edf8":"#374151",lineHeight:1.5,whiteSpace:"pre-wrap",fontWeight:500}}>{m.message}</div>
+ <div style={{fontSize:10,color:mine?(isAdmin?"rgba(7,17,76,0.6)":"rgba(255,255,255,0.5)"):isAdmin?"#6677aa":"#9ca3af",marginTop:4,textAlign:"right"}}>{fmtTs(m.timestamp)}</div>
  </div>
  </div>
  );
@@ -692,10 +692,10 @@ function ConversationThread({ conversation=[], currentAuthor="supplier", authorN
  value={msg}
  onChange={e=>setMsg(e.target.value)}
  onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
- placeholder="Type a message... (Enter to send)"
- style={{flex:1,border:isAdmin?"1px solid rgba(255,255,255,0.3)":"1px solid #d1d5db",borderRadius:10,padding:"10px 12px",fontSize:13,background:isAdmin?"rgba(255,255,255,0.15)":"#f9fafb",color:isAdmin?"#fff":"#374151",outline:"none"}}
+ placeholder={isAdmin?"Type a message...":"Type a message..."}
+ style={{flex:1,border:isAdmin?"1px solid #3d4f7a":"1px solid #d1d5db",borderRadius:10,padding:"10px 12px",fontSize:13,background:isAdmin?"#162040":"#f9fafb",color:isAdmin?"#ffffff":"#374151",outline:"none",caretColor:isAdmin?"#ffffff":"#374151"}}
  />
- <button onClick={send} disabled={!msg.trim()||sending} style={{padding:"10px 16px",background:sending?"#9ca3af":isAdmin?"#C8962A":"#07114C",color:isAdmin&&!sending?"#07114C":"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:msg.trim()&&!sending?"pointer":"not-allowed"}}>
+ <button onClick={send} disabled={!msg.trim()||sending} style={{padding:"10px 16px",background:sending?"#4a5568":isAdmin?"#C8962A":"#07114C",color:isAdmin&&!sending?"#07114C":"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:msg.trim()&&!sending?"pointer":"not-allowed"}}>
  {sending?"...":"Send"}
  </button>
  </div>
