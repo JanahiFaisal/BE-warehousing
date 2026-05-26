@@ -630,18 +630,21 @@ function ConversationThread({ conversation=[], currentAuthor="supplier", authorN
 
 function SupplierTracker({ appointments, onBack, onSendMessage }) {
  const { isMobile } = useWindowSize();
- const [query,setQuery]=useState("");
- const [results,setResults]=useState([]);
+ const [searchQuery,setSearchQuery]=useState("");
  const [searched,setSearched]=useState(false);
  const [pinInputs,setPinInputs]=useState({});
  const [pinErrors,setPinErrors]=useState({});
  const [unlocked,setUnlocked]=useState({});
 
+ // Live results — always derived from latest appointments prop
+ const results=useMemo(()=>{
+  if(!searched||!searchQuery.trim())return [];
+  const q=searchQuery.trim().toLowerCase();
+  return appointments.filter(a=>matchesAppt(a,q)).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+ },[appointments,searched,searchQuery]);
+
  function doSearch(){
- const q=query.trim().toLowerCase();
- if(!q)return;
- const found=appointments.filter(a=>matchesAppt(a,q)).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
- setResults(found);
+ if(!searchQuery.trim())return;
  setSearched(true);
  setPinInputs({});setPinErrors({});setUnlocked({});
  }
@@ -672,7 +675,7 @@ function SupplierTracker({ appointments, onBack, onSendMessage }) {
 
  <div style={{background:"#fff",borderRadius:20,padding:isMobile?16:20,marginBottom:20}}>
  <div style={{display:"flex",flexDirection:isMobile?"column":"row",gap:10}}>
- <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder="Search by any field — ID, name, email, PO, date, status…" style={{flex:1,border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,background:"#f9fafb",outline:"none"}}/>
+ <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder="Search by any field — ID, name, email, PO, date, status…" style={{flex:1,border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,background:"#f9fafb",outline:"none"}}/>
  <button onClick={doSearch} style={{padding:"11px 20px",background:P,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer"}}>Search</button>
  </div>
  </div>
