@@ -431,6 +431,9 @@ function AdminLogin({ onLogin, onBack }) {
  <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",fontFamily:"system-ui,sans-serif"}}>
  {showHelp&&<HelpModal role="supplier" onClose={()=>setShowHelp(false)}/>}
  <TopBar onBack={onBack} onHelp={()=>setShowHelp(true)}/>
+ <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+ <div style={{width:"100%",maxWidth:380}}>
+ <div style={{textAlign:"center",marginBottom:24}}>
  <h2 style={{color:"#fff",fontWeight:800,fontSize:22,margin:0}}>Admin Login</h2>
  <p style={{color:"rgba(255,255,255,0.45)",fontSize:13,marginTop:6}}>BE – Warehouse Appointments</p>
  </div>
