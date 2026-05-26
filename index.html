@@ -851,7 +851,16 @@ function SupplierApp() {
  // Real-time subscription for appointments (to see approvals instantly)
  useEffect(()=>{
   const sub=window.supabase.channel("sup-appts").on("postgres_changes",{event:"UPDATE",schema:"public",table:"appointments"},payload=>{
-   setAppts(p=>p.map(a=>a.id===payload.new.data.id?payload.new.data:a));
+   const incoming=payload.new.data;
+   if(!incoming)return;
+   setAppts(p=>p.map(a=>{
+    if(a.id!==incoming.id)return a;
+    // Merge conversations — keep whichever has more messages
+    const localConv=a.conversation||[];
+    const remoteConv=incoming.conversation||[];
+    const merged=remoteConv.length>=localConv.length?remoteConv:localConv;
+    return {...incoming,conversation:merged};
+   }));
   }).subscribe();
   return ()=>sub.unsubscribe();
  },[]);
