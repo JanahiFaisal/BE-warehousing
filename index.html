@@ -920,19 +920,34 @@ function SupplierApp() {
    return {id:existing.id,pin:existing.pin};
   }
 
-  // Fetch latest count from Supabase to avoid race condition on ID generation
-  const latest = await sbGetAll("appointments");
-  const baseAppts = latest || appts;
-  const id = nextAptId(baseAppts, data.deliveryTo);
-  const pin = genPin();
-  const newAppt={id,pin,supplierName:data.supplierName,supplierEmail:data.supplierEmail,deliveryTo:data.deliveryTo,date:data.date,time:data.time,totalOrders:(data.poNumbers||[]).length||0,totalLines:Number(data.totalLines),poNumbers:data.poNumbers||[],offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],storageLocation:data.storageLocation,additionalNotes:data.additionalNotes,attachments:data.attachments||[],status:"pending",deliveryStatus:"pending",priority:data.isEmergency?"emergency":"standard",emergencyJustification:data.isEmergency?data.emergencyJustification:"",managerComments:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
-  // Update local state using functional update to avoid stale state
-  if(latest) setAppts([newAppt,...latest]);
-  else setAppts(p=>[newAppt,...p]);
-  await sbUpsert("appointments",id,newAppt);
-  logEmail("submission",newAppt);
-  logTransaction("create",newAppt,{actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:data.isEmergency?"EMERGENCY: "+data.emergencyJustification:"New appointment submitted"});
-  return {id,pin};
+  // Generate unique ID using prefix + timestamp + random to avoid race condition
+  const prefix=data.deliveryTo||"BR";
+  const ts=Date.now().toString(36).toUpperCase();
+  const rnd=Math.floor(Math.random()*1000).toString().padStart(3,"0");
+  const tempId=`${prefix}-T${ts}${rnd}`;
+
+  const pin=genPin();
+  const newAppt={id:tempId,pin,supplierName:data.supplierName,supplierEmail:data.supplierEmail,deliveryTo:data.deliveryTo,date:data.date,time:data.time,totalOrders:(data.poNumbers||[]).length||0,totalLines:Number(data.totalLines),poNumbers:data.poNumbers||[],offloadingEquipment:data.needsEquipment?data.offloadingEquipment:[],storageLocation:data.storageLocation,additionalNotes:data.additionalNotes,attachments:data.attachments||[],status:"pending",deliveryStatus:"pending",priority:data.isEmergency?"emergency":"standard",emergencyJustification:data.isEmergency?data.emergencyJustification:"",managerComments:null,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+
+  // Save with temp ID first to reserve the slot
+  await sbUpsert("appointments",tempId,newAppt);
+
+  // Now fetch all to get proper sequential ID
+  const latest=await sbGetAll("appointments");
+  const allAppts=latest||appts;
+  const properId=nextAptId(allAppts.filter(a=>a.id!==tempId),data.deliveryTo);
+
+  // Update with proper sequential ID
+  const finalAppt={...newAppt,id:properId};
+  await sbUpsert("appointments",properId,finalAppt);
+
+  // Delete temp entry
+  try{await window.supabase.from("appointments").delete().eq("id",tempId);}catch(e){}
+
+  setAppts(p=>[finalAppt,...p.filter(a=>a.id!==tempId)]);
+  logEmail("submission",finalAppt);
+  logTransaction("create",finalAppt,{actor:data.supplierName||"Supplier",actorEmail:data.supplierEmail,note:data.isEmergency?"EMERGENCY: "+data.emergencyJustification:"New appointment submitted"});
+  return {id:properId,pin};
  }
 
  const editingAppt=editingId?appts.find(a=>a.id===editingId):null;
