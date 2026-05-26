@@ -2492,7 +2492,7 @@ function App() {
  } else {
  // Notify admin
  const cfg=getEmailCfg();
- const subject=`💬 Supplier reply on ${aptId} — ${appt.supplierName}`;
+ const subject="New Supplier Reply: "+aptId+" — "+appt.supplierName;
  const body=`${appt.supplierName} has replied on appointment ${aptId}:\n\n"${message}"\n\nPlease log in to the admin portal to review.\n\nAppointment: ${aptId}\nSupplier: ${appt.supplierName}\nStatus: ${appt.status}`;
  sendEmail(cfg.adminEmail||ADMIN_ALERT_EMAIL, subject, body);
  }
