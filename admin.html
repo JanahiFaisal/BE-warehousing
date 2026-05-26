@@ -645,7 +645,65 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  );
 }
 
-function SupplierTracker({ appointments, onBack }) {
+function ConversationThread({ conversation=[], currentAuthor="supplier", authorName="", onSend, appointmentId }){
+ const [msg,setMsg]=useState("");
+ const [sending,setSending]=useState(false);
+ const endRef=useRef(null);
+ useEffect(()=>{if(endRef.current)endRef.current.scrollIntoView({behavior:"smooth"});},[conversation]);
+ const isAdmin=currentAuthor==="admin";
+ async function send(){
+ if(!msg.trim()||sending)return;
+ setSending(true);
+ await onSend(msg.trim());
+ setMsg("");
+ setSending(false);
+ }
+ return(
+ <div style={{background:isAdmin?"rgba(255,255,255,0.04)":"#f9fafb",borderRadius:14,padding:16,border:isAdmin?"1px solid rgba(255,255,255,0.1)":"1px solid #e5e7eb"}}>
+ <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+ <span style={{fontSize:14}}>💬</span>
+ <span style={{fontWeight:700,fontSize:14,color:isAdmin?"#fff":"#111827"}}>Conversation</span>
+ {conversation.filter(m=>!m.read&&m.author!==currentAuthor).length>0&&(
+ <span style={{background:"#ef4444",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:99}}>{conversation.filter(m=>!m.read&&m.author!==currentAuthor).length} new</span>
+ )}
+ </div>
+ {conversation.length===0&&(
+ <div style={{textAlign:"center",padding:"20px 0",color:isAdmin?"rgba(255,255,255,0.3)":"#9ca3af",fontSize:13}}>No messages yet. Start the conversation.</div>
+ )}
+ <div style={{display:"flex",flexDirection:"column",gap:10,maxHeight:300,overflowY:"auto",marginBottom:12}}>
+ {conversation.map((m,i)=>{
+ const mine=m.author===currentAuthor;
+ return(
+ <div key={m.id||i} style={{display:"flex",flexDirection:"column",alignItems:mine?"flex-end":"flex-start"}}>
+ <div style={{maxWidth:"80%",background:mine?(isAdmin?"#07114C":"#eef2ff"):isAdmin?"rgba(255,255,255,0.1)":"#f3f4f6",borderRadius:mine?"14px 14px 4px 14px":"14px 14px 14px 4px",padding:"10px 14px",border:mine?(isAdmin?"1px solid rgba(255,255,255,0.2)":"1px solid #c7d2fe"):"none"}}>
+ <div style={{fontSize:11,fontWeight:700,color:mine?(isAdmin?"#a5b4fc":"#4f46e5"):isAdmin?"rgba(255,255,255,0.5)":"#6b7280",marginBottom:4}}>
+ {m.author==="admin"?"🛡️ "+m.authorName:"📦 "+m.authorName}
+ </div>
+ <div style={{fontSize:13,color:mine?(isAdmin?"#e0e7ff":"#1e1b4b"):isAdmin?"rgba(255,255,255,0.85)":"#374151",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{m.message}</div>
+ <div style={{fontSize:10,color:mine?(isAdmin?"rgba(255,255,255,0.3)":"#818cf8"):isAdmin?"rgba(255,255,255,0.3)":"#9ca3af",marginTop:4,textAlign:"right"}}>{fmtTs(m.timestamp)}</div>
+ </div>
+ </div>
+ );
+ })}
+ <div ref={endRef}/>
+ </div>
+ <div style={{display:"flex",gap:8}}>
+ <input
+ value={msg}
+ onChange={e=>setMsg(e.target.value)}
+ onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
+ placeholder="Type a message... (Enter to send)"
+ style={{flex:1,border:isAdmin?"1px solid rgba(255,255,255,0.15)":"1px solid #e5e7eb",borderRadius:10,padding:"10px 12px",fontSize:13,background:isAdmin?"rgba(255,255,255,0.08)":"#fff",color:isAdmin?"#fff":"#374151",outline:"none"}}
+ />
+ <button onClick={send} disabled={!msg.trim()||sending} style={{padding:"10px 16px",background:sending?"#9ca3af":"#07114C",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:msg.trim()&&!sending?"pointer":"not-allowed"}}>
+ {sending?"...":"Send"}
+ </button>
+ </div>
+ </div>
+ );
+}
+
+function SupplierTracker({ appointments, onBack, onSendMessage }) {
  const { isMobile } = useWindowSize();
  const [query,setQuery]=useState("");
  const [results,setResults]=useState([]);
@@ -810,6 +868,16 @@ function SupplierTracker({ appointments, onBack }) {
  </button>
  </div>
  )}
+ {/* Conversation Thread */}
+ <ConversationThread
+ conversation={a.conversation||[]}
+ currentAuthor="supplier"
+ authorName={a.supplierName||"Supplier"}
+ appointmentId={a.id}
+ onSend={async(msg)=>{
+ if(onSendMessage) await onSendMessage(a.id, msg, a.supplierName||"Supplier");
+ }}
+ />
  </div>
  )}
  </div>
@@ -938,7 +1006,12 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  </div>
  <div style={{marginBottom:12}}><StoreBadge loc={a.storageLocation}/></div>
  <div style={{display:"flex",gap:8}}>
- <button onClick={()=>onView(a.id)} style={{flex:1,padding:"9px",background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:10,cursor:"pointer",color:"#6b7280",fontSize:13,fontWeight:500}}>👁 View</button>
+ <button onClick={()=>onView(a.id)} style={{flex:1,padding:"9px",background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:10,cursor:"pointer",color:"#6b7280",fontSize:13,fontWeight:500,position:"relative"}}>
+ 👁 View
+ {(a.conversation||[]).some(m=>!m.read&&m.author==="supplier")&&(
+ <span style={{position:"absolute",top:-4,right:-4,background:"#ef4444",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 5px",borderRadius:99}}>NEW</span>
+ )}
+ </button>
  {a.status==="pending" && (
  <>
  <button onClick={()=>onApprove(a)} disabled={!!loading} style={{flex:1,padding:"9px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:600,cursor:"pointer"}}>✓ Approve</button>
@@ -2402,7 +2475,38 @@ function App() {
  };
  },[]);
 
- // 24-hour reminder emails for approved appointments
+ // Conversation — send message from admin or supplier
+ async function handleSendMessage(aptId, message, authorName, author="admin"){
+ const appt=appts.find(a=>a.id===aptId);
+ if(!appt)return;
+ const newMsg={id:Date.now()+Math.random(),timestamp:new Date().toISOString(),author,authorName,message,read:false};
+ const updated={...appt,conversation:[...(appt.conversation||[]),newMsg],updatedAt:new Date().toISOString()};
+ setAppts(p=>p.map(a=>a.id===aptId?updated:a));
+ await sbUpdate("appointments",aptId,{conversation:updated.conversation,updatedAt:updated.updatedAt});
+ // Email notification
+ if(author==="admin"){
+ // Notify supplier
+ const subject=`New message on your appointment ${aptId}`;
+ const body=`Dear ${appt.supplierName},\n\n${authorName} has left a message on your appointment ${aptId}:\n\n"${message}"\n\nPlease log in to track your appointment and reply.\n\nKind regards,\nBE Warehouse Operations`;
+ sendEmail(appt.supplierEmail, subject, body);
+ } else {
+ // Notify admin
+ const cfg=getEmailCfg();
+ const subject=`💬 Supplier reply on ${aptId} — ${appt.supplierName}`;
+ const body=`${appt.supplierName} has replied on appointment ${aptId}:\n\n"${message}"\n\nPlease log in to the admin portal to review.\n\nAppointment: ${aptId}\nSupplier: ${appt.supplierName}\nStatus: ${appt.status}`;
+ sendEmail(cfg.adminEmail||ADMIN_ALERT_EMAIL, subject, body);
+ }
+ }
+
+ // Mark conversation messages as read when admin opens view modal
+ useEffect(()=>{
+ if(!viewId)return;
+ const appt=appts.find(a=>a.id===viewId);
+ if(!appt||!appt.conversation||!appt.conversation.some(m=>!m.read&&m.author==="supplier"))return;
+ const updated={...appt,conversation:appt.conversation.map(m=>m.author==="supplier"?{...m,read:true}:m)};
+ setAppts(p=>p.map(a=>a.id===viewId?updated:a));
+ sbUpdate("appointments",viewId,{conversation:updated.conversation});
+ },[viewId]);
  useEffect(()=>{
  if(!appts.length)return;
  const LS_REMINDERS="be_wh_reminders_sent";
@@ -2674,7 +2778,7 @@ function App() {
 
  if(page==="landing") return <Landing onSupplier={()=>{setEditingId(null);setPage("supplier");}} onAdmin={()=>setPage("admin-login")} onTracker={()=>setPage("tracker")}/>;
  if(page==="supplier") return <SupplierForm onSubmit={handleBook} onBack={()=>{setEditingId(null);setPage("landing");}} appointments={appts} editingAppointment={editingAppt}/>;
- if(page==="tracker") return <SupplierTracker appointments={appts} onBack={()=>setPage("landing")}/>;
+ if(page==="tracker") return <SupplierTracker appointments={appts} onBack={()=>setPage("landing")} onSendMessage={async(aptId,msg,authorName)=>await handleSendMessage(aptId,msg,authorName,"supplier")}/>;
  if(page==="admin-login") return <AdminLogin onLogin={e=>{setAdminEmail(e);setPage("admin");setView("dashboard");}} onBack={()=>setPage("landing")}/>;
 
  const pending = appts.filter(a=>a.status==="pending");
@@ -2865,6 +2969,15 @@ function App() {
  )}
  {viewApt.additionalNotes&&<div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}><div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>Notes</div><div style={{fontSize:13,color:"#374151"}}>{viewApt.additionalNotes}</div></div>}
  {viewApt.managerComments&&<div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:10,padding:"10px 12px",marginBottom:10}}><div style={{fontSize:10,fontWeight:700,color:"#ef4444",textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Manager Comments</div><div style={{fontSize:13,color:"#991b1b"}}>{viewApt.managerComments}</div></div>}
+ <div style={{marginBottom:12}}>
+ <ConversationThread
+ conversation={viewApt.conversation||[]}
+ currentAuthor="admin"
+ authorName={getAdminCreds().nickname||"Admin"}
+ appointmentId={viewApt.id}
+ onSend={async(msg)=>{ await handleSendMessage(viewApt.id, msg, getAdminCreds().nickname||"Admin", "admin"); }}
+ />
+ </div>
  <button onClick={()=>setViewId(null)} style={{width:"100%",padding:12,border:"1px solid #e5e7eb",borderRadius:12,fontSize:14,fontWeight:600,color:"#6b7280",background:"transparent",cursor:"pointer",marginTop:4}}>Close</button>
  </div>
  </div>
