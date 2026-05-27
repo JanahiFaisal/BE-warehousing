@@ -2542,12 +2542,13 @@ function TeamLeadPanel({ appointments, isMobile }) {
  );
  }
 
+ const exportAppts=statusFilter==="all"?approved:statusFilter==="overdue"?overdue:statusFilter==="upcoming"?upcoming:statusFilter==="completed"?completed:statusFilter==="failed"?failed:approved;
+
  return(
  <div style={{padding:isMobile?16:28}}>
  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10,marginBottom:4}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:0}}>Team Lead Dashboard</h1>
  <button onClick={()=>{
- const exportAppts=statusFilter==="all"?approved:statusFilter==="overdue"?overdue:statusFilter==="upcoming"?upcoming:statusFilter==="completed"?completed:statusFilter==="failed"?failed:approved;
  const data=exportAppts.map(a=>({
  "ID":a.id,"Supplier":a.supplierName||"—","SBU":sbuName(a.deliveryTo),
  "Date":fmtExcelDate(a.date),"Time":a.time||"—",
