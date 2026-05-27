@@ -690,11 +690,18 @@ function SupplierTracker({ appointments, onBack, onSendMessage }) {
  const [pinErrors,setPinErrors]=useState({});
  const [unlocked,setUnlocked]=useState({});
 
- // Live results — always derived from latest appointments prop
+ // Live results — always derived from latest appointments prop, deduplicated
  const results=useMemo(()=>{
   if(!searched||!searchQuery.trim())return [];
   const q=searchQuery.trim().toLowerCase();
-  return appointments.filter(a=>matchesAppt(a,q)).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  const seen=new Set();
+  return appointments
+   .filter(a=>{
+    if(seen.has(a.id))return false;
+    seen.add(a.id);
+    return matchesAppt(a,q);
+   })
+   .sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
  },[appointments,searched,searchQuery]);
 
  function doSearch(){
@@ -901,7 +908,7 @@ function SupplierApp() {
 
  // Load from Supabase on mount
  useEffect(()=>{
-  sbGetAll("appointments").then(a=>{if(a){setAppts(a.sort((x,y)=>new Date(y.createdAt)-new Date(x.createdAt)));localStorage.setItem(LS_APPTS,JSON.stringify(a));}});
+  sbGetAll("appointments").then(a=>{if(a){const deduped=[...new Map(a.map(x=>[x.id,x])).values()];setAppts(deduped.sort((x,y)=>new Date(y.createdAt)-new Date(x.createdAt)));localStorage.setItem(LS_APPTS,JSON.stringify(deduped));}});
   sbGetAll("emails").then(e=>{if(e){setEmailLog(e.sort((x,y)=>new Date(y.timestamp)-new Date(x.timestamp)));localStorage.setItem(LS_EMAILS,JSON.stringify(e));}});
   sbGetAll("transactions").then(t=>{if(t){setTransactions(t.sort((x,y)=>new Date(y.timestamp)-new Date(x.timestamp)));localStorage.setItem(LS_TRANSACTIONS,JSON.stringify(t));}});
  },[]);
