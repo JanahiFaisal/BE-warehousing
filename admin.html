@@ -566,6 +566,8 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",fontFamily:"system-ui,sans-serif"}}>
  {showHelp&&<HelpModal role="supplier" onClose={()=>setShowHelp(false)}/>}
  <TopBar onBack={onBack} onHelp={()=>setShowHelp(true)}/>
+ <div style={{maxWidth:640,width:"100%",margin:"0 auto",padding:isMobile?"20px 16px":"28px 20px"}}>
+ <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,marginBottom:4}}>{editingAppointment?"↩️ Edit & Resubmit":"Book a Delivery"}</h1>
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,marginBottom:20}}>{editingAppointment?`Revising appointment ${editingAppointment.id} — Make your changes and resubmit.`:"All requests are subject to warehouse approval."}</p>
  <div style={{background:"#fff",borderRadius:20,padding:isMobile?20:28,display:"flex",flexDirection:"column",gap:18}}>
 
