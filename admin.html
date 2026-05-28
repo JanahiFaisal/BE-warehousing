@@ -11,7 +11,19 @@
  </style>
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
- <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+ <script>
+ // Load ExcelJS lazily only when export is triggered
+ window._excelJSLoaded=false;
+ window._loadExcelJS=function(){
+  return new Promise(function(resolve){
+   if(window.ExcelJS){resolve();return;}
+   var s=document.createElement('script');
+   s.src='https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js';
+   s.onload=function(){window._excelJSLoaded=true;resolve();};
+   document.head.appendChild(s);
+  });
+ };
+ </script>
  <script>
  const SUPA_URL = "https://ekzpkrztmllzxdorrjcv.supabase.co";
  const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrenBrcnp0bWxsenhkb3JyamN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MjAxMDcsImV4cCI6MjA5NTE5NjEwN30.BsZOkNknbEF0Ds0W8mPmNjeJadp5InXOacE1pJAGbeE";
@@ -338,6 +350,8 @@ function addSummarySheet(wb,name,rows){
 }
 
 async function exportToExcel(sheets,filename,meta){
+ // Load ExcelJS on demand (not on page load to avoid blocking Supabase)
+ await window._loadExcelJS();
  meta=meta||[];
  var wb=new ExcelJS.Workbook();
  wb.creator=COMPANY;
@@ -1554,10 +1568,10 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
  color:["#C8962A","#10b981","#3b82f6","#8b5cf6"][i],
  }));
 
- const card=(bg,bd)=>({background:bg,border:`1px solid ${bd}`,borderRadius:16,padding:isMobile?14:20});
+ const cardStyle=(bg,bd)=>({background:bg,border:`1px solid ${bd}`,borderRadius:16,padding:isMobile?14:20});
 
  return(
- <div style={{padding:isMobile?12:24,display:"flex",flexDirection:"column",gap:16}}>
+ <div style={{padding:isMobile?12:24,display:"flex",flexDirection:"column",gap:16,overflowY:"auto"}}>
  {/* Header */}
  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
  <div>
@@ -1569,31 +1583,31 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
  </div>
  </div>
 
- {/* KPI Cards Row 1 */}
+ {/* KPI Cards */}
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12}}>
  {[
- {label:"Total Appointments",val:total,color:"#C8962A",sub:`${approvalRate}% approval rate`,filter:null,icon:"📦"},
- {label:"Pending Review",val:pending,color:"#fcd34d",sub:"Awaiting action",filter:"pending",icon:"⏳"},
+ {label:"Total",val:total,color:"#C8962A",sub:`${approvalRate}% approval rate`,filter:null,icon:"📦"},
+ {label:"Pending",val:pending,color:"#fcd34d",sub:"Awaiting action",filter:"pending",icon:"⏳"},
  {label:"Approved",val:approved,color:"#6ee7b7",sub:`${completionRate}% delivered`,filter:"approved",icon:"✅"},
  {label:"Emergency",val:emergency,color:"#fca5a5",sub:"High priority",filter:null,icon:"🚨"},
- ].map(({label,val,color,sub,filter,icon})=>(
- <button key={label} onClick={filter?()=>{setAdminFilter(filter);setView("admin");}:undefined}
-  style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)"),textAlign:"left",cursor:filter?"pointer":"default",transition:"all 0.2s"}}>
+ ].map(function(item){return(
+ <button key={item.label} onClick={item.filter?()=>{setAdminFilter(item.filter);setView("admin");}:undefined}
+  style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:isMobile?14:20,textAlign:"left",cursor:item.filter?"pointer":"default"}}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
- <span style={{fontSize:20}}>{icon}</span>
- {filter&&<span style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>Click →</span>}
+ <span style={{fontSize:20}}>{item.icon}</span>
+ {item.filter&&<span style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>Click</span>}
  </div>
- <AnimCounter target={val} color={color} size={isMobile?28:36}/>
- <div style={{color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:600,marginTop:4}}>{label}</div>
- <div style={{color:"rgba(255,255,255,0.35)",fontSize:11,marginTop:2}}>{sub}</div>
+ <AnimCounter target={item.val} color={item.color} size={isMobile?28:36}/>
+ <div style={{color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:600,marginTop:4}}>{item.label}</div>
+ <div style={{color:"rgba(255,255,255,0.35)",fontSize:11,marginTop:2}}>{item.sub}</div>
  </button>
- ))}
+ );})}
  </div>
 
- {/* Row 2: Donut + Bar + Rates */}
+ {/* Charts Row */}
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:12}}>
- {/* Status Donut */}
- <div style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}}>
+ {/* Donut */}
+ <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Status Distribution</div>
  <div style={{display:"flex",alignItems:"center",gap:16,justifyContent:"center"}}>
  <DonutChart size={isMobile?100:120} thickness={22} segments={[
@@ -1601,96 +1615,82 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
  {value:rejected,color:"#ef4444"},{value:revision,color:"#fb923c"},
  ]}/>
  <div style={{display:"flex",flexDirection:"column",gap:6}}>
- {[["⏳ Pending",pending,"#fcd34d"],["✅ Approved",approved,"#6ee7b7"],["❌ Rejected",rejected,"#fca5a5"],["↩️ Revision",revision,"#fdba74"]].map(([l,v,c])=>(
- <div key={l} style={{display:"flex",alignItems:"center",gap:6}}>
- <div style={{width:8,height:8,borderRadius:"50%",background:c,flexShrink:0}}/>
- <span style={{fontSize:11,color:"rgba(255,255,255,0.6)"}}>{l}</span>
- <span style={{fontSize:11,fontWeight:700,color:"#fff",marginLeft:"auto"}}>{v}</span>
+ {[["Pending",pending,"#fcd34d"],["Approved",approved,"#6ee7b7"],["Rejected",rejected,"#fca5a5"],["Revision",revision,"#fdba74"]].map(function(item){return(
+ <div key={item[0]} style={{display:"flex",alignItems:"center",gap:6}}>
+ <div style={{width:8,height:8,borderRadius:"50%",background:item[2],flexShrink:0}}/>
+ <span style={{fontSize:11,color:"rgba(255,255,255,0.6)"}}>{item[0]}</span>
+ <span style={{fontSize:11,fontWeight:700,color:"#fff",marginLeft:"auto",paddingLeft:8}}>{item[1]}</span>
  </div>
- ))}
+ );})}
  </div>
  </div>
  </div>
-
  {/* SBU Bar */}
- <div style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}}>
- <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Appointments by SBU</div>
+ <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+ <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>By SBU</div>
  <BarChart data={sbuData} color={(i)=>sbuData[i].color} height={100}/>
  </div>
-
- {/* Rate Cards */}
+ {/* Rates */}
  <div style={{display:"flex",flexDirection:"column",gap:12}}>
  {[
- {label:"Approval Rate",val:approvalRate,color:"#10b981",icon:"✅"},
- {label:"Delivery Rate",val:completionRate,color:"#C8962A",icon:"🚚"},
- {label:"Emergency Rate",val:total>0?Math.round(emergency/total*100):0,color:"#ef4444",icon:"🚨"},
- ].map(({label,val,color,icon})=>(
- <div key={label} style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)"),padding:"12px 16px"}}>
+ {label:"Approval Rate",val:approvalRate,color:"#10b981"},
+ {label:"Delivery Rate",val:completionRate,color:"#C8962A"},
+ {label:"Emergency Rate",val:total>0?Math.round(emergency/total*100):0,color:"#ef4444"},
+ ].map(function(item){return(
+ <div key={item.label} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:"12px 16px"}}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
- <span style={{fontSize:11,color:"rgba(255,255,255,0.6)",fontWeight:600}}>{icon} {label}</span>
- <span style={{fontSize:18,fontWeight:800,color}}>{val}%</span>
+ <span style={{fontSize:11,color:"rgba(255,255,255,0.6)",fontWeight:600}}>{item.label}</span>
+ <span style={{fontSize:18,fontWeight:800,color:item.color}}>{item.val}%</span>
  </div>
  <div style={{height:6,borderRadius:3,background:"rgba(255,255,255,0.1)",overflow:"hidden"}}>
- <div style={{height:"100%",width:`${val}%`,background:color,borderRadius:3,transition:"width 1s ease"}}/>
+ <div style={{height:"100%",width:`${item.val}%`,background:item.color,borderRadius:3}}/>
  </div>
  </div>
- ))}
+ );})}
  </div>
  </div>
 
- {/* Row 3: Monthly trend + Sparklines */}
+ {/* Monthly Trend + Quick Stats */}
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"2fr 1fr",gap:12}}>
- {/* Monthly Bar Chart */}
- <div style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}}>
+ <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Monthly Booking Trend</div>
  <BarChart data={monthlyData} color="#C8962A" height={isMobile?80:110}/>
- <div style={{marginTop:8,display:"flex",gap:12,flexWrap:"wrap"}}>
- <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>
- Peak: <strong style={{color:"#fff"}}>{monthlyData.reduce((m,d)=>d.value>m.value?d:m,{value:0,label:"—"}).label}</strong>
- </span>
- <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>
- Avg: <strong style={{color:"#fff"}}>{monthlyData.length?Math.round(monthlyData.reduce((s,d)=>s+d.value,0)/monthlyData.length):0}/mo</strong>
- </span>
+ <div style={{marginTop:8,display:"flex",gap:16}}>
+ <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>Peak: <strong style={{color:"#fff"}}>{monthlyData.reduce((m,d)=>d.value>m.value?d:m,{value:0,label:"—"}).label}</strong></span>
+ <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>Avg: <strong style={{color:"#fff"}}>{monthlyData.length?Math.round(monthlyData.reduce((s,d)=>s+d.value,0)/monthlyData.length):0}/mo</strong></span>
  </div>
  </div>
-
- {/* Quick Stats */}
- <div style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)"),display:"flex",flexDirection:"column",gap:10}}>
- <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>Quick Stats</div>
+ <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+ <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:10}}>Quick Stats</div>
  {[
  {label:"Completed",val:completed,color:"#6ee7b7"},
  {label:"Revision",val:revision,color:"#fdba74"},
  {label:"Rejected",val:rejected,color:"#fca5a5"},
  {label:"Total Orders",val:appointments.reduce((s,a)=>s+(a.totalOrders||0),0),color:"#C8962A"},
  {label:"Total Lines",val:appointments.reduce((s,a)=>s+(a.totalLines||0),0),color:"#a5b4fc"},
- ].map(({label,val,color})=>(
- <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
- <span style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>{label}</span>
- <span style={{fontSize:13,fontWeight:700,color}}>{val.toLocaleString()}</span>
+ ].map(function(item){return(
+ <div key={item.label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
+ <span style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>{item.label}</span>
+ <span style={{fontSize:13,fontWeight:700,color:item.color}}>{item.val.toLocaleString()}</span>
  </div>
- ))}
+ );})}
  </div>
  </div>
 
- {/* Row 4: Slot Heatmap */}
- <div style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}}>
- <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>
- Booking Density — Time Slot × Day of Week
- <span style={{fontSize:10,color:"rgba(255,255,255,0.35)",marginLeft:8,fontWeight:400}}>Hover for details</span>
- </div>
+ {/* Slot Heatmap */}
+ <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+ <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Booking Density — Slot vs Day</div>
  <SlotHeatmap appointments={appointments}/>
  </div>
 
- {/* Row 5: Calendar Heatmap */}
- <div style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}}>
- <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>
- Submission Activity — Last 6 Months
- </div>
+ {/* Calendar Heatmap */}
+ <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+ <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Submission Activity — Last 6 Months</div>
  <CalendarHeatmap appointments={appointments}/>
  </div>
 
- {/* Row 6: Supplier Performance Table */}
- <div style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}}>
+ {/* Supplier Table */}
+ <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>Top 10 Suppliers — Performance</div>
  <span style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>Click headers to sort</span>
