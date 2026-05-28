@@ -11,7 +11,7 @@
  </style>
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
- <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
  <script>
  const SUPA_URL = "https://ekzpkrztmllzxdorrjcv.supabase.co";
  const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrenBrcnp0bWxsenhkb3JyamN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2MjAxMDcsImV4cCI6MjA5NTE5NjEwN30.BsZOkNknbEF0Ds0W8mPmNjeJadp5InXOacE1pJAGbeE";
@@ -76,259 +76,274 @@ async function sendEmail(to, subject, body){
  }catch(e){console.error("Email error:",e);}
 }
 
-// ─── Professional Excel Export Engine ──────────────────────────
+// ─── Professional Excel Export Engine (ExcelJS) ─────────────────
 const COMPANY="Bapco Energies — BE Warehouse";
-const NAVY="FF07114C",GOLD="FFC8962A",WHITE="FFFFFFFF";
-const LIGHT_GREY="FFF1F5F9",MID_GREY="FFE2E8F0",DARK_GREY="FF64748B";
-const TEAL="FF0D9488",PURPLE="FF7C3AED",BLUE="FF2563EB";
-const S_GREEN="FFD1FAE5",S_GREEN_TXT="FF065F46";
-const S_RED="FFFEE2E2",S_RED_TXT="FF991B1B";
-const S_YELLOW="FFFEF9C3",S_YELLOW_TXT="FF92400E";
-const S_ORANGE="FFFED7AA",S_ORANGE_TXT="FF92400E";
-const S_BLUE="FFDBEAFE",S_BLUE_TXT="FF1E40AF";
 
-const STATUS_BG={
- pending:S_YELLOW,approved:S_GREEN,rejected:S_RED,
- "revision required":S_ORANGE,revision_required:S_ORANGE,
- completed:S_GREEN,"awaiting delivery":S_BLUE,
- failed:S_RED,emergency:S_ORANGE,standard:WHITE
-};
-const STATUS_FG={
- pending:S_YELLOW_TXT,approved:S_GREEN_TXT,rejected:S_RED_TXT,
- "revision required":S_ORANGE_TXT,revision_required:S_ORANGE_TXT,
- completed:S_GREEN_TXT,"awaiting delivery":S_BLUE_TXT,
- failed:S_RED_TXT,emergency:S_ORANGE_TXT,standard:"FF374151"
+const XL={
+ navy:{argb:"FF07114C"},
+ gold:{argb:"FFC8962A"},
+ white:{argb:"FFFFFFFF"},
+ lightGrey:{argb:"FFF1F5F9"},
+ midGrey:{argb:"FFE2E8F0"},
+ darkGrey:{argb:"FF64748B"},
+ green:{argb:"FFD1FAE5"},greenTxt:{argb:"FF065F46"},
+ red:{argb:"FFFEE2E2"},redTxt:{argb:"FF991B1B"},
+ yellow:{argb:"FFFEF9C3"},yellowTxt:{argb:"FF92400E"},
+ orange:{argb:"FFFED7AA"},orangeTxt:{argb:"FF92400E"},
+ blue:{argb:"FFDBEAFE"},blueTxt:{argb:"FF1E40AF"},
+ slate:{argb:"FF1E293B"},
 };
 
-function colW(data,key){
- const max=data.reduce((m,r)=>Math.max(m,String(r[key]||"").length),key.length);
- return Math.min(Math.max(max+3,14),60);
+function statusColors(sv){
+ var map={
+  pending:{bg:XL.yellow,fg:XL.yellowTxt},
+  approved:{bg:XL.green,fg:XL.greenTxt},
+  rejected:{bg:XL.red,fg:XL.redTxt},
+  "revision required":{bg:XL.orange,fg:XL.orangeTxt},
+  revision_required:{bg:XL.orange,fg:XL.orangeTxt},
+  completed:{bg:XL.green,fg:XL.greenTxt},
+  failed:{bg:XL.red,fg:XL.redTxt},
+  "awaiting delivery":{bg:XL.blue,fg:XL.blueTxt},
+  emergency:{bg:XL.orange,fg:XL.orangeTxt},
+ };
+ return map[sv]||null;
 }
 
-function c(v,s){
- s=s||{};
- var t=typeof v==="number"?"n":"s";
- return{t:t,v:v==null?"":v,s:{
-  font:{name:"Calibri",sz:s.sz||10,bold:s.bold||false,
-   color:{rgb:s.fc||"FF1E293B"},italic:s.italic||false},
-  fill:s.bg?{patternType:"solid",fgColor:{rgb:s.bg}}:{patternType:"none"},
-  alignment:{vertical:"center",horizontal:s.align||"left",wrapText:s.wrap||false},
-  border:{
-   top:{style:s.bt||"thin",color:{rgb:s.bc||MID_GREY}},
-   bottom:{style:s.bb||"thin",color:{rgb:s.bc||MID_GREY}},
-   left:{style:s.bl||"thin",color:{rgb:s.bc||MID_GREY}},
-   right:{style:s.br||"thin",color:{rgb:s.bc||MID_GREY}}
-  },
-  numFmt:s.fmt||""
- }};
-}
-
-// Fill entire row with background color (for merges)
-function fillRow(ws,row,cols,bg){
- for(var i=0;i<cols;i++){
-  var addr=XLSX.utils.encode_cell({r:row,c:i});
-  if(!ws[addr]) ws[addr]=c("",{bg:bg,bc:bg});
+function applyCell(cell,val,opts){
+ opts=opts||{};
+ cell.value=val==null||val===""?"—":val;
+ cell.font={name:"Calibri",size:opts.size||10,bold:opts.bold||false,color:opts.fc||XL.slate,italic:opts.italic||false};
+ if(opts.bg) cell.fill={type:"pattern",pattern:"solid",fgColor:opts.bg};
+ cell.alignment={vertical:"middle",horizontal:opts.align||"left",wrapText:false};
+ if(opts.border!==false){
+  var bs={style:opts.borderStyle||"thin",color:{argb:"FFE2E8F0"}};
+  cell.border={top:bs,bottom:bs,left:bs,right:bs};
  }
+ if(opts.numFmt) cell.numFmt=opts.numFmt;
 }
 
-function buildCover(title,meta){
- var ws={};
+function colWidth(data,key){
+ var max=data.reduce(function(m,r){return Math.max(m,String(r[key]||"").length);},key.length);
+ return Math.min(Math.max(max+3,14),55);
+}
+
+function addCoverSheet(wb,title,meta){
+ var ws=wb.addWorksheet("Cover",{views:[{showGridLines:false}]});
+ ws.columns=[{width:30},{width:32},{width:18},{width:18},{width:18},{width:18}];
  var COLS=6;
- var row=0;
+ var row;
 
- // ── ROW 0: top accent bar (GOLD)
- fillRow(ws,row,COLS,GOLD); row++;
-
- // ── ROW 1: spacer navy
- fillRow(ws,row,COLS,NAVY); row++;
-
- // ── ROW 2: Company name (merged A:F)
- fillRow(ws,row,COLS,NAVY);
- ws[XLSX.utils.encode_cell({r:row,c:0})]=c(COMPANY,{bold:true,fc:GOLD,bg:NAVY,sz:22,align:"center",bc:NAVY});
- row++;
-
- // ── ROW 3: Subtitle
- fillRow(ws,row,COLS,NAVY);
- ws[XLSX.utils.encode_cell({r:row,c:0})]=c("Delivery Management System",{fc:"FFCBD5E1",bg:NAVY,sz:12,align:"center",bc:NAVY});
- row++;
-
- // ── ROW 4: spacer navy
- fillRow(ws,row,COLS,NAVY); row++;
-
- // ── ROW 5: gold accent bar
- fillRow(ws,row,COLS,GOLD); row++;
-
- // ── ROW 6: white spacer
- fillRow(ws,row,COLS,WHITE); row++;
-
- // ── ROW 7: Report title (merged)
- fillRow(ws,row,COLS,WHITE);
- ws[XLSX.utils.encode_cell({r:row,c:0})]=c(title,{bold:true,fc:NAVY,sz:18,align:"center",bg:WHITE,bc:WHITE});
- row++;
-
- // ── ROW 8: white spacer
- fillRow(ws,row,COLS,WHITE); row++;
-
- // ── Section header: Report Details
- fillRow(ws,row,COLS,NAVY);
- ws[XLSX.utils.encode_cell({r:row,c:0})]=c("REPORT DETAILS",{bold:true,fc:GOLD,bg:NAVY,sz:10,align:"center",bc:NAVY});
- row++;
-
- // ── Meta rows (label | value)
- var alt=false;
- meta.forEach(function(pair){
-  var k=pair[0],v=pair[1];
-  var bg=alt?LIGHT_GREY:WHITE;
-  fillRow(ws,row,COLS,bg);
-  ws[XLSX.utils.encode_cell({r:row,c:0})]=c(k,{bold:true,fc:DARK_GREY,bg:bg,sz:10,align:"right",bc:MID_GREY});
-  ws[XLSX.utils.encode_cell({r:row,c:1})]=c(String(v),{fc:NAVY,bg:bg,sz:10,bold:true,bc:MID_GREY});
-  alt=!alt;
-  row++;
- });
-
- // ── Spacer
- fillRow(ws,row,COLS,WHITE); row++;
-
- // ── Confidential banner
- fillRow(ws,row,COLS,S_RED);
- ws[XLSX.utils.encode_cell({r:row,c:0})]=c("CONFIDENTIAL — For authorised internal use only",{bold:true,fc:S_RED_TXT,bg:S_RED,sz:10,align:"center",bc:S_RED});
- row++;
-
- // ── Bottom gold bar
- fillRow(ws,row,COLS,GOLD); row++;
-
- ws["!ref"]=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:row-1,c:COLS-1}});
- ws["!cols"]=[{wch:28},{wch:30},{wch:18},{wch:18},{wch:18},{wch:18}];
-
- // Row heights
- var heights=[6,20,50,24,20,6,10,42,10,22];
- meta.forEach(function(){heights.push(22);});
- heights.push(10,20,6);
- ws["!rows"]=heights.map(function(h){return{hpt:h};});
-
- // Merges — span all cols for every row
- var merges=[];
- for(var r=0;r<row;r++){
-  merges.push({s:{r:r,c:0},e:{r:r,c:COLS-1}});
+ function fullRow(bg,height){
+  row=ws.addRow([]);
+  row.height=height||8;
+  for(var i=1;i<=COLS;i++){
+   var cell=row.getCell(i);
+   cell.fill={type:"pattern",pattern:"solid",fgColor:bg};
+   cell.border={};
+  }
+  return row;
  }
- // Meta rows: label in col 0, value in cols 1-5
- var metaStart=10;
- meta.forEach(function(_,i){
-  merges.push({s:{r:metaStart+i,c:1},e:{r:metaStart+i,c:COLS-1}});
+
+ function mergedRow(val,bg,fg,size,height){
+  var r=fullRow(bg,height);
+  var cell=r.getCell(1);
+  cell.value=val;
+  cell.font={name:"Calibri",size:size||11,bold:true,color:fg||XL.white};
+  cell.alignment={vertical:"middle",horizontal:"center"};
+  ws.mergeCells(r.number,1,r.number,COLS);
+  return r;
+ }
+
+ // Gold top bar
+ fullRow(XL.gold,6);
+ // Navy spacer
+ mergedRow("",XL.navy,XL.navy,10,16);
+ // Company name
+ mergedRow(COMPANY,XL.navy,XL.gold,22,48);
+ // Subtitle
+ mergedRow("Delivery Management System",XL.navy,{argb:"FFCBD5E1"},12,24);
+ // Navy spacer
+ mergedRow("",XL.navy,XL.navy,10,16);
+ // Gold bar
+ fullRow(XL.gold,6);
+ // White spacer
+ mergedRow("",XL.white,XL.white,10,12);
+ // Report title
+ mergedRow(title,XL.white,XL.navy,18,44);
+ // White spacer
+ mergedRow("",XL.white,XL.white,10,12);
+
+ // Section header
+ mergedRow("REPORT DETAILS",XL.navy,XL.gold,10,22);
+
+ // Meta rows
+ meta.forEach(function(pair,i){
+  var k=pair[0],v=pair[1];
+  var bg=i%2===0?XL.lightGrey:XL.white;
+  var r=ws.addRow([k,String(v),"","","",""]);
+  r.height=22;
+  var kCell=r.getCell(1);
+  kCell.value=k;
+  kCell.font={name:"Calibri",size:10,bold:true,color:XL.darkGrey};
+  kCell.fill={type:"pattern",pattern:"solid",fgColor:bg};
+  kCell.alignment={vertical:"middle",horizontal:"right"};
+  kCell.border={bottom:{style:"thin",color:{argb:"FFE2E8F0"}}};
+  var vCell=r.getCell(2);
+  vCell.value=String(v);
+  vCell.font={name:"Calibri",size:10,bold:true,color:XL.navy};
+  vCell.fill={type:"pattern",pattern:"solid",fgColor:bg};
+  vCell.alignment={vertical:"middle",horizontal:"left"};
+  vCell.border={bottom:{style:"thin",color:{argb:"FFE2E8F0"}}};
+  ws.mergeCells(r.number,2,r.number,COLS);
  });
- ws["!merges"]=merges;
- return ws;
+
+ // Spacer
+ mergedRow("",XL.white,XL.white,10,10);
+
+ // Confidential
+ var confRow=mergedRow("CONFIDENTIAL — For authorised internal use only",XL.red,XL.redTxt,10,22);
+ confRow.getCell(1).font={name:"Calibri",size:10,bold:true,color:XL.redTxt};
+
+ // Gold bottom bar
+ fullRow(XL.gold,6);
 }
 
-function buildDataSheet(data,statusKey,kpis){
+function addDataSheet(wb,name,data,statusKey,kpis){
  if(!data||!data.length){
-  var ws={"A1":c("No data available",{fc:S_RED_TXT,bold:true})};
-  ws["!ref"]="A1:A1"; return ws;
+  var ws=wb.addWorksheet(name);
+  ws.addRow(["No data available"]);
+  return;
  }
- var ws={};
+ var ws=wb.addWorksheet(name,{views:[{state:"frozen",xSplit:0,ySplit:kpis&&kpis.length?4:1,showGridLines:false}]});
  var keys=Object.keys(data[0]);
- var COLS=keys.length;
- var row=0;
- var merges=[];
+ ws.columns=keys.map(function(k){return{width:colWidth(data,k)};});
 
  // ── KPI strip
  if(kpis&&kpis.length){
+  var span=Math.max(1,Math.floor(keys.length/kpis.length));
+
   // Label row
-  fillRow(ws,row,COLS,LIGHT_GREY);
+  var lblRow=ws.addRow([]);
+  lblRow.height=18;
   kpis.forEach(function(kpi,i){
-   var span=Math.floor(COLS/kpis.length);
-   var startC=i*span;
-   var endC=(i===kpis.length-1)?COLS-1:startC+span-1;
-   ws[XLSX.utils.encode_cell({r:row,c:startC})]=c(kpi.label,{bold:false,fc:DARK_GREY,bg:LIGHT_GREY,sz:9,align:"center",bc:MID_GREY});
-   if(startC<endC) merges.push({s:{r:row,c:startC},e:{r:row,c:endC}});
+   var startCol=i*span+1;
+   var endCol=(i===kpis.length-1)?keys.length:startCol+span-1;
+   var cell=lblRow.getCell(startCol);
+   cell.value=kpi.label;
+   cell.font={name:"Calibri",size:9,color:XL.darkGrey};
+   cell.fill={type:"pattern",pattern:"solid",fgColor:XL.lightGrey};
+   cell.alignment={vertical:"middle",horizontal:"center"};
+   if(startCol<endCol) ws.mergeCells(lblRow.number,startCol,lblRow.number,endCol);
   });
-  row++;
+  // Fill remaining cells
+  for(var col=1;col<=keys.length;col++){
+   var cell=lblRow.getCell(col);
+   if(!cell.value) cell.fill={type:"pattern",pattern:"solid",fgColor:XL.lightGrey};
+  }
+
   // Value row
-  fillRow(ws,row,COLS,WHITE);
+  var valRow=ws.addRow([]);
+  valRow.height=38;
   kpis.forEach(function(kpi,i){
-   var span=Math.floor(COLS/kpis.length);
-   var startC=i*span;
-   var endC=(i===kpis.length-1)?COLS-1:startC+span-1;
-   ws[XLSX.utils.encode_cell({r:row,c:startC})]=c(kpi.value,{bold:true,fc:NAVY,bg:WHITE,sz:16,align:"center",bc:MID_GREY,fmt:typeof kpi.value==="number"?"#,##0":""});
-   if(startC<endC) merges.push({s:{r:row,c:startC},e:{r:row,c:endC}});
+   var startCol=i*span+1;
+   var endCol=(i===kpis.length-1)?keys.length:startCol+span-1;
+   var cell=valRow.getCell(startCol);
+   cell.value=kpi.value;
+   cell.font={name:"Calibri",size:18,bold:true,color:XL.navy};
+   cell.fill={type:"pattern",pattern:"solid",fgColor:XL.white};
+   cell.alignment={vertical:"middle",horizontal:"center"};
+   if(typeof kpi.value==="number") cell.numFmt="#,##0";
+   if(startCol<endCol) ws.mergeCells(valRow.number,startCol,valRow.number,endCol);
   });
-  row++;
-  // Divider
-  fillRow(ws,row,COLS,GOLD);
-  row++;
+  for(var col=1;col<=keys.length;col++){
+   var cell=valRow.getCell(col);
+   if(!cell.value&&cell.value!==0) cell.fill={type:"pattern",pattern:"solid",fgColor:XL.white};
+  }
+
+  // Gold divider
+  var divRow=ws.addRow([]);
+  divRow.height=4;
+  for(var col=1;col<=keys.length;col++){
+   divRow.getCell(col).fill={type:"pattern",pattern:"solid",fgColor:XL.gold};
+  }
  }
 
  // ── Header row
- keys.forEach(function(k,col){
-  ws[XLSX.utils.encode_cell({r:row,c:col})]=c(k,{bold:true,fc:WHITE,bg:NAVY,sz:10,align:"center",bc:NAVY,bt:"medium",bb:"medium"});
+ var hRow=ws.addRow(keys);
+ hRow.height=22;
+ hRow.eachCell(function(cell){
+  cell.font={name:"Calibri",size:10,bold:true,color:XL.white};
+  cell.fill={type:"pattern",pattern:"solid",fgColor:XL.navy};
+  cell.alignment={vertical:"middle",horizontal:"center"};
+  cell.border={bottom:{style:"medium",color:XL.gold},top:{style:"thin",color:{argb:"FF07114C"}}};
  });
- var headerRow=row; row++;
 
  // ── Data rows
  data.forEach(function(item,i){
+  var vals=keys.map(function(k){var v=item[k];return v==null||v===""?"—":v;});
+  var dRow=ws.addRow(vals);
+  dRow.height=18;
   var alt=i%2===1;
   var sv=statusKey?(item[statusKey]||"").toLowerCase().replace(/ /g,"_"):"";
-  var bg=statusKey&&STATUS_BG[sv]?STATUS_BG[sv]:alt?LIGHT_GREY:WHITE;
-  var fg=statusKey&&STATUS_FG[sv]?STATUS_FG[sv]:"FF1E293B";
-  keys.forEach(function(k,col){
-   var v=item[k];
-   var isNum=typeof v==="number";
-   // Status column gets colored text
-   var cellFg=(statusKey&&k===statusKey)?fg:"FF1E293B";
-   var cellBold=(statusKey&&k===statusKey);
-   ws[XLSX.utils.encode_cell({r:row,c:col})]=c(
-    v==null||v===""?"—":v,
-    {bg:bg,fc:cellFg,bold:cellBold,align:isNum?"right":"left",fmt:isNum&&Number.isInteger(v)?"#,##0":"",bc:MID_GREY}
-   );
+  var sc=statusColors(sv);
+  var rowBg=sc?sc.bg:alt?XL.lightGrey:XL.white;
+
+  dRow.eachCell(function(cell,colNumber){
+   var key=keys[colNumber-1];
+   var isStatus=statusKey&&key===statusKey;
+   var isNum=typeof cell.value==="number";
+   cell.fill={type:"pattern",pattern:"solid",fgColor:rowBg};
+   cell.font={name:"Calibri",size:10,bold:isStatus&&sc,color:isStatus&&sc?sc.fg:XL.slate};
+   cell.alignment={vertical:"middle",horizontal:isNum?"right":"left"};
+   cell.border={bottom:{style:"thin",color:{argb:"FFE2E8F0"}}};
+   if(isNum&&Number.isInteger(cell.value)) cell.numFmt="#,##0";
   });
-  row++;
  });
 
- ws["!ref"]=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:row-1,c:COLS-1}});
- ws["!cols"]=keys.map(function(k){return{wch:colW(data,k)};});
-
- var rowHeights=[];
- for(var r=0;r<row;r++){
-  if(r===headerRow) rowHeights.push({hpt:22});
-  else if(kpis&&r===1) rowHeights.push({hpt:36});
-  else rowHeights.push({hpt:18});
- }
- ws["!rows"]=rowHeights;
-
- var freezeRow=kpis&&kpis.length?4:1;
- ws["!freeze"]={xSplit:0,ySplit:freezeRow,topLeftCell:"A"+(freezeRow+1),activePane:"bottomLeft",state:"frozen"};
- ws["!pageSetup"]={orientation:"landscape",fitToWidth:1,fitToHeight:0,fitToPage:true,paperSize:9};
- if(merges.length) ws["!merges"]=merges;
- return ws;
+ ws.pageSetup={orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:0,paperSize:9};
 }
 
-function buildSummarySheet(rows){
- var ws={};
- var merges=[];
+function addSummarySheet(wb,name,rows){
+ var ws=wb.addWorksheet(name,{views:[{showGridLines:false}]});
+ ws.columns=[{width:34},{width:28}];
  rows.forEach(function(row,r){
   if(typeof row==="string"){
-   ws[XLSX.utils.encode_cell({r:r,c:0})]=c(row,{bold:true,fc:WHITE,bg:NAVY,sz:11,align:"center",bc:NAVY});
-   ws[XLSX.utils.encode_cell({r:r,c:1})]=c("",{bg:NAVY,bc:NAVY});
-   merges.push({s:{r:r,c:0},e:{r:r,c:1}});
+   var xlRow=ws.addRow([row,""]);
+   xlRow.height=24;
+   xlRow.eachCell(function(cell){
+    cell.font={name:"Calibri",size:11,bold:true,color:XL.white};
+    cell.fill={type:"pattern",pattern:"solid",fgColor:XL.navy};
+    cell.alignment={vertical:"middle",horizontal:"center"};
+   });
+   ws.mergeCells(xlRow.number,1,xlRow.number,2);
   }else{
    var k=row[0],v=row[1];
    var alt=r%2===0;
-   var bg=alt?LIGHT_GREY:WHITE;
-   ws[XLSX.utils.encode_cell({r:r,c:0})]=c(k,{bold:true,fc:DARK_GREY,bg:bg,sz:10,align:"right",bc:MID_GREY});
-   ws[XLSX.utils.encode_cell({r:r,c:1})]=c(v==null?"—":v,{fc:NAVY,bg:bg,sz:10,bold:typeof v==="number",bc:MID_GREY,fmt:typeof v==="number"?"#,##0":""});
+   var bg=alt?XL.lightGrey:XL.white;
+   var xlRow=ws.addRow([k,v==null?"—":v]);
+   xlRow.height=20;
+   var kCell=xlRow.getCell(1);
+   kCell.font={name:"Calibri",size:10,bold:true,color:XL.darkGrey};
+   kCell.fill={type:"pattern",pattern:"solid",fgColor:bg};
+   kCell.alignment={vertical:"middle",horizontal:"right"};
+   kCell.border={bottom:{style:"thin",color:{argb:"FFE2E8F0"}}};
+   var vCell=xlRow.getCell(2);
+   vCell.font={name:"Calibri",size:10,bold:typeof v==="number",color:XL.navy};
+   vCell.fill={type:"pattern",pattern:"solid",fgColor:bg};
+   vCell.alignment={vertical:"middle",horizontal:"left"};
+   vCell.border={bottom:{style:"thin",color:{argb:"FFE2E8F0"}}};
+   if(typeof v==="number") vCell.numFmt="#,##0";
   }
  });
- ws["!ref"]=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:rows.length-1,c:1}});
- ws["!cols"]=[{wch:34},{wch:28}];
- ws["!rows"]=rows.map(function(r){return{hpt:typeof r==="string"?24:20};});
- if(merges.length) ws["!merges"]=merges;
- return ws;
 }
 
-function exportToExcel(sheets,filename,meta){
+async function exportToExcel(sheets,filename,meta){
  meta=meta||[];
- var wb=XLSX.utils.book_new();
- wb.Props={Title:filename.replace(/_/g," "),Author:COMPANY,CreatedDate:new Date(),Company:"Bapco Energies"};
+ var wb=new ExcelJS.Workbook();
+ wb.creator=COMPANY;
+ wb.created=new Date();
+ wb.modified=new Date();
+ wb.title=filename.replace(/_/g," ");
 
  var coverMeta=[
   ["Report",filename.replace(/BE_Warehouse_/g,"").replace(/_/g," ")],
@@ -337,22 +352,34 @@ function exportToExcel(sheets,filename,meta){
   ["System",COMPANY]
  ].concat(meta);
 
- XLSX.utils.book_append_sheet(wb,buildCover(filename.replace(/BE_Warehouse_/g,"").replace(/_/g," "),coverMeta),"Cover");
+ addCoverSheet(wb,filename.replace(/BE_Warehouse_/g,"").replace(/_/g," "),coverMeta);
 
  sheets.forEach(function(sheet){
-  var ws=sheet.isSummaryRows?buildSummarySheet(sheet.data):buildDataSheet(sheet.data,sheet.statusKey,sheet.kpis);
-  XLSX.utils.book_append_sheet(wb,ws,sheet.name.substring(0,31));
+  if(sheet.isSummaryRows){
+   addSummarySheet(wb,sheet.name,sheet.data);
+  }else{
+   addDataSheet(wb,sheet.name,sheet.data,sheet.statusKey,sheet.kpis);
+  }
  });
 
- var metaWs=buildSummarySheet([
+ addSummarySheet(wb,"Metadata",[
   "Export Information",
   ["File",filename],
   ["Exported At",new Date().toLocaleString("en-GB")],
   ["Total Sheets",sheets.length+1],
   ["System",COMPANY]
  ]);
- XLSX.utils.book_append_sheet(wb,metaWs,"Metadata");
- XLSX.writeFile(wb,filename+"_"+new Date().toISOString().slice(0,10)+".xlsx");
+
+ var buf=await wb.xlsx.writeBuffer();
+ var blob=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+ var url=URL.createObjectURL(blob);
+ var a=document.createElement("a");
+ a.href=url;
+ a.download=filename+"_"+new Date().toISOString().slice(0,10)+".xlsx";
+ document.body.appendChild(a);
+ a.click();
+ a.remove();
+ URL.revokeObjectURL(url);
 }
 
 function fmtExcelDate(ds){return ds?new Date(ds).toLocaleDateString("en-GB"):"—";}
@@ -822,7 +849,7 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  </div>
 
  <div style={{display:"flex",flexDirection:isMobile?"column":"row",gap:12,justifyContent:"center"}}>
- <button onClick={()=>{setResult(null);setF(BLANK);setDateErr("");setPoVal("");}} style={{padding:"12px 22px",background:A,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer"}}>Submit Another</button>
+ <button onClick={async()=>{setResult(null);setF(BLANK);setDateErr("");setPoVal("");}} style={{padding:"12px 22px",background:A,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer"}}>Submit Another</button>
  <button onClick={onBack} style={{padding:"12px 22px",background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer"}}>Back to Home</button>
  </div>
  </div>
@@ -843,7 +870,7 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  <div>
  <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Delivery Priority *</label>
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
- <button type="button" onClick={()=>{set("isEmergency")(false);set("emergencyJustification")("");set("emergencyDeclared")(false);setDateErr("");}} style={{padding:"14px 12px",borderRadius:12,border:`2px solid ${!f.isEmergency?"#6366f1":"#e5e7eb"}`,background:!f.isEmergency?"#eef2ff":"#f9fafb",cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}>
+ <button type="button" onClick={async()=>{set("isEmergency")(false);set("emergencyJustification")("");set("emergencyDeclared")(false);setDateErr("");}} style={{padding:"14px 12px",borderRadius:12,border:`2px solid ${!f.isEmergency?"#6366f1":"#e5e7eb"}`,background:!f.isEmergency?"#eef2ff":"#f9fafb",cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}>
  <div style={{fontWeight:700,fontSize:13,color:!f.isEmergency?"#4f46e5":"#6b7280",marginBottom:3}}>📦 Standard</div>
  <div style={{fontSize:11,color:!f.isEmergency?"#6366f1":"#9ca3af",lineHeight:1.4}}>Normal scheduling process with full review</div>
  </button>
@@ -958,7 +985,7 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Off-loading Equipment Required? *</label>
  <div style={{display:"flex",gap:10,marginBottom:10}}>
  {[false,true].map(opt=>{const on=f.needsEquipment===opt;return(
- <button key={String(opt)} onClick={()=>{set("needsEquipment")(opt);if(!opt)set("offloadingEquipment")([]);}} style={{flex:1,padding:"12px",borderRadius:12,border:`1px solid ${on?P:"#e5e7eb"}`,background:on?`${P}14`:"#f9fafb",color:on?P:"#6b7280",fontWeight:600,fontSize:14,cursor:"pointer"}}>{opt?"Yes":"No"}</button>
+ <button key={String(opt)} onClick={async()=>{set("needsEquipment")(opt);if(!opt)set("offloadingEquipment")([]);}} style={{flex:1,padding:"12px",borderRadius:12,border:`1px solid ${on?P:"#e5e7eb"}`,background:on?`${P}14`:"#f9fafb",color:on?P:"#6b7280",fontWeight:600,fontSize:14,cursor:"pointer"}}>{opt?"Yes":"No"}</button>
  );})}
  </div>
  {f.needsEquipment && (
@@ -1006,7 +1033,7 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  <textarea style={{...inp,height:80,resize:"none"}} value={f.additionalNotes} onChange={setE("additionalNotes")} placeholder="Special requirements (optional)"/>
  </div>
 
- <button disabled={!valid} onClick={()=>{const r=onSubmit({...f});if(r)setResult(r);}} style={{padding:"14px 24px",background:valid?P:"#9ca3af",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:valid?"pointer":"not-allowed",width:"100%"}}>
+ <button disabled={!valid} onClick={async()=>{const r=onSubmit({...f});if(r)setResult(r);}} style={{padding:"14px 24px",background:valid?P:"#9ca3af",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:valid?"pointer":"not-allowed",width:"100%"}}>
  {editingAppointment?"↩️ Resubmit for Review":"Submit for Approval"}
  </button>
  </div>
@@ -1275,7 +1302,7 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
  {label:"Revision",key:"revision",bg:"rgba(251,146,60,0.15)",bd:"rgba(251,146,60,0.3)",color:"#fb923c",filter:"revision_required"},
  {label:"✕ Rejected",key:"rejected",bg:"rgba(239,68,68,0.15)",bd:"rgba(239,68,68,0.3)",color:"#fca5a5",filter:"rejected"},
  ].map(({label,key,bg,bd,color,filter})=>(
- <button key={key} onClick={()=>{setAdminFilter(filter);setView("admin");}} style={{background:bg,border:`1px solid ${bd}`,borderRadius:14,padding:isMobile?14:20,textAlign:"left",cursor:"pointer",transition:"transform 0.1s"}}>
+ <button key={key} onClick={async()=>{setAdminFilter(filter);setView("admin");}} style={{background:bg,border:`1px solid ${bd}`,borderRadius:14,padding:isMobile?14:20,textAlign:"left",cursor:"pointer",transition:"transform 0.1s"}}>
  <div style={{color,fontSize:isMobile?26:32,fontWeight:800}}>{counts[key]}</div>
  <div style={{color:"rgba(255,255,255,0.65)",fontSize:12,fontWeight:500,marginTop:2}}>{label}</div>
  <div style={{color:"rgba(255,255,255,0.3)",fontSize:10,marginTop:4}}>Click to view →</div>
@@ -1329,7 +1356,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
  <button onClick={()=>setEmergencyOnly(p=>!p)} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${emergencyOnly?"#dc2626":"rgba(255,255,255,0.15)"}`,background:emergencyOnly?"#dc2626":"rgba(255,255,255,0.07)",color:emergencyOnly?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,cursor:"pointer"}}>Emergency</button>
  {["pending","approved","rejected","revision_required"].map(s=>{const on=statFs.includes(s);return(<button key={s} onClick={()=>togStat(s)} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${on?sc[s]:"rgba(255,255,255,0.15)"}`,background:on?sc[s]:"rgba(255,255,255,0.07)",color:on?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600,cursor:"pointer"}}>{statusLabels[s]}</button>);})}
- <button onClick={()=>{
+ <button onClick={async()=>{
  const data=rows.map(a=>({
  "ID":a.id,
  "Supplier":a.supplierName||"—",
@@ -1378,7 +1405,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  }));
  const byDate=Object.entries(rows.reduce((m,a)=>{const d=fmtExcelDate(a.date);m[d]=(m[d]||0)+1;return m;},{}))
  .sort().map(([d,c])=>({"Date":d,"Count":c}));
- exportToExcel([
+ await exportToExcel([
  {name:"Summary",data:summary,isSummaryRows:false},
  {name:"Appointments",data,statusKey:"Status",kpis:[
  {label:"Total",value:rows.length},
@@ -1752,10 +1779,10 @@ function CalendarView({ appointments, isMobile }) {
  <div style={{background:"#fef9e7",borderRadius:12,padding:12,border:"1px solid #fde68a",marginBottom:12}}>
  <div style={{fontSize:11,fontWeight:700,color:"#d97706",marginBottom:8}}>📦 Delivery Confirmation</div>
  <div style={{display:"flex",gap:8}}>
- <button onClick={()=>{setSel(null);window.handleDeliveryComplete(sel);}} style={{flex:1,padding:"10px 14px",background:"#10b981",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+ <button onClick={async()=>{setSel(null);window.handleDeliveryComplete(sel);}} style={{flex:1,padding:"10px 14px",background:"#10b981",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
  <span>✅</span><span>Completed</span>
  </button>
- <button onClick={()=>{setSel(null);window.handleDeliveryFailed(sel);}} style={{flex:1,padding:"10px 14px",background:"#ef4444",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+ <button onClick={async()=>{setSel(null);window.handleDeliveryFailed(sel);}} style={{flex:1,padding:"10px 14px",background:"#ef4444",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
  <span>❌</span><span>Failed</span>
  </button>
  </div>
@@ -1887,7 +1914,7 @@ function EmailLog({ emailLog, isMobile }) {
  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
  <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{totalConversations} conversation{totalConversations!==1?"s":""}</span>
  <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{totalEmails} email{totalEmails!==1?"s":""}</span>
- <button onClick={()=>{
+ <button onClick={async()=>{
  const emailData=emailLog.map(e=>({
  "Timestamp":fmtExcelTs(e.timestamp),
  "Appointment ID":e.appointmentId||"—",
@@ -1911,7 +1938,7 @@ function EmailLog({ emailLog, isMobile }) {
  const k=e.supplierName||e.recipient||"Unknown";
  m[k]=(m[k]||0)+1; return m;
  },{})).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({"Supplier":k,"Emails Received":v}));
- exportToExcel([
+ await exportToExcel([
  {name:"Summary",data:emailSummary},
  {name:"All Emails",data:emailData,kpis:[
  {label:"Total Emails",value:emailLog.length},
@@ -2056,7 +2083,7 @@ function HelpPage({ isMobile }){
  {/* Role toggle */}
  <div style={{display:"flex",gap:8,marginBottom:20}}>
  {["admin","supplier"].map(r=>(
- <button key={r} onClick={()=>{setActiveRole(r);setActiveSection(0);}} style={{padding:"10px 20px",borderRadius:12,border:"none",background:activeRole===r?"#C8962A":"rgba(255,255,255,0.1)",color:activeRole===r?"#07114C":"rgba(255,255,255,0.7)",fontWeight:700,fontSize:14,cursor:"pointer"}}>
+ <button key={r} onClick={async()=>{setActiveRole(r);setActiveSection(0);}} style={{padding:"10px 20px",borderRadius:12,border:"none",background:activeRole===r?"#C8962A":"rgba(255,255,255,0.1)",color:activeRole===r?"#07114C":"rgba(255,255,255,0.7)",fontWeight:700,fontSize:14,cursor:"pointer"}}>
  {HELP_CONTENT[r].icon} {HELP_CONTENT[r].title}
  </button>
  ))}
@@ -2200,7 +2227,7 @@ function SettingsPanel({ config, onChange, isMobile }) {
 
  {/* Change Credentials Card */}
  <div style={{background:"#fff",borderRadius:16,padding:isMobile?16:20}}>
- <button onClick={()=>{setCredsOpen(p=>!p);setCredsMsg(null);}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,background:"transparent",border:"none",cursor:"pointer",textAlign:"left",padding:0}}>
+ <button onClick={async()=>{setCredsOpen(p=>!p);setCredsMsg(null);}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,background:"transparent",border:"none",cursor:"pointer",textAlign:"left",padding:0}}>
  <span style={{fontSize:20}}>🔐</span>
  <div style={{flex:1}}>
  <div style={{fontWeight:700,fontSize:15,color:"#111827"}}>Change Credentials</div>
@@ -2366,7 +2393,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:26,margin:"0 0 4px"}}>Statistics</h1>
  <p style={{color:"rgba(255,255,255,0.45)",fontSize:13,margin:0}}>Advanced delivery insights to support warehouse decisions</p>
  </div>
- <button onClick={()=>{
+ <button onClick={async()=>{
  const data=appointments.map(a=>({
  "ID":a.id,"Supplier":a.supplierName||"—","Email":a.supplierEmail||"—",
  "SBU":sbuName(a.deliveryTo),"Date":fmtExcelDate(a.date),"Time":a.time||"—",
@@ -2431,7 +2458,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  "Status":(a.status||"—").replace(/_/g," "),
  "Justification":a.emergencyJustification||"—","Created":fmtExcelTs(a.createdAt),
  }));
- exportToExcel([
+ await exportToExcel([
  {name:"Summary",data:summarySheet},
  {name:"SBU Breakdown",data:sbuBreakdown},
  {name:"Slot Analysis",data:slotBreakdown},
@@ -2464,16 +2491,16 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  <span style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>To</span>
  <input type="date" value={dTo} onChange={e=>setDTo(e.target.value)} style={inp}/>
  </div>
- {(dFrom||dTo)&&<button onClick={()=>{setDFrom("");setDTo("");}} style={{padding:"8px 14px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:12,cursor:"pointer"}}>Clear</button>}
+ {(dFrom||dTo)&&<button onClick={async()=>{setDFrom("");setDTo("");}} style={{padding:"8px 14px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:12,cursor:"pointer"}}>Clear</button>}
  </div>
  <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{total} appointment{total!==1?"s":""}</span>
  </div>
 
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(5,1fr)",gap:12,marginBottom:24}}>
- <StatCard label="Total" value={total} sub="all appointments" onClick={()=>{setAdminFilter&&setAdminFilter(null);setView&&setView("admin");}}/>
- <StatCard label="Approved" value={approved} sub={total?Math.round(approved/total*100)+"%":"-"} color="#6ee7b7" onClick={()=>{setAdminFilter&&setAdminFilter("approved");setView&&setView("admin");}}/>
- <StatCard label="Pending" value={pending} sub="awaiting review" color="#fcd34d" onClick={()=>{setAdminFilter&&setAdminFilter("pending");setView&&setView("admin");}}/>
- <StatCard label="Rejected" value={rejected} sub={total?Math.round(rejected/total*100)+"%":"-"} color="#fca5a5" onClick={()=>{setAdminFilter&&setAdminFilter("rejected");setView&&setView("admin");}}/>
+ <StatCard label="Total" value={total} sub="all appointments" onClick={async()=>{setAdminFilter&&setAdminFilter(null);setView&&setView("admin");}}/>
+ <StatCard label="Approved" value={approved} sub={total?Math.round(approved/total*100)+"%":"-"} color="#6ee7b7" onClick={async()=>{setAdminFilter&&setAdminFilter("approved");setView&&setView("admin");}}/>
+ <StatCard label="Pending" value={pending} sub="awaiting review" color="#fcd34d" onClick={async()=>{setAdminFilter&&setAdminFilter("pending");setView&&setView("admin");}}/>
+ <StatCard label="Rejected" value={rejected} sub={total?Math.round(rejected/total*100)+"%":"-"} color="#fca5a5" onClick={async()=>{setAdminFilter&&setAdminFilter("rejected");setView&&setView("admin");}}/>
  <StatCard label="Total Orders" value={totalOrders} sub="across all apts" color="#a5b4fc"/>
  </div>
 
@@ -2775,7 +2802,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  return m;
  },{})).sort((a,b)=>b[1]["Total Actions"]-a[1]["Total Actions"]).map(([,v])=>v);
  const timeline=monthlyTrend(filtered,"timestamp");
- exportToExcel([
+ await exportToExcel([
  {name:"Summary",data:txSummary},
  {name:"All Transactions",data:txData,kpis:[
  {label:"Total Actions",value:filtered.length},
@@ -2847,13 +2874,13 @@ function TransactionsHistory({ transactions, isMobile }) {
  <div style={{position:"relative",minWidth:isMobile?140:200}}>
  <input list="supplier-list" value={supplierFilter||supplierSearchQ} onChange={e=>{setSupplierSearchQ(e.target.value);setSupplierFilter("");}} onBlur={()=>{if(filteredSuppliers.includes(supplierSearchQ))setSupplierFilter(supplierSearchQ);}} placeholder="Filter by supplier..." style={{...inpDark,width:"100%",paddingRight:supplierFilter||supplierSearchQ?"30px":"12px"}}/>
  <datalist id="supplier-list">{filteredSuppliers.map(s=><option key={s} value={s}/>)}</datalist>
- {(supplierFilter||supplierSearchQ)&&<button onClick={()=>{setSupplierFilter("");setSupplierSearchQ("");}} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"rgba(255,255,255,0.5)",cursor:"pointer",fontSize:16,padding:0,lineHeight:1}}>×</button>}
+ {(supplierFilter||supplierSearchQ)&&<button onClick={async()=>{setSupplierFilter("");setSupplierSearchQ("");}} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"rgba(255,255,255,0.5)",cursor:"pointer",fontSize:16,padding:0,lineHeight:1}}>×</button>}
  </div>
  <span style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>From</span>
  <input type="date" value={dFrom} onChange={e=>setDFrom(e.target.value)} style={inpDark}/>
  <span style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>To</span>
  <input type="date" value={dTo} onChange={e=>setDTo(e.target.value)} style={inpDark}/>
- {(actionFilter!=="all"||supplierFilter||supplierSearchQ||dFrom||dTo||searchQ||emergencyOnly)&&<button onClick={()=>{setActionFilter("all");setSupplierFilter("");setSupplierSearchQ("");setDFrom("");setDTo("");setSearchQ("");setEmergencyOnly(false);}} style={{padding:"8px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:11,cursor:"pointer"}}>Clear filters</button>}
+ {(actionFilter!=="all"||supplierFilter||supplierSearchQ||dFrom||dTo||searchQ||emergencyOnly)&&<button onClick={async()=>{setActionFilter("all");setSupplierFilter("");setSupplierSearchQ("");setDFrom("");setDTo("");setSearchQ("");setEmergencyOnly(false);}} style={{padding:"8px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:11,cursor:"pointer"}}>Clear filters</button>}
  <button onClick={()=>setEmergencyOnly(p=>!p)} style={{padding:"8px 12px",background:emergencyOnly?"#dc2626":"rgba(255,255,255,0.08)",border:`1px solid ${emergencyOnly?"#dc2626":"rgba(255,255,255,0.15)"}`,borderRadius:9,color:emergencyOnly?"#fff":"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,cursor:"pointer"}}>🚨 Emergency</button>
  <span style={{marginLeft:"auto",background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{groups.length} appointment{groups.length!==1?"s":""} · {filtered.length} event{filtered.length!==1?"s":""}</span>
  </div>
@@ -3035,7 +3062,7 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  )}
  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10,marginBottom:4}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:0}}>Team Lead Dashboard</h1>
- <button onClick={()=>{
+ <button onClick={async()=>{
  const aptData=exportAppts.map(a=>({
  "ID":a.id,"Supplier":a.supplierName||"—","Email":a.supplierEmail||"—",
  "SBU":sbuName(a.deliveryTo),"Date":fmtExcelDate(a.date),"Time":a.time||"—",
@@ -3068,7 +3095,7 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  "Total Orders":a.totalOrders||0,
  "Storage":Array.isArray(a.storageLocation)?a.storageLocation.join(", "):a.storageLocation||"—",
  }));
- exportToExcel([
+ await exportToExcel([
  {name:"Summary",data:tlSummary},
  {name:"Deliveries",data:aptData,statusKey:"Delivery Status",kpis:[
  {label:"Total Approved",value:approved.length},
@@ -3586,7 +3613,7 @@ function App() {
  <span style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:syncStatus==="ok"?"rgba(16,185,129,0.2)":syncStatus==="error"?"rgba(239,68,68,0.2)":"rgba(200,150,42,0.2)",color:syncStatus==="ok"?"#6ee7b7":syncStatus==="error"?"#fca5a5":"#fcd34d",border:"1px solid rgba(255,255,255,0.1)"}}>{syncStatus==="ok"?"☁️ Synced":syncStatus==="error"?"⚠️ Sync Error":"⏳ Syncing…"}</span>
  <button onClick={()=>pullFromSupabase(false)} title="Refresh data" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,padding:"4px 10px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700}}>🔄</button>
  <button onClick={()=>setView("help")} style={{background:"rgba(200,150,42,0.15)",border:"1px solid rgba(200,150,42,0.3)",borderRadius:8,padding:"4px 10px",color:"#C8962A",fontSize:12,cursor:"pointer",fontWeight:700}}>❓ Guide</button>
- <button onClick={()=>{setPage("landing");setView("dashboard");setAdminEmail("");sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");}} style={{color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
+ <button onClick={async()=>{setPage("landing");setView("dashboard");setAdminEmail("");sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");}} style={{color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
  </div>
  </header>
 
@@ -3600,7 +3627,7 @@ function App() {
  <button onClick={()=>setNavOpen(false)} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.4)",fontSize:18}}>×</button>
  </div>
  {nav.map(item=>(
- <button key={item.id} onClick={()=>{setView(item.id);setNavOpen(false);}}
+ <button key={item.id} onClick={async()=>{setView(item.id);setNavOpen(false);}}
  style={{display:"flex",alignItems:"center",gap:10,padding:"12px 10px",borderRadius:10,border:"none",cursor:"pointer",background:view===item.id?A:"transparent",color:view===item.id?"#fff":"rgba(255,255,255,0.55)",fontWeight:500,fontSize:14,marginBottom:4,textAlign:"left"}}>
  <span style={{fontSize:16}}>{item.icon}</span>
  <span style={{flex:1}}>{item.label}</span>
