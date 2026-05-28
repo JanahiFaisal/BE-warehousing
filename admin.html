@@ -2624,9 +2624,32 @@ function TeamLeadPanel({ appointments, isMobile }) {
  }
 
  const exportAppts=statusFilter==="all"?approved:statusFilter==="overdue"?overdue:statusFilter==="upcoming"?upcoming:statusFilter==="completed"?completed:statusFilter==="failed"?failed:approved;
+ const [confirmMarkAll,setConfirmMarkAll]=useState(false);
+ const markAllTargets=awaiting; // all awaiting deliveries
+
+ async function handleMarkAllComplete(){
+ for(const a of markAllTargets){
+ if(window.handleDeliveryComplete) await window.handleDeliveryComplete(a);
+ }
+ setConfirmMarkAll(false);
+ }
 
  return(
  <div style={{padding:isMobile?16:28}}>
+ {/* Mark All Confirmation Modal */}
+ {confirmMarkAll&&(
+ <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+ <div style={{background:"#fff",borderRadius:20,padding:28,maxWidth:400,width:"100%",boxShadow:"0 25px 60px rgba(0,0,0,0.4)"}}>
+ <div style={{fontSize:36,textAlign:"center",marginBottom:12}}>✅</div>
+ <h3 style={{fontWeight:800,fontSize:18,color:"#111827",textAlign:"center",margin:"0 0 8px"}}>Mark All as Complete?</h3>
+ <p style={{color:"#6b7280",fontSize:13,textAlign:"center",margin:"0 0 20px"}}>This will mark <strong>{markAllTargets.length} pending deliveries</strong> as completed. This action cannot be undone.</p>
+ <div style={{display:"flex",gap:10}}>
+ <button onClick={()=>setConfirmMarkAll(false)} style={{flex:1,padding:"11px",border:"1px solid #e5e7eb",borderRadius:12,fontSize:14,fontWeight:600,color:"#6b7280",background:"transparent",cursor:"pointer"}}>Cancel</button>
+ <button onClick={handleMarkAllComplete} style={{flex:1,padding:"11px",background:"#10b981",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:700,cursor:"pointer"}}>✅ Confirm</button>
+ </div>
+ </div>
+ </div>
+ )}
  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10,marginBottom:4}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:0}}>Team Lead Dashboard</h1>
  <button onClick={()=>{
@@ -2654,6 +2677,9 @@ function TeamLeadPanel({ appointments, isMobile }) {
  exportToExcel([{name:"Deliveries",data}],"BE_Warehouse_TeamLead_"+new Date().toISOString().slice(0,10));
  }} disabled={exportAppts.length===0} style={{padding:"8px 14px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer"}}>
  📥 Export Excel
+ </button>
+ <button onClick={()=>setConfirmMarkAll(true)} disabled={markAllTargets.length===0} style={{padding:"8px 14px",background:markAllTargets.length===0?"#9ca3af":"#10b981",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:markAllTargets.length===0?"not-allowed":"pointer",opacity:markAllTargets.length===0?0.5:1}}>
+ ✅ Mark All Complete ({markAllTargets.length})
  </button>
  </div>
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Monitor approved deliveries and track completion status</p>
