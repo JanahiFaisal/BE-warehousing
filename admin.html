@@ -2628,9 +2628,20 @@ function TeamLeadPanel({ appointments, isMobile }) {
  const markAllTargets=awaiting; // all awaiting deliveries
 
  async function handleMarkAllComplete(){
- for(const a of markAllTargets){
- if(window.handleDeliveryComplete) await window.handleDeliveryComplete(a);
+ const updates={deliveryStatus:"completed",completedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+ const targets=[...markAllTargets];
+ // Update all local state at once
+ setAppts(p=>p.map(x=>{
+ if(targets.some(t=>t.id===x.id)) return {...x,...updates};
+ return x;
+ }));
+ // Save to Supabase and log each
+ for(const a of targets){
+ await sbUpdate("appointments",a.id,updates);
+ logTransaction("delivery_complete",a,{actor:getAdminCreds().nickname||"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery completed via Mark All"});
+ logEmail("delivery_complete",{...a,...updates},{});
  }
+ showToast(`${targets.length} deliveries marked as completed`);
  setConfirmMarkAll(false);
  }
 
