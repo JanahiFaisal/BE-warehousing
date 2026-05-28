@@ -76,107 +76,146 @@ async function sendEmail(to, subject, body){
  }catch(e){console.error("Email error:",e);}
 }
 
-// ─── Enhanced Excel Export ───────────────────────────────────
-const STATUS_COLORS={
- pending:"FFFCD34D", approved:"FF6EE7B7", rejected:"FFFCA5A5",
- revision_required:"FFFDE68A", completed:"FF86EFAC", failed:"FFF87171",
- emergency:"FFFBB6B6", standard:"FFFFFFFF",
-};
+// ─── Professional Excel Export Engine ──────────────────────────
+const COMPANY="Bapco Energies — BE Warehouse";
+const NAVY="FF07114C",GOLD="FFC8962A",WHITE="FFFFFFFF";
+const LIGHT_BLUE="FFF0F4FF",LIGHT_GREY="FFF8FAFC",MID_GREY="FFE5E7EB";
+const S_GREEN="FF6EE7B7",S_RED="FFFCA5A5",S_YELLOW="FFFDE68A",S_ORANGE="FFFED7AA";
+const STATUS_COLORS={pending:S_YELLOW,approved:S_GREEN,rejected:S_RED,revision_required:S_ORANGE,"revision required":S_ORANGE,completed:S_GREEN,failed:S_RED,emergency:S_ORANGE,standard:WHITE,"awaiting delivery":LIGHT_BLUE};
 
-function colWidth(data, key){
- const max=data.reduce((m,r)=>Math.max(m,String(r[key]||"").length),key.length);
- return Math.min(Math.max(max+2,12),60);
+function colWidth(data,key){const max=data.reduce((m,r)=>Math.max(m,String(r[key]||"").length),key.length);return Math.min(Math.max(max+2,12),55);}
+
+function mCell(v,s={}){
+ const t=typeof v==="number"?"n":"s";
+ return{t,v:v==null?"":v,s:{
+  font:{name:"Calibri",sz:s.sz||10,bold:s.bold||false,color:{rgb:s.fc||"FF111827"},...(s.italic?{italic:true}:{})},
+  fill:s.bg?{patternType:"solid",fgColor:{rgb:s.bg}}:{patternType:"none"},
+  alignment:{vertical:"center",horizontal:s.align||"left",wrapText:s.wrap||false},
+  border:{top:{style:"thin",color:{rgb:s.bc||MID_GREY}},bottom:{style:"thin",color:{rgb:s.bc||MID_GREY}},left:{style:"thin",color:{rgb:s.bc||MID_GREY}},right:{style:"thin",color:{rgb:s.bc||MID_GREY}}},
+  numFmt:s.numFmt||""
+ }};
 }
 
-function exportToExcel(sheets, filename){
- const wb=XLSX.utils.book_new();
- sheets.forEach(({name,data,statusKey})=>{
- if(!data||data.length===0){
- const ws=XLSX.utils.json_to_sheet([{"No Data":"No records found"}]);
- XLSX.utils.book_append_sheet(wb,ws,name.substring(0,31));
- return;
- }
- const ws=XLSX.utils.json_to_sheet(data);
- const keys=Object.keys(data[0]);
+function hCell(v){return mCell(v,{bold:true,fc:GOLD,bg:NAVY,align:"center",sz:11,bc:NAVY});}
 
- // Auto column widths
- ws["!cols"]=keys.map(k=>({wch:colWidth(data,k)}));
-
- // Freeze header row
- ws["!freeze"]={xSplit:0,ySplit:1,topLeftCell:"A2",activePane:"bottomLeft",state:"frozen"};
-
- // Style header row — navy background gold text
- const range=XLSX.utils.decode_range(ws["!ref"]);
- for(let c=range.s.c;c<=range.e.c;c++){
- const cell=XLSX.utils.encode_cell({r:0,c});
- if(ws[cell]){
- ws[cell].s={
- fill:{patternType:"solid",fgColor:{rgb:"FF07114C"}},
- font:{bold:true,color:{rgb:"FFC8962A"},sz:11},
- alignment:{horizontal:"center",vertical:"center",wrapText:true},
- border:{bottom:{style:"medium",color:{rgb:"FFC8962A"}}}
- };
- }
- }
-
- // Style data rows — alternate colors + status color coding
- if(statusKey){
- for(let r=1;r<=range.e.r;r++){
- const rowData=data[r-1];
- const status=(rowData[statusKey]||"").toLowerCase().replace(/ /g,"_");
- const bgColor=STATUS_COLORS[status]||(r%2===0?"FFF8FAFC":"FFFFFFFF");
- for(let c=range.s.c;c<=range.e.c;c++){
- const cell=XLSX.utils.encode_cell({r,c});
- if(!ws[cell])ws[cell]={t:"z",v:""};
- ws[cell].s={
- fill:{patternType:"solid",fgColor:{rgb:bgColor}},
- font:{sz:10},
- alignment:{vertical:"center",wrapText:false},
- border:{bottom:{style:"thin",color:{rgb:"FFE5E7EB"}}}
- };
- }
- }
- } else {
- for(let r=1;r<=range.e.r;r++){
- const bgColor=r%2===0?"FFF1F5F9":"FFFFFFFF";
- for(let c=range.s.c;c<=range.e.c;c++){
- const cell=XLSX.utils.encode_cell({r,c});
- if(!ws[cell])ws[cell]={t:"z",v:""};
- ws[cell].s={
- fill:{patternType:"solid",fgColor:{rgb:bgColor}},
- font:{sz:10},
- alignment:{vertical:"center"},
- border:{bottom:{style:"thin",color:{rgb:"FFE5E7EB"}}}
- };
- }
- }
- }
-
- XLSX.utils.book_append_sheet(wb,ws,name.substring(0,31));
+function buildCover(title,meta){
+ const ws={};
+ const addRow=(r,cells)=>cells.forEach((c,col)=>{ws[XLSX.utils.encode_cell({r,c:col})]=c;});
+ // Navy header block
+ for(let r=0;r<4;r++) for(let c=0;c<4;c++) ws[XLSX.utils.encode_cell({r,c})]=mCell("",{bg:NAVY});
+ ws["A2"]=mCell(COMPANY,{bold:true,fc:GOLD,bg:NAVY,sz:20,align:"center"});
+ ws["A3"]=mCell("Delivery Management System",{fc:"FFAAAAAA",bg:NAVY,sz:12,align:"center"});
+ // White section
+ for(let r=4;r<6;r++) for(let c=0;c<4;c++) ws[XLSX.utils.encode_cell({r,c})]=mCell("",{bg:WHITE});
+ ws["A5"]=mCell(title,{bold:true,fc:NAVY,sz:16,align:"center",bg:WHITE});
+ // Meta rows
+ let row=6;
+ meta.forEach(([k,v])=>{
+  ws[XLSX.utils.encode_cell({r:row,c:0})]=mCell(k,{bold:true,fc:"FF374151",bg:LIGHT_GREY,align:"right"});
+  ws[XLSX.utils.encode_cell({r:row,c:1})]=mCell(String(v),{fc:NAVY,bg:WHITE});
+  ws[XLSX.utils.encode_cell({r:row,c:2})]=mCell("",{bg:WHITE});
+  ws[XLSX.utils.encode_cell({r:row,c:3})]=mCell("",{bg:WHITE});
+  row++;
  });
+ // Spacer
+ for(let c=0;c<4;c++) ws[XLSX.utils.encode_cell({r:row,c})]=mCell("",{bg:WHITE}); row++;
+ // Confidential
+ ws[XLSX.utils.encode_cell({r:row,c:0})]=mCell("CONFIDENTIAL — For internal use only",{bold:true,fc:S_RED,bg:WHITE,align:"center"});
+ for(let c=1;c<4;c++) ws[XLSX.utils.encode_cell({r:row,c})]=mCell("",{bg:WHITE});
+ ws["!ref"]=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:row,c:3}});
+ ws["!cols"]=[{wch:32},{wch:35},{wch:20},{wch:20}];
+ ws["!rows"]=[{hpt:8},{hpt:42},{hpt:24},{hpt:8},{hpt:8},{hpt:36},...meta.map(()=>({hpt:22})),{hpt:10},{hpt:20}];
+ ws["!merges"]=[{s:{r:1,c:0},e:{r:1,c:3}},{s:{r:2,c:0},e:{r:2,c:3}},{s:{r:4,c:0},e:{r:4,c:3}},{s:{r:row,c:0},e:{r:row,c:3}}];
+ return ws;
+}
+
+function buildDataSheet(data,statusKey,kpis){
+ if(!data||!data.length){const ws={"A1":mCell("No data available",{fc:S_RED})};ws["!ref"]="A1:A1";return ws;}
+ const ws={};
+ const keys=Object.keys(data[0]);
+ let row=0;
+ // KPI strip
+ if(kpis&&kpis.length){
+  kpis.forEach(({label,value},i){
+   ws[XLSX.utils.encode_cell({r:0,c:i*2})]=mCell(label,{bold:true,fc:"FF6B7280",bg:LIGHT_GREY,align:"center",sz:9});
+   ws[XLSX.utils.encode_cell({r:1,c:i*2})]=mCell(value,{bold:true,fc:NAVY,bg:WHITE,align:"center",sz:13,numFmt:typeof value==="number"?"#,##0":""});
+   if(i*2+1<keys.length){
+    ws[XLSX.utils.encode_cell({r:0,c:i*2+1})]=mCell("",{bg:LIGHT_GREY});
+    ws[XLSX.utils.encode_cell({r:1,c:i*2+1})]=mCell("",{bg:WHITE});
+   }
+  });
+  row=3;
+ }
+ // Headers
+ keys.forEach((k,c)=>{ws[XLSX.utils.encode_cell({r:row,c})]=hCell(k);});
+ row++;
+ // Data
+ data.forEach((item,i)=>{
+  const alt=i%2===1;
+  const sv=statusKey?(item[statusKey]||"").toLowerCase().replace(/ /g,"_"):"";
+  const bg=statusKey&&STATUS_COLORS[sv]?STATUS_COLORS[sv]:alt?LIGHT_GREY:WHITE;
+  keys.forEach((k,c)=>{
+   const v=item[k];
+   const isNum=typeof v==="number";
+   ws[XLSX.utils.encode_cell({r:row,c})]=mCell(v==null||v===""?"—":v,{bg,align:isNum?"right":"left",numFmt:isNum&&Number.isInteger(v)?"#,##0":""});
+  });
+  row++;
+ });
+ ws["!ref"]=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:row-1,c:keys.length-1}});
+ ws["!cols"]=keys.map(k=>({wch:colWidth(data,k)}));
+ ws["!rows"]=[...Array(row)].map((_,i)=>({hpt:i<(kpis&&kpis.length?3:1)?22:18}));
+ const fr=kpis&&kpis.length?4:1;
+ ws["!freeze"]={xSplit:0,ySplit:fr,topLeftCell:`A${fr+1}`,activePane:"bottomLeft",state:"frozen"};
+ ws["!pageSetup"]={orientation:"landscape",fitToWidth:1,fitToHeight:0,fitToPage:true,paperSize:9};
+ return ws;
+}
+
+function buildSummarySheet(rows){
+ const ws={};
+ rows.forEach((row,r)=>{
+  if(typeof row==="string"){
+   ws[XLSX.utils.encode_cell({r,c:0})]=mCell(row,{bold:true,fc:GOLD,bg:NAVY,sz:11});
+   ws[XLSX.utils.encode_cell({r,c:1})]=mCell("",{bg:NAVY});
+  }else{
+   const[k,v]=row;
+   ws[XLSX.utils.encode_cell({r,c:0})]=mCell(k,{bold:true,fc:"FF374151",bg:LIGHT_GREY,align:"right"});
+   ws[XLSX.utils.encode_cell({r,c:1})]=mCell(v==null?"—":v,{fc:NAVY,bg:WHITE,bold:typeof v==="number",numFmt:typeof v==="number"?"#,##0":""});
+  }
+ });
+ ws["!ref"]=XLSX.utils.encode_range({s:{r:0,c:0},e:{r:rows.length-1,c:1}});
+ ws["!cols"]=[{wch:32},{wch:28}];
+ ws["!rows"]=[...Array(rows.length)].map(()=>({hpt:22}));
+ return ws;
+}
+
+function exportToExcel(sheets,filename,meta=[]){
+ const wb=XLSX.utils.book_new();
+ wb.Props={Title:filename.replace(/_/g," "),Author:COMPANY,CreatedDate:new Date(),Company:"Bapco Energies"};
+ // Cover
+ const coverMeta=[
+  ["Report",filename.replace(/BE_Warehouse_/g,"").replace(/_/g," ")],
+  ["Generated",new Date().toLocaleString("en-GB")],
+  ["Generated By",getAdminCreds?.()?getAdminCreds().nickname||"Admin":"Admin"],
+  ["System",COMPANY],
+  ...meta,
+ ];
+ XLSX.utils.book_append_sheet(wb,buildCover(filename.replace(/BE_Warehouse_/g,"").replace(/_/g," "),coverMeta),"📋 Cover");
+ // Data sheets
+ sheets.forEach(({name,data,statusKey,kpis,isSummaryRows})=>{
+  const ws=isSummaryRows?buildSummarySheet(data):buildDataSheet(data,statusKey,kpis);
+  XLSX.utils.book_append_sheet(wb,ws,name.substring(0,31));
+ });
+ // Metadata
+ const metaWs=buildSummarySheet(["Export Information",["File",filename],["Exported At",new Date().toLocaleString("en-GB")],["Total Sheets",sheets.length+1],["System",COMPANY]]);
+ XLSX.utils.book_append_sheet(wb,metaWs,"ℹ️ Metadata");
  XLSX.writeFile(wb,filename+"_"+new Date().toISOString().slice(0,10)+".xlsx");
 }
 
 function fmtExcelDate(ds){return ds?new Date(ds).toLocaleDateString("en-GB"):"—";}
 function fmtExcelTs(iso){return iso?new Date(iso).toLocaleString("en-GB"):"—";}
+function groupCount(arr,key){return Object.entries(arr.reduce((m,x)=>{const k=x[key]||"Unknown";m[k]=(m[k]||0)+1;return m;},{})).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({"Group":k,"Count":v}));}
+function monthlyTrend(arr,dateKey){const map={};arr.forEach(x=>{const d=x[dateKey];if(!d)return;const m=new Date(d).toLocaleDateString("en-GB",{month:"short",year:"numeric"});map[m]=(map[m]||0)+1;});return Object.entries(map).map(([m,c])=>({"Month":m,"Count":c}));}
 
-// Helper — group by key and count
-function groupCount(arr, key){
- return Object.entries(arr.reduce((m,x)=>{const k=x[key]||"Unknown";m[k]=(m[k]||0)+1;return m;},{}))
- .sort((a,b)=>b[1]-a[1]).map(([k,v])=>({"Group":k,"Count":v}));
-}
-
-// Helper — monthly trend
-function monthlyTrend(arr, dateKey){
- const map={};
- arr.forEach(x=>{
- const d=x[dateKey];
- if(!d)return;
- const m=new Date(d).toLocaleDateString("en-GB",{month:"short",year:"numeric"});
- map[m]=(map[m]||0)+1;
- });
- return Object.entries(map).map(([m,c])=>({"Month":m,"Appointments":c}));
-}
 
 // Supabase helpers
 async function sbGetAll(table){
@@ -1197,11 +1236,17 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  const byDate=Object.entries(rows.reduce((m,a)=>{const d=fmtExcelDate(a.date);m[d]=(m[d]||0)+1;return m;},{}))
  .sort().map(([d,c])=>({"Date":d,"Count":c}));
  exportToExcel([
- {name:"Summary",data:summary},
- {name:"Appointments",data,statusKey:"Status"},
+ {name:"Summary",data:summary,isSummaryRows:false},
+ {name:"Appointments",data,statusKey:"Status",kpis:[
+ {label:"Total",value:rows.length},
+ {label:"Pending",value:rows.filter(a=>a.status==="pending").length},
+ {label:"Approved",value:rows.filter(a=>a.status==="approved").length},
+ {label:"Rejected",value:rows.filter(a=>a.status==="rejected").length},
+ {label:"Emergency",value:rows.filter(a=>a.priority==="emergency").length},
+ ]},
  {name:"By SBU",data:bySBU},
  {name:"By Date",data:byDate},
- ],"BE_Warehouse_Admin");
+ ],"BE_Warehouse_Admin",[["Total Records",rows.length],["Filter Applied",statFs.join(", ")||"All"]]);
  }} disabled={rows.length===0} style={{padding:"8px 12px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:rows.length===0?"not-allowed":"pointer",opacity:rows.length===0?0.5:1}}>
  📥 Export Excel
  </button>
@@ -1725,9 +1770,14 @@ function EmailLog({ emailLog, isMobile }) {
  },{})).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({"Supplier":k,"Emails Received":v}));
  exportToExcel([
  {name:"Summary",data:emailSummary},
- {name:"All Emails",data:emailData},
+ {name:"All Emails",data:emailData,kpis:[
+ {label:"Total Emails",value:emailLog.length},
+ {label:"Submissions",value:emailLog.filter(e=>e.type==="submission").length},
+ {label:"Approvals",value:emailLog.filter(e=>e.type==="approval").length},
+ {label:"Rejections",value:emailLog.filter(e=>e.type==="rejection").length},
+ ]},
  {name:"By Supplier",data:bySupplier},
- ],"BE_Warehouse_Emails");
+ ],"BE_Warehouse_Emails",[["Total Emails",emailLog.length]]);
  }} disabled={totalEmails===0} style={{padding:"6px 12px",background:"#059669",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:totalEmails===0?"not-allowed":"pointer",opacity:totalEmails===0?0.5:1}}>
  📥 Export Excel
  </button>
@@ -2243,11 +2293,16 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  {name:"SBU Breakdown",data:sbuBreakdown},
  {name:"Slot Analysis",data:slotBreakdown},
  {name:"Monthly Trend",data:monthTrend},
- {name:"Supplier Ranking",data:supplierRank},
+ {name:"Supplier Ranking",data:supplierRank,kpis:[{label:"Total Suppliers",value:supplierRank.length},{label:"Top Supplier",value:supplierRank[0]?.Supplier||"—"}]},
  {name:"Peak Days",data:peakDays},
  {name:"Emergency Report",data:emergencySheet,statusKey:"Status"},
- {name:"All Appointments",data,statusKey:"Status"},
- ],"BE_Warehouse_Statistics");
+ {name:"All Appointments",data,statusKey:"Status",kpis:[
+ {label:"Total",value:appointments.length},
+ {label:"Completed",value:appointments.filter(a=>a.deliveryStatus==="completed").length},
+ {label:"Emergency",value:appointments.filter(a=>a.priority==="emergency").length},
+ {label:"Approval Rate",value:Math.round(appointments.filter(a=>a.status==="approved").length/Math.max(appointments.length,1)*100)+"%"},
+ ]},
+ ],"BE_Warehouse_Statistics",[["Total Appointments",appointments.length],["Completed",appointments.filter(a=>a.deliveryStatus==="completed").length],["Emergency Requests",appointments.filter(a=>a.priority==="emergency").length]]);
  }} disabled={appointments.length===0} style={{padding:"10px 16px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:appointments.length===0?"not-allowed":"pointer",opacity:appointments.length===0?0.5:1}}>
  📥 Export Excel
  </button>
@@ -2579,10 +2634,15 @@ function TransactionsHistory({ transactions, isMobile }) {
  const timeline=monthlyTrend(filtered,"timestamp");
  exportToExcel([
  {name:"Summary",data:txSummary},
- {name:"All Transactions",data:txData},
+ {name:"All Transactions",data:txData,kpis:[
+ {label:"Total Actions",value:filtered.length},
+ {label:"Approved",value:filtered.filter(t=>t.action==="approve").length},
+ {label:"Rejected",value:filtered.filter(t=>t.action==="reject").length},
+ {label:"Completed",value:filtered.filter(t=>t.action==="delivery_complete").length},
+ ]},
  {name:"By Actor",data:byActor},
  {name:"Monthly Timeline",data:timeline},
- ],"BE_Warehouse_Transactions");
+ ],"BE_Warehouse_Transactions",[["Total Records",filtered.length]]);
  }
 
  const [openGroups,setOpenGroups]=useState({});
@@ -2867,9 +2927,15 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  }));
  exportToExcel([
  {name:"Summary",data:tlSummary},
- {name:"Deliveries",data:aptData,statusKey:"Delivery Status"},
+ {name:"Deliveries",data:aptData,statusKey:"Delivery Status",kpis:[
+ {label:"Total Approved",value:approved.length},
+ {label:"Awaiting",value:awaiting.length},
+ {label:"Completed",value:completed.length},
+ {label:"Overdue",value:overdue.length},
+ {label:"Failed",value:failed.length},
+ ]},
  {name:"Overdue",data:overdueSheet},
- ],"BE_Warehouse_TeamLead");
+ ],"BE_Warehouse_TeamLead",[["Awaiting Delivery",awaiting.length],["Completed",completed.length],["Overdue",overdue.length]]);
  }} disabled={exportAppts.length===0} style={{padding:"8px 14px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer"}}>
  📥 Export Excel
  </button>
