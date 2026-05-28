@@ -2625,17 +2625,18 @@ function TeamLeadPanel({ appointments, isMobile }) {
 
  const exportAppts=statusFilter==="all"?approved:statusFilter==="overdue"?overdue:statusFilter==="upcoming"?upcoming:statusFilter==="completed"?completed:statusFilter==="failed"?failed:approved;
  const [confirmMarkAll,setConfirmMarkAll]=useState(false);
- const markAllTargets=awaiting; // all awaiting deliveries
+ const markAllRef=useRef([]);
+
+ function openMarkAll(){
+ markAllRef.current=[...awaiting];
+ setConfirmMarkAll(true);
+ }
 
  async function handleMarkAllComplete(){
+ const targets=markAllRef.current;
+ if(!targets.length){setConfirmMarkAll(false);return;}
  const updates={deliveryStatus:"completed",completedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
- const targets=[...markAllTargets];
- // Update all local state at once
- setAppts(p=>p.map(x=>{
- if(targets.some(t=>t.id===x.id)) return {...x,...updates};
- return x;
- }));
- // Save to Supabase and log each
+ setAppts(p=>p.map(x=>targets.some(t=>t.id===x.id)?{...x,...updates}:x));
  for(const a of targets){
  await sbUpdate("appointments",a.id,updates);
  logTransaction("delivery_complete",a,{actor:getAdminCreds().nickname||"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery completed via Mark All"});
@@ -2643,6 +2644,8 @@ function TeamLeadPanel({ appointments, isMobile }) {
  }
  showToast(`${targets.length} deliveries marked as completed`);
  setConfirmMarkAll(false);
+ markAllRef.current=[];
+ }
  }
 
  return(
@@ -2653,7 +2656,7 @@ function TeamLeadPanel({ appointments, isMobile }) {
  <div style={{background:"#fff",borderRadius:20,padding:28,maxWidth:400,width:"100%",boxShadow:"0 25px 60px rgba(0,0,0,0.4)"}}>
  <div style={{fontSize:36,textAlign:"center",marginBottom:12}}>✅</div>
  <h3 style={{fontWeight:800,fontSize:18,color:"#111827",textAlign:"center",margin:"0 0 8px"}}>Mark All as Complete?</h3>
- <p style={{color:"#6b7280",fontSize:13,textAlign:"center",margin:"0 0 20px"}}>This will mark <strong>{markAllTargets.length} pending deliveries</strong> as completed. This action cannot be undone.</p>
+ <p style={{color:"#6b7280",fontSize:13,textAlign:"center",margin:"0 0 20px"}}>This will mark <strong>{markAllRef.current.length} pending deliveries</strong> as completed. This action cannot be undone.</p>
  <div style={{display:"flex",gap:10}}>
  <button onClick={()=>setConfirmMarkAll(false)} style={{flex:1,padding:"11px",border:"1px solid #e5e7eb",borderRadius:12,fontSize:14,fontWeight:600,color:"#6b7280",background:"transparent",cursor:"pointer"}}>Cancel</button>
  <button onClick={handleMarkAllComplete} style={{flex:1,padding:"11px",background:"#10b981",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:700,cursor:"pointer"}}>✅ Confirm</button>
@@ -2689,8 +2692,8 @@ function TeamLeadPanel({ appointments, isMobile }) {
  }} disabled={exportAppts.length===0} style={{padding:"8px 14px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer"}}>
  📥 Export Excel
  </button>
- <button onClick={()=>setConfirmMarkAll(true)} disabled={markAllTargets.length===0} style={{padding:"8px 14px",background:markAllTargets.length===0?"#9ca3af":"#10b981",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:markAllTargets.length===0?"not-allowed":"pointer",opacity:markAllTargets.length===0?0.5:1}}>
- ✅ Mark All Complete ({markAllTargets.length})
+ <button onClick={openMarkAll} disabled={awaiting.length===0} style={{padding:"8px 14px",background:awaiting.length===0?"#9ca3af":"#10b981",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:awaiting.length===0?"not-allowed":"pointer",opacity:awaiting.length===0?0.5:1}}>
+ ✅ Mark All Complete ({awaiting.length})
  </button>
  </div>
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Monitor approved deliveries and track completion status</p>
