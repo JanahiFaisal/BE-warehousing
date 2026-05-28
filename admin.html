@@ -1350,6 +1350,9 @@ function CalendarView({ appointments, isMobile }) {
  function renderDaily(){
  const dayApts=forDate(cur);
  const off=isFriSat(cur);
+ // Normalize time for matching — strips AM/PM, trims spaces
+ function normalizeTime(t){if(!t)return "";return t.trim().replace(/\s*(AM|PM)$/i,"").replace(/^(\d):/, "0$1:");}
+ const matchedIds=new Set();
  return(
  <div style={{background:"#fff",borderRadius:16,overflow:"hidden",flex:1,display:"flex",flexDirection:"column"}}>
  <div style={{background:P,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",flexShrink:0}}>
@@ -1362,7 +1365,8 @@ function CalendarView({ appointments, isMobile }) {
  </div>
  <div style={{flex:1,overflowY:"auto"}}>
  {SLOTS.map(slot=>{
- const slotApts=approved.filter(a=>a.date===dsOf(cur)&&a.time===slot);
+ const slotApts=approved.filter(a=>a.date===dsOf(cur)&&normalizeTime(a.time)===normalizeTime(slot));
+ slotApts.forEach(a=>matchedIds.add(a.id));
  const hasApts=slotApts.length>0;
  return(
  <div key={slot} style={{display:"flex",borderBottom:"1px solid #f3f4f6",minHeight:64,background:hasApts?"#fff":"#fafafa"}}>
@@ -1387,6 +1391,25 @@ function CalendarView({ appointments, isMobile }) {
  </div>
  );
  })}
+ {/* Catch-all row for appointments with non-standard time formats */}
+ {dayApts.filter(a=>!matchedIds.has(a.id)).length>0&&(
+ <div style={{display:"flex",borderBottom:"1px solid #f3f4f6",minHeight:64,background:"#fffbeb"}}>
+ <div style={{width:72,padding:"0 12px",borderRight:"1px solid #f3f4f6",display:"flex",alignItems:"center",justifyContent:"flex-end",flexShrink:0,background:"#fef9c3"}}>
+ <span style={{fontSize:11,fontWeight:700,color:"#92400e"}}>Other</span>
+ </div>
+ <div style={{flex:1,padding:8,display:"flex",flexDirection:"column",gap:6}}>
+ {dayApts.filter(a=>!matchedIds.has(a.id)).map(a=>(
+ <button key={a.id} onClick={()=>setSel(a)} style={{textAlign:"left",padding:"10px 14px",borderRadius:10,border:"2px solid #fde68a",background:"#fef3c7",cursor:"pointer",display:"block",width:"100%"}}>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5,flexWrap:"wrap",gap:6}}>
+ <span style={{fontWeight:800,fontSize:14,color:"#92400e"}}>{a.supplierName}</span>
+ <span style={{fontSize:10,color:"#92400e",background:"#fde68a",padding:"2px 6px",borderRadius:6}}>{a.time}</span>
+ </div>
+ <div style={{fontSize:11,color:"#92400e"}}>{a.totalOrders} orders · {a.totalLines} lines</div>
+ </button>
+ ))}
+ </div>
+ </div>
+ )}
  </div>
  </div>
  );
@@ -2894,6 +2917,8 @@ function App() {
  type,
  recipient:appt.supplierEmail,
  appointmentId:appt.id,
+ supplierName:appt.supplierName||"—",
+ deliveryTo:appt.deliveryTo||"—",
  subject:subjects[type]||`Notification – ${appt.id}`,
  body,
  status:"sent",
@@ -2941,6 +2966,9 @@ function App() {
  appointmentId:appt?appt.id:"—",
  supplierName:appt?appt.supplierName:"—",
  deliveryTo:appt?appt.deliveryTo:"—",
+ appointmentDate:appt?appt.date:"—",
+ appointmentTime:appt?appt.time:"—",
+ priority:appt?appt.priority:"standard",
  details:details.note||"",
  };
  setTransactions(p=>[tx,...p]);
