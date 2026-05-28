@@ -136,7 +136,8 @@ function buildDataSheet(data,statusKey,kpis){
  let row=0;
  // KPI strip
  if(kpis&&kpis.length){
-  kpis.forEach(({label,value},i){
+  kpis.forEach(function(kpi,i){
+   var label=kpi.label,value=kpi.value;
    ws[XLSX.utils.encode_cell({r:0,c:i*2})]=mCell(label,{bold:true,fc:"FF6B7280",bg:LIGHT_GREY,align:"center",sz:9});
    ws[XLSX.utils.encode_cell({r:1,c:i*2})]=mCell(value,{bold:true,fc:NAVY,bg:WHITE,align:"center",sz:13,numFmt:typeof value==="number"?"#,##0":""});
    if(i*2+1<keys.length){
