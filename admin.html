@@ -2768,7 +2768,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  const counts={create:0,resubmission:0,approve:0,reject:0,return_for_revision:0,delivery_complete:0,delivery_failed:0};
  transactions.forEach(t=>{if(counts[t.action]!==undefined)counts[t.action]++;});
 
- function exportCSV(){
+ async function exportCSV(){
  const txData=filtered.map(t=>({
  "Timestamp":fmtExcelTs(t.timestamp),
  "Action":(t.action||"—").replace(/_/g," "),
