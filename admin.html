@@ -1286,47 +1286,416 @@ function SupplierTracker({ appointments, onBack, onSendMessage }) {
  );
 }
 
-function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
- const [searchQ,setSearchQ]=useState("");
- const filtered=searchQ?appointments.filter(a=>matchesAppt(a,searchQ)):[...appointments].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,6);
- const counts={pending:appointments.filter(a=>a.status==="pending").length,approved:appointments.filter(a=>a.status==="approved").length,rejected:appointments.filter(a=>a.status==="rejected").length,revision:appointments.filter(a=>a.status==="revision_required").length};
+// ─── Animated Counter ─────────────────────────────────────────
+function AnimCounter({ target, duration=1200, color="#fff", size=32 }){
+ const [val,setVal]=useState(0);
+ useEffect(()=>{
+ let start=null;
+ const step=ts=>{
+ if(!start)start=ts;
+ const p=Math.min((ts-start)/duration,1);
+ setVal(Math.floor(p*target));
+ if(p<1)requestAnimationFrame(step);
+ };
+ requestAnimationFrame(step);
+ },[target]);
+ return <span style={{fontSize:size,fontWeight:800,color,fontVariantNumeric:"tabular-nums"}}>{val.toLocaleString()}</span>;
+}
+
+// ─── Mini Sparkline ───────────────────────────────────────────
+function Sparkline({ data, color="#C8962A", height=40, width=120 }){
+ if(!data||data.length<2)return null;
+ const max=Math.max(...data,1);
+ const pts=data.map((v,i)=>{
+ const x=(i/(data.length-1))*width;
+ const y=height-(v/max)*height;
+ return `${x},${y}`;
+ }).join(" ");
  return(
- <div style={{padding:isMobile?16:28}}>
- <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Dashboard</h1>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Warehouse delivery appointments overview</p>
- <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, name, email, date, PO, status, notes…" style={{width:"100%",marginBottom:16,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
- <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12,marginBottom:20}}>
+ <svg width={width} height={height} style={{overflow:"visible"}}>
+ <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+ <circle cx={pts.split(" ").pop().split(",")[0]} cy={pts.split(" ").pop().split(",")[1]} r="3" fill={color}/>
+ </svg>
+ );
+}
+
+// ─── Donut Chart ──────────────────────────────────────────────
+function DonutChart({ segments, size=120, thickness=24 }){
+ const total=segments.reduce((s,x)=>s+x.value,0)||1;
+ let offset=0;
+ const r=(size-thickness)/2;
+ const circ=2*Math.PI*r;
+ return(
+ <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+ {segments.map((seg,i)=>{
+ const pct=seg.value/total;
+ const dash=pct*circ;
+ const gap=circ-dash;
+ const el=<circle key={i} cx={size/2} cy={size/2} r={r}
+  fill="none" stroke={seg.color} strokeWidth={thickness}
+  strokeDasharray={`${dash} ${gap}`}
+  strokeDashoffset={-offset*circ+circ/4}
+  strokeLinecap="butt"/>;
+ offset+=pct;
+ return el;
+ })}
+ <text x={size/2} y={size/2-6} textAnchor="middle" fontSize="22" fontWeight="800" fill="#fff">{total.toLocaleString()}</text>
+ <text x={size/2} y={size/2+14} textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.5)">Total</text>
+ </svg>
+ );
+}
+
+// ─── Bar Chart ────────────────────────────────────────────────
+function BarChart({ data, color="#C8962A", height=120, label="" }){
+ const max=Math.max(...data.map(d=>d.value),1);
+ return(
+ <div style={{display:"flex",alignItems:"flex-end",gap:4,height,padding:"0 4px"}}>
+ {data.map((d,i)=>(
+ <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+ <div style={{fontSize:9,color:"rgba(255,255,255,0.5)",fontWeight:600}}>{d.value>0?d.value:""}</div>
+ <div style={{width:"100%",background:typeof color==="function"?color(i,d):color,borderRadius:"4px 4px 0 0",height:`${Math.max((d.value/max)*100,d.value>0?4:0)}%`,transition:"height 0.8s ease",minHeight:d.value>0?4:0}}/>
+ <div style={{fontSize:9,color:"rgba(255,255,255,0.45)",textAlign:"center",lineHeight:1.2,maxWidth:32,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.label}</div>
+ </div>
+ ))}
+ </div>
+ );
+}
+
+// ─── Heatmap (Slot × Day) ─────────────────────────────────────
+function SlotHeatmap({ appointments }){
+ const days=["Sun","Mon","Tue","Wed","Thu"];
+ const dayNums=[0,1,2,3,4];
+ const slots=["08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00"];
+ const grid={};
+ let maxVal=0;
+ appointments.forEach(a=>{
+ if(!a.date||!a.time)return;
+ const dow=new Date(a.date).getDay();
+ const key=`${dow}-${a.time}`;
+ grid[key]=(grid[key]||0)+1;
+ if(grid[key]>maxVal)maxVal=grid[key];
+ });
+ return(
+ <div style={{overflowX:"auto"}}>
+ <div style={{display:"grid",gridTemplateColumns:`40px repeat(${days.length},1fr)`,gap:3,minWidth:280}}>
+ <div/>
+ {days.map(d=><div key={d} style={{fontSize:10,color:"rgba(255,255,255,0.5)",textAlign:"center",fontWeight:600,padding:"2px 0"}}>{d}</div>)}
+ {slots.map(slot=>(
+ <React.Fragment key={slot}>
+ <div style={{fontSize:9,color:"rgba(255,255,255,0.4)",display:"flex",alignItems:"center",justifyContent:"flex-end",paddingRight:6}}>{slot}</div>
+ {dayNums.map(dow=>{
+ const val=grid[`${dow}-${slot}`]||0;
+ const intensity=maxVal>0?val/maxVal:0;
+ const bg=val===0?"rgba(255,255,255,0.05)":`rgba(200,150,42,${0.15+intensity*0.85})`;
+ return(
+ <div key={dow} title={`${days[dow]} ${slot}: ${val} bookings`}
+  style={{height:22,borderRadius:4,background:bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:intensity>0.5?"#07114C":"rgba(255,255,255,0.6)",fontWeight:intensity>0.3?700:400,cursor:"default",transition:"all 0.3s"}}>
+  {val>0?val:""}
+ </div>
+ );
+ })}
+ </React.Fragment>
+ ))}
+ </div>
+ <div style={{display:"flex",alignItems:"center",gap:6,marginTop:10,justifyContent:"flex-end"}}>
+ <span style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>Low</span>
+ {[0.1,0.3,0.5,0.7,0.9].map(o=><div key={o} style={{width:14,height:14,borderRadius:3,background:`rgba(200,150,42,${o})`}}/>)}
+ <span style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>High</span>
+ </div>
+ </div>
+ );
+}
+
+// ─── Calendar Heatmap (GitHub style) ─────────────────────────
+function CalendarHeatmap({ appointments }){
+ const today=new Date();
+ const days=[];
+ for(let i=179;i>=0;i--){
+ const d=new Date(today);
+ d.setDate(d.getDate()-i);
+ days.push(d);
+ }
+ const counts={};
+ appointments.forEach(a=>{if(a.createdAt)counts[a.createdAt.slice(0,10)]=(counts[a.createdAt.slice(0,10)]||0)+1;});
+ const maxVal=Math.max(...Object.values(counts),1);
+ const weeks=[];
+ let week=[];
+ days.forEach((d,i)=>{
+ if(i===0){for(let p=0;p<d.getDay();p++)week.push(null);}
+ week.push(d);
+ if(week.length===7){weeks.push(week);week=[];}
+ });
+ if(week.length)weeks.push(week);
+ const months=[];
+ let lastMonth=-1;
+ weeks.forEach((wk,wi)=>{
+ const d=wk.find(x=>x);
+ if(d&&d.getMonth()!==lastMonth){months.push({label:d.toLocaleDateString("en-GB",{month:"short"}),col:wi});lastMonth=d.getMonth();}
+ });
+ return(
+ <div style={{overflowX:"auto"}}>
+ <div style={{position:"relative",paddingTop:18}}>
+ <div style={{display:"flex",position:"absolute",top:0,left:0,right:0}}>
+ {months.map((m,i)=><div key={i} style={{position:"absolute",left:m.col*16,fontSize:9,color:"rgba(255,255,255,0.5)",fontWeight:600}}>{m.label}</div>)}
+ </div>
+ <div style={{display:"flex",gap:2}}>
+ {weeks.map((wk,wi)=>(
+ <div key={wi} style={{display:"flex",flexDirection:"column",gap:2}}>
+ {wk.map((d,di)=>{
+ if(!d)return<div key={di} style={{width:12,height:12}}/>;
+ const ds=d.toISOString().slice(0,10);
+ const val=counts[ds]||0;
+ const intensity=val>0?Math.min(val/maxVal,1):0;
+ const bg=val===0?"rgba(255,255,255,0.06)":`rgba(200,150,42,${0.2+intensity*0.8})`;
+ return<div key={di} title={`${ds}: ${val} submission${val!==1?"s":""}`}
+  style={{width:12,height:12,borderRadius:2,background:bg,cursor:"default"}}/>;
+ })}
+ </div>
+ ))}
+ </div>
+ </div>
+ </div>
+ );
+}
+
+// ─── Supplier Performance Table ───────────────────────────────
+function SupplierTable({ appointments, isMobile }){
+ const [sort,setSort]=useState("total");
+ const [asc,setAsc]=useState(false);
+ const data=Object.values(appointments.reduce((m,a)=>{
+ const k=a.supplierName||"Unknown";
+ if(!m[k])m[k]={name:k,total:0,approved:0,rejected:0,completed:0,pending:0,last:""};
+ m[k].total++;
+ if(a.status==="approved")m[k].approved++;
+ if(a.status==="rejected")m[k].rejected++;
+ if(a.status==="pending")m[k].pending++;
+ if(a.deliveryStatus==="completed")m[k].completed++;
+ if(a.createdAt>m[k].last)m[k].last=a.createdAt;
+ return m;
+ },{})).map(s=>({...s,
+ approvalRate:s.total>0?Math.round(s.approved/s.total*100):0,
+ completionRate:s.approved>0?Math.round(s.completed/s.approved*100):0,
+ })).sort((a,b)=>(asc?1:-1)*(b[sort]-a[sort])).slice(0,10);
+ const cols=[{key:"name",label:"Supplier",align:"left"},{key:"total",label:"Total"},{key:"approvalRate",label:"Approval %"},{key:"completionRate",label:"Delivery %"},{key:"pending",label:"Pending"},{key:"rejected",label:"Rejected"}];
+ function Hdr({k,label,align}){
+ return<th onClick={()=>{if(sort===k)setAsc(p=>!p);else{setSort(k);setAsc(false);}}}
+  style={{padding:"10px 12px",fontSize:10,fontWeight:700,color:sort===k?"#C8962A":"rgba(255,255,255,0.6)",textTransform:"uppercase",letterSpacing:1,cursor:"pointer",textAlign:align||"center",whiteSpace:"nowrap",background:"rgba(0,0,0,0.2)",userSelect:"none"}}>
+  {label}{sort===k?(asc?"↑":"↓"):""}
+ </th>;
+ }
+ return(
+ <div style={{overflowX:"auto"}}>
+ <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+ <thead><tr>{cols.map(c=><Hdr key={c.key} k={c.key} label={c.label} align={c.align}/>)}</tr></thead>
+ <tbody>
+ {data.map((s,i)=>(
+ <tr key={s.name} style={{background:i%2===0?"rgba(255,255,255,0.03)":"transparent"}}>
+ <td style={{padding:"10px 12px",color:"#fff",fontWeight:500}}>{s.name}</td>
+ <td style={{padding:"10px 12px",textAlign:"center",color:"#fff",fontWeight:700}}>{s.total}</td>
+ <td style={{padding:"10px 12px",textAlign:"center"}}>
+ <div style={{display:"flex",alignItems:"center",gap:6,justifyContent:"center"}}>
+ <div style={{width:40,height:6,borderRadius:3,background:"rgba(255,255,255,0.1)",overflow:"hidden"}}>
+ <div style={{height:"100%",width:`${s.approvalRate}%`,background:s.approvalRate>=70?"#10b981":s.approvalRate>=40?"#f59e0b":"#ef4444",borderRadius:3}}/>
+ </div>
+ <span style={{color:s.approvalRate>=70?"#6ee7b7":s.approvalRate>=40?"#fcd34d":"#fca5a5",fontWeight:700}}>{s.approvalRate}%</span>
+ </div>
+ </td>
+ <td style={{padding:"10px 12px",textAlign:"center"}}>
+ <div style={{display:"flex",alignItems:"center",gap:6,justifyContent:"center"}}>
+ <div style={{width:40,height:6,borderRadius:3,background:"rgba(255,255,255,0.1)",overflow:"hidden"}}>
+ <div style={{height:"100%",width:`${s.completionRate}%`,background:"#C8962A",borderRadius:3}}/>
+ </div>
+ <span style={{color:"#C8962A",fontWeight:700}}>{s.completionRate}%</span>
+ </div>
+ </td>
+ <td style={{padding:"10px 12px",textAlign:"center",color:"#fcd34d",fontWeight:600}}>{s.pending}</td>
+ <td style={{padding:"10px 12px",textAlign:"center",color:"#fca5a5",fontWeight:600}}>{s.rejected}</td>
+ </tr>
+ ))}
+ </tbody>
+ </table>
+ </div>
+ );
+}
+
+// ─── Full Dashboard ───────────────────────────────────────────
+function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
+ const total=appointments.length;
+ const pending=appointments.filter(a=>a.status==="pending").length;
+ const approved=appointments.filter(a=>a.status==="approved").length;
+ const rejected=appointments.filter(a=>a.status==="rejected").length;
+ const revision=appointments.filter(a=>a.status==="revision_required").length;
+ const completed=appointments.filter(a=>a.deliveryStatus==="completed").length;
+ const emergency=appointments.filter(a=>a.priority==="emergency").length;
+ const approvalRate=total>0?Math.round(approved/total*100):0;
+ const completionRate=approved>0?Math.round(completed/approved*100):0;
+
+ // Monthly trend (last 6 months)
+ const monthlyData=(()=>{
+ const map={};
+ const now=new Date();
+ for(let i=5;i>=0;i--){
+ const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+ const key=d.toLocaleDateString("en-GB",{month:"short"});
+ map[key]=0;
+ }
+ appointments.forEach(a=>{
+ if(!a.createdAt)return;
+ const d=new Date(a.createdAt);
+ const key=d.toLocaleDateString("en-GB",{month:"short"});
+ if(key in map)map[key]++;
+ });
+ return Object.entries(map).map(([label,value])=>({label,value}));
+ })();
+
+ const sbuData=["BR","BU","BG","BT"].map((sbu,i)=>({
+ label:sbu,
+ value:appointments.filter(a=>a.deliveryTo===sbu).length,
+ color:["#C8962A","#10b981","#3b82f6","#8b5cf6"][i],
+ }));
+
+ const card=(bg,bd)=>({background:bg,border:`1px solid ${bd}`,borderRadius:16,padding:isMobile?14:20});
+
+ return(
+ <div style={{padding:isMobile?12:24,display:"flex",flexDirection:"column",gap:16}}>
+ {/* Header */}
+ <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+ <div>
+ <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:26,margin:0}}>Dashboard</h1>
+ <p style={{color:"rgba(255,255,255,0.45)",fontSize:13,margin:"4px 0 0"}}>Live warehouse delivery overview</p>
+ </div>
+ <div style={{fontSize:11,color:"rgba(255,255,255,0.35)",background:"rgba(255,255,255,0.06)",padding:"6px 12px",borderRadius:99,border:"1px solid rgba(255,255,255,0.1)"}}>
+ Last updated: {new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}
+ </div>
+ </div>
+
+ {/* KPI Cards Row 1 */}
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12}}>
  {[
- {label:"⏳ Pending",key:"pending",bg:"rgba(245,158,11,0.15)",bd:"rgba(245,158,11,0.3)",color:"#fcd34d",filter:"pending"},
- {label:"✓ Approved",key:"approved",bg:"rgba(16,185,129,0.15)",bd:"rgba(16,185,129,0.3)",color:"#6ee7b7",filter:"approved"},
- {label:"Revision",key:"revision",bg:"rgba(251,146,60,0.15)",bd:"rgba(251,146,60,0.3)",color:"#fb923c",filter:"revision_required"},
- {label:"✕ Rejected",key:"rejected",bg:"rgba(239,68,68,0.15)",bd:"rgba(239,68,68,0.3)",color:"#fca5a5",filter:"rejected"},
- ].map(({label,key,bg,bd,color,filter})=>(
- <button key={key} onClick={async()=>{setAdminFilter(filter);setView("admin");}} style={{background:bg,border:`1px solid ${bd}`,borderRadius:14,padding:isMobile?14:20,textAlign:"left",cursor:"pointer",transition:"transform 0.1s"}}>
- <div style={{color,fontSize:isMobile?26:32,fontWeight:800}}>{counts[key]}</div>
- <div style={{color:"rgba(255,255,255,0.65)",fontSize:12,fontWeight:500,marginTop:2}}>{label}</div>
- <div style={{color:"rgba(255,255,255,0.3)",fontSize:10,marginTop:4}}>Click to view →</div>
+ {label:"Total Appointments",val:total,color:"#C8962A",sub:`${approvalRate}% approval rate`,filter:null,icon:"📦"},
+ {label:"Pending Review",val:pending,color:"#fcd34d",sub:"Awaiting action",filter:"pending",icon:"⏳"},
+ {label:"Approved",val:approved,color:"#6ee7b7",sub:`${completionRate}% delivered`,filter:"approved",icon:"✅"},
+ {label:"Emergency",val:emergency,color:"#fca5a5",sub:"High priority",filter:null,icon:"🚨"},
+ ].map(({label,val,color,sub,filter,icon})=>(
+ <button key={label} onClick={filter?()=>{setAdminFilter(filter);setView("admin");}:undefined}
+  style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)"),textAlign:"left",cursor:filter?"pointer":"default",transition:"all 0.2s"}}>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+ <span style={{fontSize:20}}>{icon}</span>
+ {filter&&<span style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>Click →</span>}
+ </div>
+ <AnimCounter target={val} color={color} size={isMobile?28:36}/>
+ <div style={{color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:600,marginTop:4}}>{label}</div>
+ <div style={{color:"rgba(255,255,255,0.35)",fontSize:11,marginTop:2}}>{sub}</div>
  </button>
  ))}
  </div>
- <div style={{background:"rgba(255,255,255,0.08)",borderRadius:16,border:"1px solid rgba(255,255,255,0.12)"}}>
- <div style={{padding:"14px 18px",borderBottom:"1px solid rgba(255,255,255,0.1)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
- <span style={{color:"#fff",fontWeight:600,fontSize:14}}>{searchQ?`Search Results (${filtered.length})`:"Recent Appointments"}</span>
- {!searchQ&&<button onClick={()=>setView("admin")} style={{color:A,background:"none",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>View all →</button>}
+
+ {/* Row 2: Donut + Bar + Rates */}
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:12}}>
+ {/* Status Donut */}
+ <div style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}}>
+ <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Status Distribution</div>
+ <div style={{display:"flex",alignItems:"center",gap:16,justifyContent:"center"}}>
+ <DonutChart size={isMobile?100:120} thickness={22} segments={[
+ {value:pending,color:"#f59e0b"},{value:approved,color:"#10b981"},
+ {value:rejected,color:"#ef4444"},{value:revision,color:"#fb923c"},
+ ]}/>
+ <div style={{display:"flex",flexDirection:"column",gap:6}}>
+ {[["⏳ Pending",pending,"#fcd34d"],["✅ Approved",approved,"#6ee7b7"],["❌ Rejected",rejected,"#fca5a5"],["↩️ Revision",revision,"#fdba74"]].map(([l,v,c])=>(
+ <div key={l} style={{display:"flex",alignItems:"center",gap:6}}>
+ <div style={{width:8,height:8,borderRadius:"50%",background:c,flexShrink:0}}/>
+ <span style={{fontSize:11,color:"rgba(255,255,255,0.6)"}}>{l}</span>
+ <span style={{fontSize:11,fontWeight:700,color:"#fff",marginLeft:"auto"}}>{v}</span>
  </div>
- {filtered.length===0 ? <div style={{padding:40,textAlign:"center",color:"rgba(255,255,255,0.3)",fontSize:13}}>No appointments found.</div> :
- filtered.map(a=>(
- <div key={a.id} style={{padding:isMobile?"12px 16px":"14px 18px",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
- <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
- <div style={{minWidth:0}}>
- <div style={{color:"#fff",fontWeight:500,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.supplierName}</div>
- <div style={{color:"rgba(255,255,255,0.4)",fontSize:11,marginTop:2}}>{a.id} · {fmtDate(a.date)} · {a.time}</div>
- </div>
- <StatusBadge status={a.status}/>
+ ))}
  </div>
  </div>
- ))
- }
+ </div>
+
+ {/* SBU Bar */}
+ <div style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}}>
+ <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Appointments by SBU</div>
+ <BarChart data={sbuData} color={(i)=>sbuData[i].color} height={100}/>
+ </div>
+
+ {/* Rate Cards */}
+ <div style={{display:"flex",flexDirection:"column",gap:12}}>
+ {[
+ {label:"Approval Rate",val:approvalRate,color:"#10b981",icon:"✅"},
+ {label:"Delivery Rate",val:completionRate,color:"#C8962A",icon:"🚚"},
+ {label:"Emergency Rate",val:total>0?Math.round(emergency/total*100):0,color:"#ef4444",icon:"🚨"},
+ ].map(({label,val,color,icon})=>(
+ <div key={label} style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)"),padding:"12px 16px"}}>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+ <span style={{fontSize:11,color:"rgba(255,255,255,0.6)",fontWeight:600}}>{icon} {label}</span>
+ <span style={{fontSize:18,fontWeight:800,color}}>{val}%</span>
+ </div>
+ <div style={{height:6,borderRadius:3,background:"rgba(255,255,255,0.1)",overflow:"hidden"}}>
+ <div style={{height:"100%",width:`${val}%`,background:color,borderRadius:3,transition:"width 1s ease"}}/>
+ </div>
+ </div>
+ ))}
+ </div>
+ </div>
+
+ {/* Row 3: Monthly trend + Sparklines */}
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"2fr 1fr",gap:12}}>
+ {/* Monthly Bar Chart */}
+ <div style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}}>
+ <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Monthly Booking Trend</div>
+ <BarChart data={monthlyData} color="#C8962A" height={isMobile?80:110}/>
+ <div style={{marginTop:8,display:"flex",gap:12,flexWrap:"wrap"}}>
+ <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>
+ Peak: <strong style={{color:"#fff"}}>{monthlyData.reduce((m,d)=>d.value>m.value?d:m,{value:0,label:"—"}).label}</strong>
+ </span>
+ <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>
+ Avg: <strong style={{color:"#fff"}}>{monthlyData.length?Math.round(monthlyData.reduce((s,d)=>s+d.value,0)/monthlyData.length):0}/mo</strong>
+ </span>
+ </div>
+ </div>
+
+ {/* Quick Stats */}
+ <div style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)"),display:"flex",flexDirection:"column",gap:10}}>
+ <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>Quick Stats</div>
+ {[
+ {label:"Completed",val:completed,color:"#6ee7b7"},
+ {label:"Revision",val:revision,color:"#fdba74"},
+ {label:"Rejected",val:rejected,color:"#fca5a5"},
+ {label:"Total Orders",val:appointments.reduce((s,a)=>s+(a.totalOrders||0),0),color:"#C8962A"},
+ {label:"Total Lines",val:appointments.reduce((s,a)=>s+(a.totalLines||0),0),color:"#a5b4fc"},
+ ].map(({label,val,color})=>(
+ <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
+ <span style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>{label}</span>
+ <span style={{fontSize:13,fontWeight:700,color}}>{val.toLocaleString()}</span>
+ </div>
+ ))}
+ </div>
+ </div>
+
+ {/* Row 4: Slot Heatmap */}
+ <div style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}}>
+ <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>
+ Booking Density — Time Slot × Day of Week
+ <span style={{fontSize:10,color:"rgba(255,255,255,0.35)",marginLeft:8,fontWeight:400}}>Hover for details</span>
+ </div>
+ <SlotHeatmap appointments={appointments}/>
+ </div>
+
+ {/* Row 5: Calendar Heatmap */}
+ <div style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}}>
+ <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>
+ Submission Activity — Last 6 Months
+ </div>
+ <CalendarHeatmap appointments={appointments}/>
+ </div>
+
+ {/* Row 6: Supplier Performance Table */}
+ <div style={{...card("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}}>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+ <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>Top 10 Suppliers — Performance</div>
+ <span style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>Click headers to sort</span>
+ </div>
+ <SupplierTable appointments={appointments} isMobile={isMobile}/>
  </div>
  </div>
  );
@@ -3589,6 +3958,7 @@ function App() {
  const overdueCount = appts.filter(a=>a.status==="approved"&&(a.deliveryStatus==="awaiting_delivery"||!a.deliveryStatus)&&new Date(a.date+"T"+a.time)<new Date()).length;
  const nav = [
  {id:"dashboard",label:"Dashboard",icon:"📊"},
+ {id:"dashboard",label:"Dashboard",icon:"🏠"},
  {id:"admin",label:"Admin Panel",badge:emergencyCount>0?`🚨${emergencyCount}`:pending.length||undefined,icon:"📋"},
  {id:"teamlead",label:"Team Lead",badge:overdueCount,icon:"👷"},
  {id:"statistics",label:"Statistics",icon:"📈"},
