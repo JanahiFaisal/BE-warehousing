@@ -2634,10 +2634,10 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
 
  async function handleMarkAllComplete(){
  const targets=markAllRef.current;
- if(!targets.length){setConfirmMarkAll(false);return;}
- if(onMarkAll) await onMarkAll(targets);
  setConfirmMarkAll(false);
  markAllRef.current=[];
+ if(!targets.length)return;
+ if(onMarkAll) await onMarkAll(targets);
  }
 
  return(
