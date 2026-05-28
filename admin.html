@@ -1302,14 +1302,21 @@ function SupplierTracker({ appointments, onBack, onSendMessage }) {
 
 // ─── Animated Counter ─────────────────────────────────────────
 function AnimCounter({ target, duration=1200, color="#fff", size=32 }){
- const [val,setVal]=useState(0);
+ const [val,setVal]=useState(target);
+ const prevTarget=useRef(target);
  useEffect(()=>{
+ if(prevTarget.current===target)return;
+ prevTarget.current=target;
  let start=null;
+ const from=val;
+ const diff=target-from;
+ if(diff===0)return;
  const step=ts=>{
  if(!start)start=ts;
- const p=Math.min((ts-start)/duration,1);
- setVal(Math.floor(p*target));
+ const p=Math.min((ts-start)/Math.min(duration,600),1);
+ setVal(Math.floor(from+diff*p));
  if(p<1)requestAnimationFrame(step);
+ else setVal(target);
  };
  requestAnimationFrame(step);
  },[target]);
@@ -3934,7 +3941,7 @@ function App() {
  const viewApt = appts.find(a=>a.id===viewId);
  const overdueCount = appts.filter(a=>a.status==="approved"&&(a.deliveryStatus==="awaiting_delivery"||!a.deliveryStatus)&&new Date(a.date+"T"+a.time)<new Date()).length;
  const nav = [
- {id:"dashboard",label:"Dashboard",icon:"🏠"},
+ {id:"dashboard",label:"Dashboard",icon:"🏠",badge:appts.length||undefined},
  {id:"admin",label:"Admin Panel",badge:emergencyCount>0?`🚨${emergencyCount}`:pending.length||undefined,icon:"📋"},
  {id:"teamlead",label:"Team Lead",badge:overdueCount,icon:"👷"},
  {id:"statistics",label:"Statistics",icon:"📈"},
