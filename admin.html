@@ -404,7 +404,7 @@ function monthlyTrend(arr,dateKey){var map={};arr.forEach(function(x){var d=x[da
 // Supabase helpers
 async function sbGetAll(table){
  try{
- const {data,error}=await window.supabase.from(table).select('data');
+ const {data,error}=await window.supabase.from(table).select('data').order('updated_at',{ascending:false}).limit(5000);
  if(error)throw error;
  return (data||[]).map(r=>r.data);
  }catch(e){console.error('sbGetAll',table,e);return null;}
