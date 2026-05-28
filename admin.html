@@ -76,21 +76,107 @@ async function sendEmail(to, subject, body){
  }catch(e){console.error("Email error:",e);}
 }
 
-// Excel Export Helper
+// ─── Enhanced Excel Export ───────────────────────────────────
+const STATUS_COLORS={
+ pending:"FFFCD34D", approved:"FF6EE7B7", rejected:"FFFCA5A5",
+ revision_required:"FFFDE68A", completed:"FF86EFAC", failed:"FFF87171",
+ emergency:"FFFBB6B6", standard:"FFFFFFFF",
+};
+
+function colWidth(data, key){
+ const max=data.reduce((m,r)=>Math.max(m,String(r[key]||"").length),key.length);
+ return Math.min(Math.max(max+2,12),60);
+}
+
 function exportToExcel(sheets, filename){
  const wb=XLSX.utils.book_new();
- sheets.forEach(({name,data})=>{
+ sheets.forEach(({name,data,statusKey})=>{
+ if(!data||data.length===0){
+ const ws=XLSX.utils.json_to_sheet([{"No Data":"No records found"}]);
+ XLSX.utils.book_append_sheet(wb,ws,name.substring(0,31));
+ return;
+ }
  const ws=XLSX.utils.json_to_sheet(data);
- // Style header row width
- const cols=data.length>0?Object.keys(data[0]).map(k=>({wch:Math.max(k.length,14)})):[];
- ws['!cols']=cols;
+ const keys=Object.keys(data[0]);
+
+ // Auto column widths
+ ws["!cols"]=keys.map(k=>({wch:colWidth(data,k)}));
+
+ // Freeze header row
+ ws["!freeze"]={xSplit:0,ySplit:1,topLeftCell:"A2",activePane:"bottomLeft",state:"frozen"};
+
+ // Style header row — navy background gold text
+ const range=XLSX.utils.decode_range(ws["!ref"]);
+ for(let c=range.s.c;c<=range.e.c;c++){
+ const cell=XLSX.utils.encode_cell({r:0,c});
+ if(ws[cell]){
+ ws[cell].s={
+ fill:{patternType:"solid",fgColor:{rgb:"FF07114C"}},
+ font:{bold:true,color:{rgb:"FFC8962A"},sz:11},
+ alignment:{horizontal:"center",vertical:"center",wrapText:true},
+ border:{bottom:{style:"medium",color:{rgb:"FFC8962A"}}}
+ };
+ }
+ }
+
+ // Style data rows — alternate colors + status color coding
+ if(statusKey){
+ for(let r=1;r<=range.e.r;r++){
+ const rowData=data[r-1];
+ const status=(rowData[statusKey]||"").toLowerCase().replace(/ /g,"_");
+ const bgColor=STATUS_COLORS[status]||(r%2===0?"FFF8FAFC":"FFFFFFFF");
+ for(let c=range.s.c;c<=range.e.c;c++){
+ const cell=XLSX.utils.encode_cell({r,c});
+ if(!ws[cell])ws[cell]={t:"z",v:""};
+ ws[cell].s={
+ fill:{patternType:"solid",fgColor:{rgb:bgColor}},
+ font:{sz:10},
+ alignment:{vertical:"center",wrapText:false},
+ border:{bottom:{style:"thin",color:{rgb:"FFE5E7EB"}}}
+ };
+ }
+ }
+ } else {
+ for(let r=1;r<=range.e.r;r++){
+ const bgColor=r%2===0?"FFF1F5F9":"FFFFFFFF";
+ for(let c=range.s.c;c<=range.e.c;c++){
+ const cell=XLSX.utils.encode_cell({r,c});
+ if(!ws[cell])ws[cell]={t:"z",v:""};
+ ws[cell].s={
+ fill:{patternType:"solid",fgColor:{rgb:bgColor}},
+ font:{sz:10},
+ alignment:{vertical:"center"},
+ border:{bottom:{style:"thin",color:{rgb:"FFE5E7EB"}}}
+ };
+ }
+ }
+ }
+
  XLSX.utils.book_append_sheet(wb,ws,name.substring(0,31));
  });
- XLSX.writeFile(wb,filename+".xlsx");
+ XLSX.writeFile(wb,filename+"_"+new Date().toISOString().slice(0,10)+".xlsx");
 }
 
 function fmtExcelDate(ds){return ds?new Date(ds).toLocaleDateString("en-GB"):"—";}
 function fmtExcelTs(iso){return iso?new Date(iso).toLocaleString("en-GB"):"—";}
+
+// Helper — group by key and count
+function groupCount(arr, key){
+ return Object.entries(arr.reduce((m,x)=>{const k=x[key]||"Unknown";m[k]=(m[k]||0)+1;return m;},{}))
+ .sort((a,b)=>b[1]-a[1]).map(([k,v])=>({"Group":k,"Count":v}));
+}
+
+// Helper — monthly trend
+function monthlyTrend(arr, dateKey){
+ const map={};
+ arr.forEach(x=>{
+ const d=x[dateKey];
+ if(!d)return;
+ const m=new Date(d).toLocaleDateString("en-GB",{month:"short",year:"numeric"});
+ map[m]=(map[m]||0)+1;
+ });
+ return Object.entries(map).map(([m,c])=>({"Month":m,"Appointments":c}));
+}
 
 // Supabase helpers
 async function sbGetAll(table){
@@ -1089,7 +1175,33 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  "Completed At":fmtExcelTs(a.completedAt),
  "Failed Reason":a.failureReason||"—",
  }));
- exportToExcel([{name:"Appointments",data}],"BE_Warehouse_Admin_"+new Date().toISOString().slice(0,10));
+ const summary=[
+ {"Metric":"Total Appointments","Value":rows.length},
+ {"Metric":"Pending","Value":rows.filter(a=>a.status==="pending").length},
+ {"Metric":"Approved","Value":rows.filter(a=>a.status==="approved").length},
+ {"Metric":"Rejected","Value":rows.filter(a=>a.status==="rejected").length},
+ {"Metric":"Revision Required","Value":rows.filter(a=>a.status==="revision_required").length},
+ {"Metric":"Emergency","Value":rows.filter(a=>a.priority==="emergency").length},
+ {"Metric":"Total Orders","Value":rows.reduce((s,a)=>s+(a.totalOrders||0),0)},
+ {"Metric":"Total Lines","Value":rows.reduce((s,a)=>s+(a.totalLines||0),0)},
+ {"Metric":"Report Date","Value":new Date().toLocaleDateString("en-GB")},
+ ];
+ const bySBU=["BR","BU","BG","BT"].map(sbu=>({
+ "SBU":sbuName(sbu),
+ "Total":rows.filter(a=>a.deliveryTo===sbu).length,
+ "Pending":rows.filter(a=>a.deliveryTo===sbu&&a.status==="pending").length,
+ "Approved":rows.filter(a=>a.deliveryTo===sbu&&a.status==="approved").length,
+ "Rejected":rows.filter(a=>a.deliveryTo===sbu&&a.status==="rejected").length,
+ "Emergency":rows.filter(a=>a.deliveryTo===sbu&&a.priority==="emergency").length,
+ }));
+ const byDate=Object.entries(rows.reduce((m,a)=>{const d=fmtExcelDate(a.date);m[d]=(m[d]||0)+1;return m;},{}))
+ .sort().map(([d,c])=>({"Date":d,"Count":c}));
+ exportToExcel([
+ {name:"Summary",data:summary},
+ {name:"Appointments",data,statusKey:"Status"},
+ {name:"By SBU",data:bySBU},
+ {name:"By Date",data:byDate},
+ ],"BE_Warehouse_Admin");
  }} disabled={rows.length===0} style={{padding:"8px 12px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:rows.length===0?"not-allowed":"pointer",opacity:rows.length===0?0.5:1}}>
  📥 Export Excel
  </button>
@@ -1588,7 +1700,7 @@ function EmailLog({ emailLog, isMobile }) {
  <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{totalConversations} conversation{totalConversations!==1?"s":""}</span>
  <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{totalEmails} email{totalEmails!==1?"s":""}</span>
  <button onClick={()=>{
- const data=emailLog.map(e=>({
+ const emailData=emailLog.map(e=>({
  "Timestamp":fmtExcelTs(e.timestamp),
  "Appointment ID":e.appointmentId||"—",
  "Type":(e.type||"—").replace(/_/g," "),
@@ -1598,7 +1710,24 @@ function EmailLog({ emailLog, isMobile }) {
  "Subject":e.subject||"—",
  "Status":e.status||"sent",
  }));
- exportToExcel([{name:"Email Log",data}],"BE_Warehouse_Emails_"+new Date().toISOString().slice(0,10));
+ const emailSummary=[
+ {"Type":"Submission Confirmation","Count":emailLog.filter(e=>e.type==="submission").length},
+ {"Type":"Approval","Count":emailLog.filter(e=>e.type==="approval").length},
+ {"Type":"Rejection","Count":emailLog.filter(e=>e.type==="rejection").length},
+ {"Type":"Revision Required","Count":emailLog.filter(e=>e.type==="revision").length},
+ {"Type":"Delivery Complete","Count":emailLog.filter(e=>e.type==="delivery_complete").length},
+ {"Type":"Delivery Failed","Count":emailLog.filter(e=>e.type==="delivery_failed").length},
+ {"Type":"Total Emails","Count":emailLog.length},
+ ];
+ const bySupplier=Object.entries(emailLog.reduce((m,e)=>{
+ const k=e.supplierName||e.recipient||"Unknown";
+ m[k]=(m[k]||0)+1; return m;
+ },{})).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({"Supplier":k,"Emails Received":v}));
+ exportToExcel([
+ {name:"Summary",data:emailSummary},
+ {name:"All Emails",data:emailData},
+ {name:"By Supplier",data:bySupplier},
+ ],"BE_Warehouse_Emails");
  }} disabled={totalEmails===0} style={{padding:"6px 12px",background:"#059669",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:totalEmails===0?"not-allowed":"pointer",opacity:totalEmails===0?0.5:1}}>
  📥 Export Excel
  </button>
@@ -2046,59 +2175,79 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  </div>
  <button onClick={()=>{
  const data=appointments.map(a=>({
- "ID":a.id,
- "Supplier":a.supplierName||"—",
- "Email":a.supplierEmail||"—",
- "SBU":sbuName(a.deliveryTo),
- "Date":fmtExcelDate(a.date),
- "Time":a.time||"—",
- "Status":(a.status||"—").replace(/_/g," "),
- "Priority":a.priority||"standard",
+ "ID":a.id,"Supplier":a.supplierName||"—","Email":a.supplierEmail||"—",
+ "SBU":sbuName(a.deliveryTo),"Date":fmtExcelDate(a.date),"Time":a.time||"—",
+ "Status":(a.status||"—").replace(/_/g," "),"Priority":a.priority||"standard",
  "Delivery Status":(a.deliveryStatus||"—").replace(/_/g," "),
- "Total Orders":a.totalOrders||0,
- "Total Lines":a.totalLines||0,
+ "Total Orders":a.totalOrders||0,"Total Lines":a.totalLines||0,
  "PO Numbers":(a.poNumbers||[]).join(", ")||"—",
  "Storage":Array.isArray(a.storageLocation)?a.storageLocation.join(", "):a.storageLocation||"—",
- "Equipment":(a.offloadingEquipment||[]).join(", ")||"None",
  "Emergency Justification":a.emergencyJustification||"—",
- "Created":fmtExcelTs(a.createdAt),
- "Completed At":fmtExcelTs(a.completedAt),
- "Failed Reason":a.failureReason||"—",
+ "Created":fmtExcelTs(a.createdAt),"Completed At":fmtExcelTs(a.completedAt),
  }));
+ const summarySheet=[
+ {"Metric":"Total Appointments","Value":appointments.length},
+ {"Metric":"Approved","Value":appointments.filter(a=>a.status==="approved").length},
+ {"Metric":"Pending","Value":appointments.filter(a=>a.status==="pending").length},
+ {"Metric":"Rejected","Value":appointments.filter(a=>a.status==="rejected").length},
+ {"Metric":"Revision Required","Value":appointments.filter(a=>a.status==="revision_required").length},
+ {"Metric":"Completed Deliveries","Value":appointments.filter(a=>a.deliveryStatus==="completed").length},
+ {"Metric":"Failed Deliveries","Value":appointments.filter(a=>a.deliveryStatus==="failed").length},
+ {"Metric":"Emergency Requests","Value":appointments.filter(a=>a.priority==="emergency").length},
+ {"Metric":"Total Orders","Value":appointments.reduce((s,a)=>s+(a.totalOrders||0),0)},
+ {"Metric":"Total Lines","Value":appointments.reduce((s,a)=>s+(a.totalLines||0),0)},
+ {"Metric":"Busiest Slot","Value":busiestSlot?.label||"—"},
+ {"Metric":"Busiest Day","Value":busiestDay?.label||"—"},
+ {"Metric":"Report Generated","Value":new Date().toLocaleString("en-GB")},
+ ];
  const sbuBreakdown=["BR","BU","BG","BT"].map(sbu=>({
  "SBU":sbuName(sbu),
  "Total":appointments.filter(a=>a.deliveryTo===sbu).length,
  "Pending":appointments.filter(a=>a.deliveryTo===sbu&&a.status==="pending").length,
  "Approved":appointments.filter(a=>a.deliveryTo===sbu&&a.status==="approved").length,
  "Rejected":appointments.filter(a=>a.deliveryTo===sbu&&a.status==="rejected").length,
- "Revision":appointments.filter(a=>a.deliveryTo===sbu&&a.status==="revision_required").length,
  "Completed":appointments.filter(a=>a.deliveryTo===sbu&&a.deliveryStatus==="completed").length,
  "Failed":appointments.filter(a=>a.deliveryTo===sbu&&a.deliveryStatus==="failed").length,
  "Emergency":appointments.filter(a=>a.deliveryTo===sbu&&a.priority==="emergency").length,
+ "Total Orders":appointments.filter(a=>a.deliveryTo===sbu).reduce((s,a)=>s+(a.totalOrders||0),0),
  }));
  const slotBreakdown=SLOTS.map(slot=>({
- "Time Slot":slot,
- "Total Bookings":appointments.filter(a=>a.time===slot).length,
+ "Time Slot":slot,"Total":appointments.filter(a=>a.time===slot).length,
  "BR":appointments.filter(a=>a.time===slot&&a.deliveryTo==="BR").length,
  "BU":appointments.filter(a=>a.time===slot&&a.deliveryTo==="BU").length,
  "BG":appointments.filter(a=>a.time===slot&&a.deliveryTo==="BG").length,
  "BT":appointments.filter(a=>a.time===slot&&a.deliveryTo==="BT").length,
+ "Emergency":appointments.filter(a=>a.time===slot&&a.priority==="emergency").length,
  }));
- const summary=[
- {"Metric":"Total Appointments","Value":total},
- {"Metric":"Approved","Value":approved},
- {"Metric":"Pending","Value":pending},
- {"Metric":"Rejected","Value":rejected},
- {"Metric":"Total Orders","Value":totalOrders},
- {"Metric":"Busiest Slot","Value":busiestSlot?.label||"—"},
- {"Metric":"Busiest Day","Value":busiestDay?.label||"—"},
- ];
+ const monthTrend=monthlyTrend(appointments,"createdAt");
+ const supplierRank=Object.entries(appointments.reduce((m,a)=>{
+ const k=a.supplierName||"Unknown";
+ if(!m[k])m[k]={"Supplier":k,"Total":0,"Completed":0,"Rejected":0,"Total Orders":0};
+ m[k].Total++;
+ if(a.deliveryStatus==="completed")m[k].Completed++;
+ if(a.status==="rejected")m[k].Rejected++;
+ m[k]["Total Orders"]+=(a.totalOrders||0);
+ return m;
+ },{})).sort((a,b)=>b[1].Total-a[1].Total).map(([,v])=>v);
+ const peakDays=["Sunday","Monday","Tuesday","Wednesday","Thursday"].map(day=>({
+ "Day":day,"Bookings":appointments.filter(a=>a.date&&new Date(a.date).toLocaleDateString("en-GB",{weekday:"long"})===day).length,
+ }));
+ const emergencySheet=appointments.filter(a=>a.priority==="emergency").map(a=>({
+ "ID":a.id,"Supplier":a.supplierName||"—","SBU":sbuName(a.deliveryTo),
+ "Date":fmtExcelDate(a.date),"Time":a.time||"—",
+ "Status":(a.status||"—").replace(/_/g," "),
+ "Justification":a.emergencyJustification||"—","Created":fmtExcelTs(a.createdAt),
+ }));
  exportToExcel([
- {name:"Summary",data:summary},
+ {name:"Summary",data:summarySheet},
  {name:"SBU Breakdown",data:sbuBreakdown},
  {name:"Slot Analysis",data:slotBreakdown},
- {name:"All Appointments",data}
- ],"BE_Warehouse_Statistics_"+new Date().toISOString().slice(0,10));
+ {name:"Monthly Trend",data:monthTrend},
+ {name:"Supplier Ranking",data:supplierRank},
+ {name:"Peak Days",data:peakDays},
+ {name:"Emergency Report",data:emergencySheet,statusKey:"Status"},
+ {name:"All Appointments",data,statusKey:"Status"},
+ ],"BE_Warehouse_Statistics");
  }} disabled={appointments.length===0} style={{padding:"10px 16px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:appointments.length===0?"not-allowed":"pointer",opacity:appointments.length===0?0.5:1}}>
  📥 Export Excel
  </button>
@@ -2395,7 +2544,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  transactions.forEach(t=>{if(counts[t.action]!==undefined)counts[t.action]++;});
 
  function exportCSV(){
- const data=filtered.map(t=>({
+ const txData=filtered.map(t=>({
  "Timestamp":fmtExcelTs(t.timestamp),
  "Action":(t.action||"—").replace(/_/g," "),
  "Actor":t.actor||"—",
@@ -2405,10 +2554,35 @@ function TransactionsHistory({ transactions, isMobile }) {
  "SBU":sbuName(t.deliveryTo),
  "Appointment Date":fmtExcelDate(t.appointmentDate),
  "Appointment Time":t.appointmentTime||"—",
- "Details":t.details||"—",
  "Priority":t.priority||"standard",
+ "Details":t.details||"—",
  }));
- exportToExcel([{name:"Transactions",data}],"BE_Warehouse_Transactions_"+new Date().toISOString().slice(0,10));
+ const txSummary=[
+ {"Action":"Created","Count":filtered.filter(t=>t.action==="create").length},
+ {"Action":"Approved","Count":filtered.filter(t=>t.action==="approve").length},
+ {"Action":"Rejected","Count":filtered.filter(t=>t.action==="reject").length},
+ {"Action":"Returned for Revision","Count":filtered.filter(t=>t.action==="return_for_revision").length},
+ {"Action":"Resubmitted","Count":filtered.filter(t=>t.action==="resubmission").length},
+ {"Action":"Delivery Complete","Count":filtered.filter(t=>t.action==="delivery_complete").length},
+ {"Action":"Delivery Failed","Count":filtered.filter(t=>t.action==="delivery_failed").length},
+ {"Action":"Total","Count":filtered.length},
+ ];
+ const byActor=Object.entries(filtered.reduce((m,t)=>{
+ const k=t.actor||"Unknown";
+ if(!m[k])m[k]={"Actor":k,"Total Actions":0,"Approved":0,"Rejected":0,"Completed":0};
+ m[k]["Total Actions"]++;
+ if(t.action==="approve")m[k].Approved++;
+ if(t.action==="reject")m[k].Rejected++;
+ if(t.action==="delivery_complete")m[k].Completed++;
+ return m;
+ },{})).sort((a,b)=>b[1]["Total Actions"]-a[1]["Total Actions"]).map(([,v])=>v);
+ const timeline=monthlyTrend(filtered,"timestamp");
+ exportToExcel([
+ {name:"Summary",data:txSummary},
+ {name:"All Transactions",data:txData},
+ {name:"By Actor",data:byActor},
+ {name:"Monthly Timeline",data:timeline},
+ ],"BE_Warehouse_Transactions");
  }
 
  const [openGroups,setOpenGroups]=useState({});
@@ -2659,28 +2833,43 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10,marginBottom:4}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:0}}>Team Lead Dashboard</h1>
  <button onClick={()=>{
- const data=exportAppts.map(a=>({
- "ID":a.id,
- "Supplier":a.supplierName||"—",
- "Email":a.supplierEmail||"—",
- "SBU":sbuName(a.deliveryTo),
- "Date":fmtExcelDate(a.date),
- "Time":a.time||"—",
+ const aptData=exportAppts.map(a=>({
+ "ID":a.id,"Supplier":a.supplierName||"—","Email":a.supplierEmail||"—",
+ "SBU":sbuName(a.deliveryTo),"Date":fmtExcelDate(a.date),"Time":a.time||"—",
  "Status":(a.status||"—").replace(/_/g," "),
  "Delivery Status":(a.deliveryStatus||"—").replace(/_/g," "),
  "Priority":a.priority||"standard",
- "Total Orders":a.totalOrders||0,
- "Total Lines":a.totalLines||0,
+ "Total Orders":a.totalOrders||0,"Total Lines":a.totalLines||0,
  "PO Numbers":(a.poNumbers||[]).join(", ")||"—",
  "Storage":Array.isArray(a.storageLocation)?a.storageLocation.join(", "):a.storageLocation||"—",
  "Equipment":(a.offloadingEquipment||[]).join(", ")||"None",
  "Notes":a.additionalNotes||"—",
- "Scheduled":fmtExcelTs(a.date+"T"+a.time),
+ "Scheduled":fmtExcelDate(a.date)+" "+a.time,
  "Completed At":fmtExcelTs(a.completedAt),
  "Failed Reason":a.failureReason||"—",
  "Failed At":fmtExcelTs(a.failedAt),
  }));
- exportToExcel([{name:"Deliveries",data}],"BE_Warehouse_TeamLead_"+new Date().toISOString().slice(0,10));
+ const tlSummary=[
+ {"Metric":"Total Approved","Value":approved.length},
+ {"Metric":"Awaiting Delivery","Value":awaiting.length},
+ {"Metric":"Completed","Value":completed.length},
+ {"Metric":"Overdue","Value":overdue.length},
+ {"Metric":"Failed","Value":failed.length},
+ {"Metric":"Emergency","Value":approved.filter(a=>a.priority==="emergency").length},
+ {"Metric":"Report Date","Value":new Date().toLocaleDateString("en-GB")},
+ ];
+ const overdueSheet=overdue.map(a=>({
+ "ID":a.id,"Supplier":a.supplierName||"—","SBU":sbuName(a.deliveryTo),
+ "Scheduled Date":fmtExcelDate(a.date),"Scheduled Time":a.time||"—",
+ "Hours Overdue":Math.round((new Date()-new Date(a.date+"T"+a.time))/3600000),
+ "Total Orders":a.totalOrders||0,
+ "Storage":Array.isArray(a.storageLocation)?a.storageLocation.join(", "):a.storageLocation||"—",
+ }));
+ exportToExcel([
+ {name:"Summary",data:tlSummary},
+ {name:"Deliveries",data:aptData,statusKey:"Delivery Status"},
+ {name:"Overdue",data:overdueSheet},
+ ],"BE_Warehouse_TeamLead");
  }} disabled={exportAppts.length===0} style={{padding:"8px 14px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer"}}>
  📥 Export Excel
  </button>
