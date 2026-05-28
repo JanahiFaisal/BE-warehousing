@@ -2552,7 +2552,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  );
 }
 
-function TeamLeadPanel({ appointments, isMobile }) {
+function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  const [statusFilter,setStatusFilter]=useState("all");
  const [searchQ,setSearchQ]=useState("");
  const now = new Date();
@@ -2635,14 +2635,7 @@ function TeamLeadPanel({ appointments, isMobile }) {
  async function handleMarkAllComplete(){
  const targets=markAllRef.current;
  if(!targets.length){setConfirmMarkAll(false);return;}
- const updates={deliveryStatus:"completed",completedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
- setAppts(p=>p.map(x=>targets.some(t=>t.id===x.id)?{...x,...updates}:x));
- for(const a of targets){
- await sbUpdate("appointments",a.id,updates);
- logTransaction("delivery_complete",a,{actor:getAdminCreds().nickname||"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery completed via Mark All"});
- logEmail("delivery_complete",{...a,...updates},{});
- }
- showToast(`${targets.length} deliveries marked as completed`);
+ if(onMarkAll) await onMarkAll(targets);
  setConfirmMarkAll(false);
  markAllRef.current=[];
  }
@@ -3241,7 +3234,16 @@ function App() {
  <div style={{flex:1}}>
  {view==="dashboard" && <Dashboard appointments={filteredAppts} setView={setView} setAdminFilter={setAdminFilter} isMobile={isMobile}/>}
  {view==="admin" && <AdminPanel appointments={filteredAppts} onApprove={handleApprove} onReject={id=>{setRejectId(id);setRejReason("");}} onView={setViewId} loading={loading} isMobile={isMobile} initialFilter={adminFilter} onFilterUsed={()=>setAdminFilter(null)}/>}
- {view==="teamlead" && <TeamLeadPanel appointments={filteredAppts} isMobile={isMobile}/>}
+ {view==="teamlead" && <TeamLeadPanel appointments={filteredAppts} isMobile={isMobile} onMarkAll={async(targets)=>{
+ const updates={deliveryStatus:"completed",completedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+ setAppts(p=>p.map(x=>targets.some(t=>t.id===x.id)?{...x,...updates}:x));
+ for(const a of targets){
+ await sbUpdate("appointments",a.id,updates);
+ logTransaction("delivery_complete",a,{actor:getAdminCreds().nickname||"Warehouse Team",actorEmail:adminEmail||ADMIN_EMAIL,note:"Delivery completed via Mark All"});
+ logEmail("delivery_complete",{...a,...updates},{});
+ }
+ showToast(`${targets.length} deliveries marked as completed`);
+ }}/>}
  {view==="statistics" && <StatisticsPanel appointments={filteredAppts} isMobile={isMobile} setView={setView} setAdminFilter={setAdminFilter}/>}
  {view==="calendar" && <CalendarView appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="emails" && <EmailLog emailLog={orgFilter==="BE"?emailLog:emailLog.filter(e=>(e.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
