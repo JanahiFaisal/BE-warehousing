@@ -1334,10 +1334,11 @@ function Sparkline({ data, color="#C8962A", height=40, width=120 }){
 }
 
 // ─── Donut Chart ──────────────────────────────────────────────
-function DonutChart({ segments, size=120, thickness=24 }){
+function DonutChart({ segments, size=120, thickness=24, stroke }){
+ const th=stroke||thickness;
  const total=segments.reduce((s,x)=>s+x.value,0)||1;
  let offset=0;
- const r=(size-thickness)/2;
+ const r=(size-th)/2;
  const circ=2*Math.PI*r;
  return(
  <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -1346,7 +1347,7 @@ function DonutChart({ segments, size=120, thickness=24 }){
  const dash=pct*circ;
  const gap=circ-dash;
  const el=<circle key={i} cx={size/2} cy={size/2} r={r}
-  fill="none" stroke={seg.color} strokeWidth={thickness}
+  fill="none" stroke={seg.color} strokeWidth={th}
   strokeDasharray={`${dash} ${gap}`}
   strokeDashoffset={-offset*circ+circ/4}
   strokeLinecap="butt"/>;
@@ -2654,30 +2655,6 @@ function SettingsPanel({ config, onChange, isMobile }) {
  );
 }
 
-function DonutChart({ segments, size=120, stroke=18 }) {
- const r = (size - stroke) / 2;
- const circ = 2 * Math.PI * r;
- const total = segments.reduce((s, x) => s + x.value, 0) || 1;
- let offset = 0;
- return (
- <svg width={size} height={size} viewBox={"0 0 "+size+" "+size} style={{transform:"rotate(-90deg)"}}>
- <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={stroke}/>
- {segments.map((seg, i) => {
- const dash = (seg.value / total) * circ;
- const gap = circ - dash;
- const el = (
- <circle key={i} cx={size/2} cy={size/2} r={r} fill="none"
- stroke={seg.color} strokeWidth={stroke}
- strokeDasharray={dash+" "+gap}
- strokeDashoffset={-offset}
- strokeLinecap="round"/>
- );
- offset += dash;
- return el;
- })}
- </svg>
- );
-}
 
 function BarRow({ label, count, max, color, sublabel }) {
  const pct = max > 0 ? (count / max) * 100 : 0;
