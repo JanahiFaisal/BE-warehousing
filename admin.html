@@ -58,10 +58,10 @@ function getAdminCreds(){
  try{const s=localStorage.getItem(LS_CREDS);return s?JSON.parse(s):{password:ADMIN_PWD,nickname:"Admin"};}
  catch{return {password:ADMIN_PWD,nickname:"Admin"};}
 }
-const LS_APPTS = "be_wh_appts_v3";
-const LS_EMAILS = "be_wh_emails_v3";
+const LS_APPTS = "be_wh_appts_v4";
+const LS_EMAILS = "be_wh_emails_v4";
 const LS_CONFIG = "be_wh_config_v3";
-const LS_TRANSACTIONS = "be_wh_transactions_v3";
+const LS_TRANSACTIONS = "be_wh_transactions_v4";
 const LS_JSONBIN = "be_wh_jsonbin_v1";
 
 // EmailJS Configuration
@@ -3588,16 +3588,16 @@ function App() {
 
  // B — Show cached data instantly on mount, then sync in background
  useEffect(()=>{
- // Show localStorage instantly
+ // Clear stale cache if it has exactly 1000 records (old limit)
  try{
  const ca=localStorage.getItem(LS_APPTS);
  const ce=localStorage.getItem(LS_EMAILS);
  const ct=localStorage.getItem(LS_TRANSACTIONS);
- if(ca)setAppts(JSON.parse(ca));
+ if(ca){const parsed=JSON.parse(ca);if(parsed.length!==1000)setAppts(parsed);}
  if(ce)setEmailLog(JSON.parse(ce));
  if(ct)setTransactions(JSON.parse(ct));
  }catch(e){}
- // Then sync from Supabase silently
+ // Always pull fresh from Supabase
  pullFromSupabase(true);
  },[]);
 
