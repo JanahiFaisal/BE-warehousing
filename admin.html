@@ -1248,7 +1248,7 @@ function SupplierTracker({ appointments, onBack, onSendMessage }) {
  <span style={{fontFamily:"monospace",fontSize:12,fontWeight:800,color:P}}>{a.id}</span>
  </div>
  ) : (
- <div style={{padding:"14px 18px",background:"rgba(255,255,255,0.06)",borderBottom:"1px solid rgba(255,255,255,0.1)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+ <div style={{padding:"14px 18px",background:"rgba(100,52,250,0.2)",borderBottom:"1px solid rgba(100,52,250,0.35)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
  <span style={{color:"#6b7280",fontSize:12,fontWeight:600}}>🔒 Locked</span>
  <span style={{fontFamily:"monospace",fontSize:12,fontWeight:800,color:P}}>{a.id}</span>
  </div>
@@ -2183,7 +2183,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  <div style={{background:"rgba(220,38,38,0.12)",border:"1px solid rgba(220,38,38,0.4)",borderRadius:14,padding:"10px 14px",marginBottom:4}}>
  <div style={{color:"#fca5a5",fontSize:12,fontWeight:800,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>🚨 EMERGENCY — Immediate Action Required<span style={{background:"#dc2626",color:"#fff",borderRadius:99,padding:"1px 8px",fontSize:11}}>{emergencyRows.length}</span></div>
  {emergencyRows.map(a=>(
- <div key={a.id} style={{background:"rgba(239,68,68,0.12)",borderRadius:12,marginBottom:8,border:"1px solid rgba(239,68,68,0.4)",overflow:"hidden"}}>
+ <div key={a.id} style={{background:"rgba(26,10,94,0.7)",borderRadius:12,marginBottom:8,border:"1px solid rgba(239,68,68,0.5)",overflow:"hidden"}}>
  <div style={{padding:"10px 14px",background:"rgba(239,68,68,0.2)",borderBottom:"1px solid rgba(239,68,68,0.3)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
  <div><div style={{fontWeight:700,fontSize:13,color:"#fff"}}>🚨 {a.supplierName}</div><div style={{fontSize:11,color:"#9ca3af",fontFamily:"monospace",fontWeight:700}}>{a.id}</div></div>
  <StatusBadge status={a.status}/>
@@ -2202,8 +2202,8 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  )}
  {standardRows.length>0&&emergencyRows.length>0&&<div style={{color:"rgba(255,255,255,0.4)",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>📋 Standard Requests</div>}
  {standardRows.map(a=>(
- <div key={a.id} style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.12)"}}>
- <div style={{padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+ <div key={a.id} style={{background:"rgba(26,10,94,0.6)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(100,52,250,0.35)"}}>
+ <div style={{padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid rgba(100,52,250,0.25)"}}>
  <div>
  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
  <SbuBadge code={a.deliveryTo} full={true}/>
@@ -2218,7 +2218,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  <div style={{padding:"12px 16px"}}>
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
  {[["Date",fmtDate(a.date)],["Time",a.time],["Orders",a.totalOrders],["Lines",a.totalLines]].map(([k,v])=>(
- <div key={k} style={{background:"rgba(255,255,255,0.06)",borderRadius:8,padding:"8px 10px",border:"1px solid rgba(255,255,255,0.1)"}}>
+ <div key={k} style={{background:"rgba(100,52,250,0.12)",borderRadius:8,padding:"8px 10px",border:"1px solid rgba(100,52,250,0.35)"}}>
  <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:2}}>{k}</div>
  <div style={{fontWeight:600,fontSize:13,color:"#fff"}}>{v}</div>
  </div>
@@ -2244,11 +2244,11 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  ))}
  </div>
  ) : (
- <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.12)"}}>
+ <div style={{background:"rgba(26,10,94,0.6)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(100,52,250,0.35)"}}>
  <div style={{overflowX:"auto"}}>
  <table style={{width:"100%",borderCollapse:"collapse",minWidth:860,fontSize:13}}>
  <thead>
- <tr style={{background:"rgba(255,255,255,0.06)",borderBottom:"1px solid rgba(255,255,255,0.1)"}}>
+ <tr style={{background:"rgba(100,52,250,0.2)",borderBottom:"1px solid rgba(100,52,250,0.35)"}}>
  {["ID","Supplier","Date","Time","Orders","Lines","Storage","Status","Actions"].map(h=>(
  <th key={h} style={{padding:"12px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:0.5,whiteSpace:"nowrap"}}>{h}</th>
  ))}
@@ -2256,7 +2256,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  </thead>
  <tbody>
  {rows.map(a=>(
- <tr key={a.id} style={{borderBottom:"1px solid rgba(255,255,255,0.06)",background:a.priority==="emergency"&&a.status==="pending"?"rgba(239,68,68,0.1)":"rgba(255,255,255,0.02)"}}>
+ <tr key={a.id} style={{borderBottom:"1px solid rgba(100,52,250,0.2)",background:a.priority==="emergency"&&a.status==="pending"?"rgba(239,68,68,0.12)":"rgba(26,10,94,0.3)"}}>
  <td style={{padding:"12px 14px",fontFamily:"monospace",fontSize:12,color:a.priority==="emergency"?"#fca5a5":"#fff",fontWeight:700,whiteSpace:"nowrap"}}>{a.priority==="emergency"&&a.status==="pending"&&"🚨 "}{a.id}</td>
  <td style={{padding:"12px 14px"}}><div style={{fontWeight:600,color:"#fff",whiteSpace:"nowrap"}}>{a.supplierName}</div><div style={{fontSize:11,color:"#9ca3af"}}>{a.supplierEmail}</div>{a.priority==="emergency"&&a.status==="pending"&&<div style={{fontSize:10,color:"#dc2626",fontWeight:700,marginTop:2,fontStyle:"italic"}}>"{a.emergencyJustification?.substring(0,50)}{a.emergencyJustification?.length>50?"…":""}"</div>}</td>
  <td style={{padding:"12px 14px",whiteSpace:"nowrap",fontWeight:500,color:"rgba(255,255,255,0.8)"}}>{fmtDate(a.date)}</td>
@@ -2338,7 +2338,7 @@ function CalendarView({ appointments, isMobile }) {
  function AptChip({ a, showTime }) {
  const statusIcon=a.deliveryStatus==="completed"?"✅":a.deliveryStatus==="failed"?"❌":a.priority==="emergency"?"🚨":"";
  return(
- <button onClick={()=>setSel(a)} style={{width:"100%",textAlign:"left",padding:isMobile?"4px 6px":"5px 8px",borderRadius:8,border:"1px solid rgba(99,102,241,0.4)",background:"rgba(99,102,241,0.15)",fontSize:isMobile?9:10,cursor:"pointer",marginBottom:2,overflow:"hidden",display:"block"}}>
+ <button onClick={()=>setSel(a)} style={{width:"100%",textAlign:"left",padding:isMobile?"4px 6px":"5px 8px",borderRadius:8,border:"1px solid rgba(100,52,250,0.35)",background:"rgba(100,52,250,0.15)",fontSize:isMobile?9:10,cursor:"pointer",marginBottom:2,overflow:"hidden",display:"block"}}>
  <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
  {showTime&&<span style={{color:"#C8962A",fontWeight:800,fontSize:isMobile?8:9,flexShrink:0}}>{a.time}</span>}
  {statusIcon&&<span style={{fontSize:9,flexShrink:0}}>{statusIcon}</span>}
@@ -2363,7 +2363,7 @@ function CalendarView({ appointments, isMobile }) {
  const sc=new Date(yr,mo,1).getDay();
  const total=Math.ceil((sc+daysInMonth)/7)*7;
  return(
- <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.12)",flex:1,display:"flex",flexDirection:"column"}}>
+ <div style={{background:"rgba(26,10,94,0.6)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(100,52,250,0.35)",flex:1,display:"flex",flexDirection:"column"}}>
  <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",background:P,flexShrink:0}}>
  {(isMobile?DAY_SHORT:DAY_FULL).map((d,i)=>(
  <div key={i} style={{textAlign:"center",padding:isMobile?"8px 0":"10px 0",fontSize:isMobile?10:11,fontWeight:700,color:i>=5?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.85)"}}>
@@ -2402,7 +2402,7 @@ function CalendarView({ appointments, isMobile }) {
  const ws=weekStart(cur);
  const days=Array.from({length:7},(_,i)=>addDays(ws,i));
  return(
- <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.12)",flex:1,display:"flex",flexDirection:"column"}}>
+ <div style={{background:"rgba(26,10,94,0.6)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(100,52,250,0.35)",flex:1,display:"flex",flexDirection:"column"}}>
  <div style={{display:"grid",gridTemplateColumns:"64px repeat(7,1fr)",background:P,flexShrink:0}}>
  <div style={{padding:"10px 0",borderRight:"1px solid rgba(255,255,255,0.1)"}}/>
  {days.map((d,i)=>{
@@ -2428,7 +2428,7 @@ function CalendarView({ appointments, isMobile }) {
  return(
  <div key={i} style={{padding:4,background:off?"rgba(255,255,255,0.01)":"rgba(255,255,255,0.03)",borderRight:"1px solid rgba(255,255,255,0.08)",overflow:"hidden",minWidth:0}}>
  {cellApts.map(a=>(
- <button key={a.id} onClick={()=>setSel(a)} style={{width:"100%",textAlign:"left",padding:"5px 7px",borderRadius:7,border:"1px solid rgba(99,102,241,0.4)",background:"rgba(99,102,241,0.15)",fontSize:10,cursor:"pointer",marginBottom:3,display:"block",overflow:"hidden",minWidth:0}}>
+ <button key={a.id} onClick={()=>setSel(a)} style={{width:"100%",textAlign:"left",padding:"5px 7px",borderRadius:7,border:"1px solid rgba(100,52,250,0.35)",background:"rgba(100,52,250,0.15)",fontSize:10,cursor:"pointer",marginBottom:3,display:"block",overflow:"hidden",minWidth:0}}>
  <div style={{fontWeight:700,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:2}}>{a.supplierName}</div>
  <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:2}}>
  <SbuBadge code={a.deliveryTo} full={true}/>
@@ -2454,7 +2454,7 @@ function CalendarView({ appointments, isMobile }) {
  function normalizeTime(t){if(!t)return "";return t.trim().replace(/\s*(AM|PM)$/i,"").replace(/^(\d):/, "0$1:");}
  const matchedIds=new Set();
  return(
- <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.12)",flex:1,display:"flex",flexDirection:"column"}}>
+ <div style={{background:"rgba(26,10,94,0.6)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(100,52,250,0.35)",flex:1,display:"flex",flexDirection:"column"}}>
  <div style={{background:P,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",flexShrink:0}}>
  <div style={{flex:1}}>
  <div style={{color:"#6b7280",fontSize:11,textTransform:"uppercase",letterSpacing:1}}>{cur.toLocaleDateString("en-GB",{weekday:"long"})}{off&&<span style={{marginLeft:8,background:"rgba(239,68,68,0.2)",color:"#fca5a5",padding:"1px 8px",borderRadius:99,fontSize:10}}>Non-working day</span>}</div>
@@ -2469,13 +2469,13 @@ function CalendarView({ appointments, isMobile }) {
  slotApts.forEach(a=>matchedIds.add(a.id));
  const hasApts=slotApts.length>0;
  return(
- <div key={slot} style={{display:"flex",borderBottom:"1px solid rgba(255,255,255,0.08)",minHeight:64,background:hasApts?"rgba(99,102,241,0.08)":"rgba(255,255,255,0.02)"}}>
+ <div key={slot} style={{display:"flex",borderBottom:"1px solid rgba(255,255,255,0.08)",minHeight:64,background:hasApts?"rgba(100,52,250,0.08)":"rgba(255,255,255,0.02)"}}>
  <div style={{width:72,padding:"0 12px",borderRight:"1px solid rgba(255,255,255,0.08)",display:"flex",alignItems:"center",justifyContent:"flex-end",flexShrink:0,background:"rgba(255,255,255,0.04)"}}>
  <span style={{fontSize:13,fontWeight:700,color:hasApts?"#a5b4fc":"rgba(255,255,255,0.2)"}}>{slot}</span>
  </div>
  <div style={{flex:1,padding:8,display:"flex",flexDirection:"column",gap:6}}>
  {hasApts ? slotApts.map(a=>(
- <button key={a.id} onClick={()=>setSel(a)} style={{textAlign:"left",padding:"10px 14px",borderRadius:10,border:"1px solid rgba(99,102,241,0.4)",background:"rgba(99,102,241,0.15)",cursor:"pointer",display:"block",width:"100%"}}>
+ <button key={a.id} onClick={()=>setSel(a)} style={{textAlign:"left",padding:"10px 14px",borderRadius:10,border:"1px solid rgba(100,52,250,0.35)",background:"rgba(100,52,250,0.15)",cursor:"pointer",display:"block",width:"100%"}}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4,flexWrap:"wrap",gap:6}}>
  <span style={{fontWeight:800,fontSize:14,color:"#fff"}}>{a.supplierName}</span>
  <div style={{display:"flex",gap:6,alignItems:"center"}}>
@@ -2532,7 +2532,7 @@ function CalendarView({ appointments, isMobile }) {
  const overdue=sel.deliveryStatus!=="completed"&&sel.deliveryStatus!=="failed"&&new Date(sel.date+"T"+sel.time)<new Date();
  return(
  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",display:"flex",alignItems:isMobile?"flex-end":"center",justifyContent:"center",zIndex:50,padding:isMobile?0:16}} onClick={e=>{if(e.target===e.currentTarget)setSel(null);}}>
- <div style={{background:"rgba(7,17,76,0.97)",backdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:isMobile?"24px 24px 0 0":"20px",padding:22,width:"100%",maxWidth:isMobile?"100%":480,maxHeight:isMobile?"90vh":"85vh",overflowY:"auto"}}>
+ <div style={{background:"rgba(15,8,60,0.98)",backdropFilter:"blur(16px)",border:"1px solid rgba(100,52,250,0.4)",borderRadius:isMobile?"24px 24px 0 0":"20px",padding:22,width:"100%",maxWidth:isMobile?"100%":480,maxHeight:isMobile?"90vh":"85vh",overflowY:"auto"}}>
 
  {/* ── Header ── */}
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
@@ -2552,7 +2552,7 @@ function CalendarView({ appointments, isMobile }) {
  {/* ── Info Grid ── */}
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
  {[["📅 Date",fmtDate(sel.date)],["⏰ Time",sel.time],["📦 Orders",sel.totalOrders],["📋 Lines",sel.totalLines]].map(([k,v])=>(
- <div key={k} style={{background:"rgba(255,255,255,0.06)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.1)"}}>
+ <div key={k} style={{background:"rgba(100,52,250,0.12)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(100,52,250,0.35)"}}>
  <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:3}}>{k}</div>
  <div style={{fontWeight:700,fontSize:14,color:"#fff"}}>{v}</div>
  </div>
@@ -2567,7 +2567,7 @@ function CalendarView({ appointments, isMobile }) {
 
  {/* ── PO Numbers ── */}
  {poList.length>0&&(
- <div style={{background:"rgba(255,255,255,0.06)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.1)",marginBottom:10}}>
+ <div style={{background:"rgba(100,52,250,0.12)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(100,52,250,0.35)",marginBottom:10}}>
  <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:6}}>📄 PO Numbers ({poList.length})</div>
  <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
  {poList.map(po=><span key={po} style={{background:"rgba(200,150,42,0.15)",color:"#fcd34d",border:"1px solid rgba(200,150,42,0.3)",padding:"2px 8px",borderRadius:6,fontSize:11,fontWeight:600,fontFamily:"monospace"}}>{po}</span>)}
@@ -2593,7 +2593,7 @@ function CalendarView({ appointments, isMobile }) {
 
  {/* ── Notes ── */}
  {sel.additionalNotes&&(
- <div style={{background:"rgba(255,255,255,0.06)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.1)",marginBottom:10}}>
+ <div style={{background:"rgba(100,52,250,0.12)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(100,52,250,0.35)",marginBottom:10}}>
  <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:3}}>📝 Notes</div>
  <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>{sel.additionalNotes}</div>
  </div>
@@ -2626,7 +2626,7 @@ function CalendarView({ appointments, isMobile }) {
  )}
 
  {/* ── Close ── */}
- <button onClick={()=>setSel(null)} style={{width:"100%",padding:12,border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,fontSize:14,fontWeight:600,color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.06)",cursor:"pointer"}}>Close</button>
+ <button onClick={()=>setSel(null)} style={{width:"100%",padding:12,border:"1px solid rgba(100,52,250,0.35)",borderRadius:12,fontSize:14,fontWeight:600,color:"rgba(255,255,255,0.6)",background:"rgba(100,52,250,0.12)",cursor:"pointer"}}>Close</button>
  </div>
  </div>
  );
@@ -2817,7 +2817,7 @@ function EmailLog({ emailLog, isMobile }) {
  emails.forEach(e => typesCounts[e.type]++);
 
  return (
- <div key={aptId} style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.12)"}}>
+ <div key={aptId} style={{background:"rgba(26,10,94,0.6)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(100,52,250,0.35)"}}>
  {/* Conversation header - always visible */}
  <div 
  onClick={()=>setExpandedApt(isExpanded?null:aptId)} 
