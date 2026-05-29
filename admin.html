@@ -1818,12 +1818,14 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
  )}
 
  {/* ── KPI Cards ── */}
- <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12}}>
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(3,1fr)",gap:12}}>
  {[
   {label:"Total",val:total,color:"#C8962A",sub:`${approvalRate}% approval rate`,filter:"all",icon:"📦"},
   {label:"Pending",val:pending,color:"#fcd34d",sub:"Awaiting action",filter:"pending",icon:"⏳"},
   {label:"Approved",val:approved,color:"#6ee7b7",sub:`${completionRate}% delivered`,filter:"approved",icon:"✅"},
-  {label:"Emergency",val:emergency,color:"#fca5a5",sub:"High priority",filter:"emergency",icon:"🚨"},
+  {label:"Rejected",val:rejected,color:"#fca5a5",sub:"Not accepted",filter:"rejected",icon:"❌"},
+  {label:"Revision",val:revision,color:"#fdba74",sub:"Returned for edit",filter:"revision_required",icon:"↩️"},
+  {label:"Emergency",val:emergency,color:"#f87171",sub:"High priority",filter:"emergency",icon:"🚨"},
  ].map(function(item){return(
   <button key={item.label} onClick={()=>navTo(item.filter)}
    style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:isMobile?14:20,textAlign:"left",cursor:"pointer",transition:"background 0.2s"}}>
