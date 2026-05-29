@@ -364,7 +364,38 @@ function addSummarySheet(wb,name,rows){
  });
 }
 
-async function exportToExcel(sheets,filename,meta){
+async function exportPDFTable(title, subtitle, columns, rows, filename){
+ const w=window.open("","_blank");
+ const html=`<html><head><title>${title}</title>
+ <style>
+ *{margin:0;padding:0;box-sizing:border-box;}
+ body{font-family:Calibri,sans-serif;color:#1e293b;padding:24px;font-size:11px;}
+ .header{background:#07114C;color:#C8962A;padding:16px 20px;border-radius:8px;margin-bottom:16px;}
+ .header h1{font-size:20px;font-weight:800;margin-bottom:2px;}
+ .header p{color:rgba(255,255,255,0.6);font-size:11px;}
+ .meta{display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;}
+ .meta-item{background:#f1f5f9;border-radius:6px;padding:8px 14px;}
+ .meta-val{font-size:18px;font-weight:800;color:#07114C;}
+ .meta-lbl{font-size:10px;color:#64748b;}
+ table{width:100%;border-collapse:collapse;margin-top:8px;}
+ th{background:#07114C;color:#C8962A;padding:7px 8px;text-align:left;font-size:10px;font-weight:700;}
+ td{padding:5px 8px;border-bottom:1px solid #e2e8f0;font-size:10px;}
+ tr:nth-child(even) td{background:#f8fafc;}
+ .footer{margin-top:16px;font-size:9px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:8px;display:flex;justify-content:space-between;}
+ @media print{body{padding:12px;}button{display:none;}}
+ .print-btn{background:#07114C;color:#C8962A;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700;margin-bottom:12px;}
+ </style></head><body>
+ <button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+ <div class="header"><h1>${title}</h1><p>${subtitle}</p></div>
+ <table><thead><tr>${columns.map(c=>`<th>${c}</th>`).join("")}</tr></thead>
+ <tbody>${rows.map((r,i)=>`<tr>${columns.map(c=>`<td>${r[c]||"—"}</td>`).join("")}</tr>`).join("")}</tbody></table>
+ <div class="footer"><span>Bapco Energies — BE Warehouse System | CONFIDENTIAL</span><span>Generated: ${new Date().toLocaleString("en-GB")} | Records: ${rows.length}</span></div>
+ </body></html>`;
+ w.document.write(html);
+ w.document.close();
+}
+
+(sheets,filename,meta){
  // Load ExcelJS on demand (not on page load to avoid blocking Supabase)
  await window._loadExcelJS();
  meta=meta||[];
@@ -1366,12 +1397,13 @@ function Sparkline({ data, color="#C8962A", height=40, width=120 }){
 }
 
 // ─── Donut Chart ──────────────────────────────────────────────
-function DonutChart({ segments, size=120, thickness=24, stroke, onSegmentClick }){
+function DonutChart({ segments, size=120, thickness=24, stroke, onSegmentClick, centerLabel }){
  const th=stroke||thickness;
  const total=segments.reduce((s,x)=>s+x.value,0)||1;
  let offset=0;
  const r=(size-th)/2;
  const circ=2*Math.PI*r;
+ const displayTotal=centerLabel!=null?centerLabel:total;
  return(
  <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{cursor:onSegmentClick?"pointer":"default"}}>
  {segments.map((seg,i)=>{
@@ -1391,7 +1423,7 @@ function DonutChart({ segments, size=120, thickness=24, stroke, onSegmentClick }
  offset+=pct;
  return el;
  })}
- <text x={size/2} y={size/2-6} textAnchor="middle" fontSize="22" fontWeight="800" fill="#fff">{total.toLocaleString()}</text>
+ <text x={size/2} y={size/2-6} textAnchor="middle" fontSize={size<100?"14":"22"} fontWeight="800" fill="#fff">{typeof displayTotal==="number"?displayTotal.toLocaleString():displayTotal}</text>
  <text x={size/2} y={size/2+14} textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.5)">Total</text>
  </svg>
  );
@@ -2123,10 +2155,20 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  }} disabled={rows.length===0} style={{padding:"8px 12px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:rows.length===0?"not-allowed":"pointer",opacity:rows.length===0?0.5:1}}>
  📥 Export Excel
  </button>
- </div>
- </div>
-
- {isMobile ? (
+ <button onClick={()=>exportPDFTable(
+ "Admin Panel — Appointments",
+ `Status: ${statFs.join(", ")||"All"} | Records: ${rows.length} | Generated: ${new Date().toLocaleString("en-GB")}`,
+ ["ID","Supplier","SBU","Date","Time","Status","Priority","Orders","Storage"],
+ rows.map(a=>({
+ "ID":a.id,"Supplier":a.supplierName||"—","SBU":sbuName(a.deliveryTo),
+ "Date":fmtDate(a.date),"Time":a.time||"—",
+ "Status":(a.status||"").replace(/_/g," "),"Priority":a.priority||"standard",
+ "Orders":a.totalOrders||0,
+ "Storage":Array.isArray(a.storageLocation)?a.storageLocation.join(", "):a.storageLocation||"—",
+ })),"BE_Warehouse_Admin"
+ )} disabled={rows.length===0} style={{padding:"8px 12px",background:"#7c3aed",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:rows.length===0?"not-allowed":"pointer",opacity:rows.length===0?0.5:1}}>
+ 📄 Export PDF
+ </button>
  <div style={{display:"flex",flexDirection:"column",gap:12}}>
  {rows.length===0 && <div style={{background:"rgba(255,255,255,0.06)",borderRadius:14,padding:40,textAlign:"center",color:"rgba(255,255,255,0.3)",fontSize:13}}>No appointments yet.</div>}
  {emergencyRows.length>0&&(
@@ -2654,9 +2696,13 @@ function EmailLog({ emailLog, isMobile }) {
  }} disabled={totalEmails===0} style={{padding:"6px 12px",background:"#059669",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:totalEmails===0?"not-allowed":"pointer",opacity:totalEmails===0?0.5:1}}>
  📥 Export Excel
  </button>
- </div>
- </div>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Grouped by appointment with full conversation history</p>
+ <button onClick={()=>exportPDFTable(
+ "Email Log","Records: "+emailLog.length+" | Generated: "+new Date().toLocaleString("en-GB"),
+ ["Timestamp","Appointment ID","Type","Recipient","Supplier","SBU","Subject"],
+ emailLog.map(e=>({"Timestamp":fmtTs(e.timestamp),"Appointment ID":e.appointmentId||"—","Type":(e.type||"").replace(/_/g," "),"Recipient":e.recipient||"—","Supplier":e.supplierName||"—","SBU":e.deliveryTo||"—","Subject":e.subject||"—"}))
+ )} disabled={totalEmails===0} style={{padding:"6px 12px",background:"#7c3aed",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:totalEmails===0?"not-allowed":"pointer",opacity:totalEmails===0?0.5:1}}>
+ 📄 Export PDF
+ </button>
 
  {totalEmails===0 ? (
  <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
@@ -3160,9 +3206,20 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  }} disabled={appointments.length===0} style={{padding:"10px 16px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:appointments.length===0?"not-allowed":"pointer",opacity:appointments.length===0?0.5:1}}>
  📥 Export Excel
  </button>
- </div>
- </div>
-
+ <button onClick={()=>exportPDFTable(
+ "Statistics Report","Total: "+appointments.length+" appointments | Generated: "+new Date().toLocaleString("en-GB"),
+ ["SBU","Total","Approved","Rejected","Completed","Emergency"],
+ ["BR","BU","BG","BT"].map(s=>({
+ "SBU":sbuName(s),
+ "Total":appointments.filter(a=>a.deliveryTo===s).length,
+ "Approved":appointments.filter(a=>a.deliveryTo===s&&a.status==="approved").length,
+ "Rejected":appointments.filter(a=>a.deliveryTo===s&&a.status==="rejected").length,
+ "Completed":appointments.filter(a=>a.deliveryTo===s&&a.deliveryStatus==="completed").length,
+ "Emergency":appointments.filter(a=>a.deliveryTo===s&&a.priority==="emergency").length,
+ }))
+ )} disabled={appointments.length===0} style={{padding:"10px 16px",background:"#7c3aed",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:appointments.length===0?"not-allowed":"pointer",opacity:appointments.length===0?0.5:1}}>
+ 📄 Export PDF
+ </button>
  <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:14,padding:16,marginBottom:24,display:"flex",flexWrap:"wrap",gap:12,alignItems:"center"}}>
  <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, name, email, date, PO, status…" style={{flex:1,minWidth:200,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
  <span style={{color:"rgba(255,255,255,0.5)",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>Date range</span>
@@ -3195,7 +3252,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Busiest Time Slots</div>
  <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{busiestSlot&&busiestSlot.count>0?"Peak: "+busiestSlot.label:"No data yet"}</div>
  </div>
- {total>0&&<DonutChart size={80} stroke={14} segments={slotData.filter(d=>d.count>0).slice(0,5).map((d,i)=>({value:d.count,color:slotColors[i]||"#6366f1"}))}/>}
+ {total>0&&<DonutChart size={80} stroke={14} centerLabel={total} segments={slotData.filter(d=>d.count>0).slice(0,5).map((d,i)=>({value:d.count,color:slotColors[i]||"#6366f1"}))}/>}
  </div>
  {slotData.map((d,i)=><BarRow key={d.label} label={d.label} count={d.count} max={maxSlot} color={slotColors[Math.min(i,4)]}/>)}
  {total===0&&<div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.2)",fontSize:13}}>No appointments in range</div>}
@@ -3206,7 +3263,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Busiest Days of Week</div>
  <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{busiestDay&&busiestDay.count>0?"Peak: "+busiestDay.label:"No data yet"}</div>
  </div>
- {total>0&&<DonutChart size={80} stroke={14} segments={dayData.filter(d=>d.count>0&&!d.isOff).map((d,i)=>({value:d.count,color:dayColors[i]||"#6366f1"}))}/>}
+ {total>0&&<DonutChart size={80} stroke={14} centerLabel={total} segments={dayData.filter(d=>d.count>0&&!d.isOff).map((d,i)=>({value:d.count,color:dayColors[i]||"#6366f1"}))}/>}
  </div>
  {dayData.map((d,i)=><BarRow key={d.label} label={d.label} count={d.count} max={maxDay} color={d.isOff?"rgba(255,255,255,0.1)":dayColors[Math.min(i,4)]} sublabel={d.isOff?"Off":""}/>)}
  {total===0&&<div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.2)",fontSize:13}}>No appointments in range</div>}
@@ -3219,7 +3276,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Most Active Suppliers</div>
  <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{supplierData.length>0?"Top "+supplierData.length+" supplier"+(supplierData.length!==1?"s":"")+" by appointment count":"No data yet"}</div>
  </div>
- {total>0&&supplierData.length>0&&<DonutChart size={80} stroke={14} segments={supplierData.slice(0,6).map((d,i)=>({value:d.count,color:["#f59e0b","#6366f1","#10b981","#ec4899","#3b82f6","#a78bfa"][i]||"#6366f1"}))}/>}
+ {total>0&&supplierData.length>0&&<DonutChart size={80} stroke={14} centerLabel={total} segments={supplierData.slice(0,6).map((d,i)=>({value:d.count,color:["#f59e0b","#6366f1","#10b981","#ec4899","#3b82f6","#a78bfa"][i]||"#6366f1"}))}/>}
  </div>
  {supplierData.length===0&&<div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.2)",fontSize:13}}>No appointments in range</div>}
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"0 32px"}}>
@@ -3529,16 +3586,23 @@ function TransactionsHistory({ transactions, isMobile }) {
  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
  <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{transactions.length} total</span>
  <button onClick={exportCSV} disabled={filtered.length===0} style={{padding:"6px 12px",background:"#059669",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:filtered.length===0?"not-allowed":"pointer",opacity:filtered.length===0?0.5:1}}>📥 Export Excel</button>
+ <button onClick={()=>exportPDFTable(
+ "Transaction History","Records: "+filtered.length+" | Generated: "+new Date().toLocaleString("en-GB"),
+ ["Timestamp","Action","Actor","Appointment ID","Supplier","SBU","Details"],
+ filtered.map(t=>({"Timestamp":fmtTs(t.timestamp),"Action":(t.action||"").replace(/_/g," "),"Actor":t.actor||"—","Appointment ID":t.appointmentId||"—","Supplier":t.supplierName||"—","SBU":t.deliveryTo||"—","Details":t.details||"—"}))
+ )} disabled={filtered.length===0} style={{padding:"6px 12px",background:"#7c3aed",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:filtered.length===0?"not-allowed":"pointer",opacity:filtered.length===0?0.5:1}}>📄 Export PDF</button>
  </div>
  </div>
  <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Full audit log — grouped by appointment</p>
 
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(7,1fr)",gap:12,marginBottom:16}}>
  {[{key:"create",label:"Created",color:"#a5b4fc"},{key:"resubmission",label:"Resubmission",color:"#7dd3fc"},{key:"approve",label:"Approved",color:"#6ee7b7"},{key:"reject",label:"Rejected",color:"#fca5a5"},{key:"return_for_revision",label:"Returned",color:"#fcd34d"},{key:"delivery_complete",label:"Delivered",color:"#86efac"},{key:"delivery_failed",label:"Failed",color:"#f87171"}].map(s=>(
- <div key={s.key} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:14,padding:isMobile?12:16}}>
+ <button key={s.key} onClick={()=>setActionFilter(p=>p===s.key?"all":s.key)}
+  style={{background:actionFilter===s.key?"rgba(255,255,255,0.15)":"rgba(255,255,255,0.07)",border:`1px solid ${actionFilter===s.key?"rgba(255,255,255,0.4)":"rgba(255,255,255,0.1)"}`,borderRadius:14,padding:isMobile?12:16,cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
  <div style={{color:s.color,fontSize:isMobile?22:26,fontWeight:800}}>{counts[s.key]}</div>
  <div style={{color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:500,marginTop:2}}>{s.label}</div>
- </div>
+ {actionFilter===s.key&&<div style={{color:"rgba(255,255,255,0.35)",fontSize:9,marginTop:3}}>● Active filter</div>}
+ </button>
  ))}
  </div>
 
@@ -3793,7 +3857,13 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  }} disabled={exportAppts.length===0} style={{padding:"8px 14px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer"}}>
  📥 Export Excel
  </button>
- <button onClick={openMarkAll} disabled={awaiting.length===0} style={{padding:"8px 14px",background:awaiting.length===0?"#9ca3af":"#10b981",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:awaiting.length===0?"not-allowed":"pointer",opacity:awaiting.length===0?0.5:1}}>
+ <button onClick={()=>exportPDFTable(
+ "Team Lead Dashboard","Deliveries: "+exportAppts.length+" | Generated: "+new Date().toLocaleString("en-GB"),
+ ["ID","Supplier","SBU","Date","Time","Delivery Status","Orders","Storage"],
+ exportAppts.map(a=>({"ID":a.id,"Supplier":a.supplierName||"—","SBU":sbuName(a.deliveryTo),"Date":fmtDate(a.date),"Time":a.time||"—","Delivery Status":(a.deliveryStatus||"awaiting").replace(/_/g," "),"Orders":a.totalOrders||0,"Storage":Array.isArray(a.storageLocation)?a.storageLocation.join(", "):a.storageLocation||"—"}))
+ )} disabled={exportAppts.length===0} style={{padding:"8px 14px",background:"#7c3aed",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer"}}>
+ 📄 Export PDF
+ </button> style={{padding:"8px 14px",background:awaiting.length===0?"#9ca3af":"#10b981",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:awaiting.length===0?"not-allowed":"pointer",opacity:awaiting.length===0?0.5:1}}>
  ✅ Mark All Complete ({awaiting.length})
  </button>
  </div>
