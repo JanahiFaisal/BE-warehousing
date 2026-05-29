@@ -1482,9 +1482,9 @@ function SlotHeatmap({ appointments }){
  ))}
  </div>
  <div style={{display:"flex",alignItems:"center",gap:6,marginTop:10,justifyContent:"flex-end"}}>
- <span style={{fontSize:10,color:"#9ca3af"}}>Low</span>
+ <span style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>Low</span>
  {[0.1,0.3,0.5,0.7,0.9].map(o=><div key={o} style={{width:14,height:14,borderRadius:3,background:`rgba(200,150,42,${o})`}}/>)}
- <span style={{fontSize:10,color:"#9ca3af"}}>High</span>
+ <span style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>High</span>
  </div>
  </div>
  );
@@ -1898,7 +1898,7 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
       <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
        <span style={{fontSize:12,color:"#fff",fontWeight:500}}>{a.supplierName}</span>
        <div style={{display:"flex",gap:6,alignItems:"center"}}>
-       <span style={{fontSize:10,color:"#9ca3af"}}>{a.deliveryTo}</span>
+       <span style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>{a.deliveryTo}</span>
        <span style={{fontSize:10,fontWeight:700,color:isDone?"#6ee7b7":isOverdue?"#fca5a5":"#fcd34d"}}>{isDone?"✅":isOverdue?"🔴":"⏳"}</span>
        </div>
       </div>
@@ -1989,9 +1989,9 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
    {label:"Delivery Rate",val:completionRate,color:"#C8962A"},
    {label:"Emergency Rate",val:total>0?Math.round(emergency/total*100):0,color:"#ef4444"},
   ].map(function(item){return(
-   <div key={item.label} style={{background:"#f9fafb",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:"12px 16px"}}>
+   <div key={item.label} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:"12px 16px"}}>
    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-    <span style={{fontSize:11,color:"#4b5563",fontWeight:600}}>{item.label}</span>
+    <span style={{fontSize:11,color:"rgba(255,255,255,0.6)",fontWeight:600}}>{item.label}</span>
     <span style={{fontSize:18,fontWeight:800,color:item.color}}>{item.val}%</span>
    </div>
    <div style={{height:6,borderRadius:3,background:"rgba(255,255,255,0.1)",overflow:"hidden"}}>
@@ -2210,7 +2210,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
  {[["Date",fmtDate(a.date)],["Time",a.time],["Orders",a.totalOrders],["Lines",a.totalLines]].map(([k,v])=>(
  <div key={k} style={{background:"#f9fafb",borderRadius:8,padding:"8px 10px",border:"1px solid rgba(255,255,255,0.08)"}}>
- <div style={{fontSize:10,color:"#9ca3af",marginBottom:2}}>{k}</div>
+ <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:2}}>{k}</div>
  <div style={{fontWeight:600,fontSize:13,color:"#fff"}}>{v}</div>
  </div>
  ))}
@@ -2499,7 +2499,7 @@ function CalendarView({ appointments, isMobile }) {
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
  <div>
  <StoreBadge loc={sel.storageLocation}/>
- <h3 style={{fontWeight:800,fontSize:17,color:P,margin:"8px 0 2px"}}>{sel.supplierName}</h3>
+ <h3 style={{fontWeight:800,fontSize:17,color:"#fff",margin:"8px 0 2px"}}>{sel.supplierName}</h3>
  <p style={{fontSize:12,color:"rgba(255,255,255,0.5)",margin:0}}>{sel.supplierEmail}</p>
  </div>
  <button onClick={()=>setSel(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:22,color:"rgba(255,255,255,0.5)",lineHeight:1}}>×</button>
@@ -2762,13 +2762,13 @@ function EmailLog({ emailLog, isMobile }) {
  </div>
  <div style={{flexShrink:0,textAlign:isMobile?"left":"right"}}>
  <div style={{fontSize:12,color:"#9ca3af",marginBottom:2}}>To: {latestEmail.recipient}</div>
- <div style={{fontSize:13,color:"#9ca3af"}}>{isExpanded?"▾":"▸"}</div>
+ <div style={{fontSize:13,color:"rgba(255,255,255,0.4)"}}>{isExpanded?"▾":"▸"}</div>
  </div>
  </div>
 
  {/* Expanded conversation thread */}
  {isExpanded&&(
- <div style={{padding:"14px 18px",background:"#fafafa",borderTop:"1px solid rgba(255,255,255,0.08)",display:"flex",flexDirection:"column",gap:8,maxHeight:600,overflowY:"auto"}}>
+ <div style={{padding:"14px 18px",background:"rgba(255,255,255,0.04)",borderTop:"1px solid rgba(255,255,255,0.08)",display:"flex",flexDirection:"column",gap:8,maxHeight:600,overflowY:"auto"}}>
  {emails.map(e => {
  const cfg = typeCfg[e.type]||typeCfg.submission;
  const isEmailExpanded = expandedEmail === e.id;
@@ -2781,15 +2781,15 @@ function EmailLog({ emailLog, isMobile }) {
  <span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,padding:"3px 9px",borderRadius:99,fontSize:10,fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>{cfg.label}</span>
  <div style={{flex:1,minWidth:0}}>
  <div style={{fontWeight:600,fontSize:12,color:"#fff",marginBottom:2}}>{e.subject}</div>
- <div style={{fontSize:10,color:"#9ca3af"}}>To: {e.recipient}{e.pin?<span style={{marginLeft:8,background:"rgba(245,158,11,0.2)",color:"#fcd34d",border:"1px solid #fcd34d",padding:"1px 6px",borderRadius:99,fontWeight:700,fontFamily:"monospace",fontSize:10}}>PIN: {e.pin}</span>:""}</div>
+ <div style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>To: {e.recipient}{e.pin?<span style={{marginLeft:8,background:"rgba(245,158,11,0.2)",color:"#fcd34d",border:"1px solid #fcd34d",padding:"1px 6px",borderRadius:99,fontWeight:700,fontFamily:"monospace",fontSize:10}}>PIN: {e.pin}</span>:""}</div>
  </div>
- <div style={{flexShrink:0,fontSize:10,color:"#9ca3af",textAlign:"right"}}>
+ <div style={{flexShrink:0,fontSize:10,color:"rgba(255,255,255,0.4)",textAlign:"right"}}>
  <div>{fmtTs(e.timestamp)}</div>
  <div style={{marginTop:2}}>{isEmailExpanded?"▾":"▸"}</div>
  </div>
  </div>
  {isEmailExpanded&&e.body&&(
- <div style={{borderTop:"1px solid rgba(255,255,255,0.12)",padding:"12px 14px",background:"#f9fafb",whiteSpace:"pre-wrap",fontSize:11,lineHeight:1.6,fontFamily:"monospace",color:"#374151",maxHeight:350,overflowY:"auto"}}>
+ <div style={{borderTop:"1px solid rgba(255,255,255,0.12)",padding:"12px 14px",background:"rgba(255,255,255,0.06)",whiteSpace:"pre-wrap",fontSize:11,lineHeight:1.6,fontFamily:"monospace",color:"rgba(255,255,255,0.8)",maxHeight:350,overflowY:"auto"}}>
  {e.body}
  </div>
  )}
@@ -3750,11 +3750,11 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  </div>
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:10}}>
  <div>
- <div style={{fontSize:10,color:"#9ca3af",marginBottom:2}}>Scheduled</div>
+ <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:2}}>Scheduled</div>
  <div style={{fontSize:12,fontWeight:600,color:"#fff"}}>{fmtDate(a.date)} {a.time}</div>
  </div>
  <div>
- <div style={{fontSize:10,color:"#9ca3af",marginBottom:2}}>Delivery To</div>
+ <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:2}}>Delivery To</div>
  <div style={{fontSize:12,fontWeight:600,color:"#fff"}}><StoreBadge loc={a.storageLocation}/></div>
  </div>
  </div>
@@ -4433,7 +4433,7 @@ function App() {
  <span style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:syncStatus==="ok"?"rgba(16,185,129,0.2)":syncStatus==="error"&&appts.length===0?"rgba(239,68,68,0.2)":"rgba(16,185,129,0.2)",color:syncStatus==="ok"?"#6ee7b7":syncStatus==="error"&&appts.length===0?"#fca5a5":"#6ee7b7",border:"1px solid rgba(255,255,255,0.12)"}}>
  {syncStatus==="ok"?"☁️ Synced":syncStatus==="error"&&appts.length===0?"⚠️ Sync Error":"☁️ Synced"}
  </span>
- <button onClick={()=>pullFromSupabase(false)} title="Refresh data" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"4px 10px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700}}>🔄</button>
+ <button onClick={async()=>{setSyncStatus("syncing");await pullFromSupabase(false);}} title="Refresh data" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"4px 10px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700}}>🔄</button>
  <button onClick={()=>setView("help")} style={{background:"rgba(200,150,42,0.15)",border:"1px solid rgba(200,150,42,0.3)",borderRadius:8,padding:"4px 10px",color:"#C8962A",fontSize:12,cursor:"pointer",fontWeight:700}}>❓ Guide</button>
  <button onClick={async()=>{setPage("landing");setView("dashboard");setAdminEmail("");sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");}} style={{color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
  </div>
