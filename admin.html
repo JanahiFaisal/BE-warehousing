@@ -6,8 +6,10 @@
  <title>BE Warehouse Appointments</title>
  <style>
  *{box-sizing:border-box;margin:0;padding:0;}
+ html,body{overflow-x:hidden;max-width:100vw;}
  body{font-family:system-ui,-apple-system,sans-serif;}
  input,select,textarea,button{font-family:inherit;}
+ #root{overflow-x:hidden;max-width:100vw;}
  </style>
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -596,7 +598,7 @@ function ConfirmModal({ msg, sub, confirmLabel="Confirm", confirmColor="#059669"
 
 function StatusBadge({ status }) {
  const cfg = {
- pending: {bg:"#fef3c7",color:"#92400e",border:"#fcd34d",label:"⏳ Pending"},
+ pending: {bg:"#fef3c7",color:"#fcd34d",border:"#fcd34d",label:"⏳ Pending"},
  approved: {bg:"#d1fae5",color:"#065f46",border:"#6ee7b7",label:"✓ Approved"},
  rejected: {bg:"#fee2e2",color:"#991b1b",border:"#fca5a5",label:"✕ Rejected"},
  revision_required: {bg:"#ffedd5",color:"#9a3412",border:"#fed7aa",label:"↩️ Revision Required"},
@@ -2327,12 +2329,22 @@ function CalendarView({ appointments, isMobile }) {
  }
 
  function AptChip({ a, showTime }) {
- const statusIcon = a.deliveryStatus==="completed"?"✅":a.deliveryStatus==="failed"?"❌":"";
- return (
- <button onClick={()=>setSel(a)} style={{width:"100%",textAlign:"left",padding:isMobile?"3px 4px":"4px 7px",borderRadius:6,border:"1px solid #c7d2fe",background:"#eef2ff",fontSize:isMobile?9:10,fontWeight:600,cursor:"pointer",marginBottom:2,overflow:"hidden",display:"block"}}>
- {showTime && <span style={{color:"#4f46e5",fontWeight:800,marginRight:3}}>{a.time}</span>}
- {statusIcon && <span style={{marginRight:2}}>{statusIcon}</span>}
- <span style={{color:"#374151",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"inline-block",maxWidth:"100%"}}>{isMobile?"":a.supplierName}</span>
+ const statusIcon=a.deliveryStatus==="completed"?"✅":a.deliveryStatus==="failed"?"❌":a.priority==="emergency"?"🚨":"";
+ const storageColor=Array.isArray(a.storageLocation)?a.storageLocation.includes("Covered store")&&a.storageLocation.includes("Open Yard")?"#a78bfa":a.storageLocation.includes("Covered store")?"#38bdf8":"#34d399":"#6b7280";
+ return(
+ <button onClick={()=>setSel(a)} style={{width:"100%",textAlign:"left",padding:isMobile?"4px 6px":"5px 8px",borderRadius:8,border:"1px solid rgba(99,102,241,0.4)",background:"rgba(99,102,241,0.15)",fontSize:isMobile?9:10,cursor:"pointer",marginBottom:2,overflow:"hidden",display:"block"}}>
+ <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:isMobile?0:2}}>
+ {showTime&&<span style={{color:"#C8962A",fontWeight:800,fontSize:isMobile?8:9,flexShrink:0}}>{a.time}</span>}
+ {statusIcon&&<span style={{fontSize:9,flexShrink:0}}>{statusIcon}</span>}
+ <span style={{color:"#fff",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.supplierName}</span>
+ </div>
+ {!isMobile&&(
+ <div style={{display:"flex",gap:4,alignItems:"center",marginTop:2}}>
+ <span style={{fontSize:8,color:storageColor,fontWeight:600,flexShrink:0}}>{Array.isArray(a.storageLocation)?a.storageLocation.map(l=>l==="Covered store"?"🏭 CS":l==="Open Yard"?"🌳 OY":l).join(" & "):a.storageLocation||""}</span>
+ {a.totalOrders>0&&<span style={{fontSize:8,color:"rgba(255,255,255,0.4)"}}>{a.totalOrders} ord</span>}
+ <span style={{fontSize:8,background:a.deliveryTo==="BR"?"rgba(200,150,42,0.3)":a.deliveryTo==="BU"?"rgba(16,185,129,0.3)":a.deliveryTo==="BG"?"rgba(59,130,246,0.3)":"rgba(139,92,246,0.3)",color:"#fff",padding:"0 4px",borderRadius:3,fontWeight:700,marginLeft:"auto"}}>{a.deliveryTo}</span>
+ </div>
+ )}
  </button>
  );
  }
@@ -2360,12 +2372,12 @@ function CalendarView({ appointments, isMobile }) {
  const off=date&&isFriSat(date);
  const today=date&&isToday(date);
  return(
- <div key={i} style={{minHeight:isMobile?58:100,borderRight:"1px solid rgba(255,255,255,0.08)",borderBottom:"1px solid rgba(255,255,255,0.08)",padding:isMobile?4:6,background:off?"#fafafa":"#fff"}}>
+ <div key={i} style={{minHeight:isMobile?58:100,borderRight:"1px solid rgba(255,255,255,0.08)",borderBottom:"1px solid rgba(255,255,255,0.08)",padding:isMobile?4:6,background:off?"rgba(255,255,255,0.01)":"rgba(255,255,255,0.03)"}}>
  {valid&&(
  <div>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
- <div style={{width:isMobile?20:26,height:isMobile?20:26,borderRadius:"50%",background:today?A:"transparent",color:today?"#fff":off?"#d1d5db":"#374151",display:"flex",alignItems:"center",justifyContent:"center",fontSize:isMobile?10:12,fontWeight:700}}>{dayNum}</div>
- {apts.length>0&&!isMobile&&<span style={{fontSize:9,color:"#4f46e5",fontWeight:700}}>{apts.length} appt{apts.length>1?"s":""}</span>}
+ <div style={{width:isMobile?20:26,height:isMobile?20:26,borderRadius:"50%",background:today?A:"transparent",color:today?"#fff":off?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:isMobile?10:12,fontWeight:700}}>{dayNum}</div>
+ {apts.length>0&&!isMobile&&<span style={{fontSize:9,color:"#a5b4fc",fontWeight:700}}>{apts.length} appt{apts.length>1?"s":""}</span>}
  </div>
  {apts.map(a=><AptChip key={a.id} a={a} showTime={true}/>)}
  </div>
@@ -2399,18 +2411,19 @@ function CalendarView({ appointments, isMobile }) {
  <div style={{flex:1,overflowY:"auto"}}>
  {SLOTS.map(slot=>(
  <div key={slot} style={{display:"grid",gridTemplateColumns:"64px repeat(7,1fr)",borderBottom:"1px solid rgba(255,255,255,0.08)",minHeight:60}}>
- <div style={{padding:"0 10px",borderRight:"1px solid rgba(255,255,255,0.08)",display:"flex",alignItems:"center",justifyContent:"flex-end",background:"#fafafa"}}>
- <span style={{fontSize:11,fontWeight:700,color:"#9ca3af",whiteSpace:"nowrap"}}>{slot}</span>
+ <div style={{padding:"0 10px",borderRight:"1px solid rgba(255,255,255,0.08)",display:"flex",alignItems:"center",justifyContent:"flex-end",background:"rgba(255,255,255,0.04)"}}>
+ <span style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",whiteSpace:"nowrap"}}>{slot}</span>
  </div>
  {days.map((d,i)=>{
  const off=isFriSat(d);
  const cellApts=approved.filter(a=>a.date===dsOf(d)&&a.time===slot);
  return(
- <div key={i} style={{padding:4,background:off?"#fafafa":"#fff",borderRight:"1px solid rgba(255,255,255,0.08)",overflow:"hidden",minWidth:0}}>
+ <div key={i} style={{padding:4,background:off?"rgba(255,255,255,0.01)":"rgba(255,255,255,0.03)",borderRight:"1px solid rgba(255,255,255,0.08)",overflow:"hidden",minWidth:0}}>
  {cellApts.map(a=>(
- <button key={a.id} onClick={()=>setSel(a)} style={{width:"100%",textAlign:"left",padding:"5px 7px",borderRadius:7,border:"1px solid #c7d2fe",background:"#eef2ff",fontSize:10,cursor:"pointer",marginBottom:3,display:"block",overflow:"hidden",minWidth:0}}>
- <div style={{fontWeight:700,color:"#4f46e5",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.supplierName}</div>
- <div style={{fontSize:9,color:"#6b7280",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{toLocs(a.storageLocation).join(" & ")}</div>
+ <button key={a.id} onClick={()=>setSel(a)} style={{width:"100%",textAlign:"left",padding:"5px 7px",borderRadius:7,border:"1px solid rgba(99,102,241,0.4)",background:"rgba(99,102,241,0.15)",fontSize:10,cursor:"pointer",marginBottom:3,display:"block",overflow:"hidden",minWidth:0}}>
+ <div style={{fontWeight:700,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.supplierName}</div>
+ <div style={{fontSize:9,color:"rgba(255,255,255,0.5)",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.time} · {Array.isArray(a.storageLocation)?a.storageLocation.map(l=>l==="Covered store"?"CS":"OY").join("+"):""} · {a.deliveryTo}</div>
+ {a.totalOrders>0&&<div style={{fontSize:8,color:"#C8962A",marginTop:1}}>{a.totalOrders} orders · {a.totalLines} lines</div>}
  </button>
  ))}
  </div>
@@ -2447,11 +2460,11 @@ function CalendarView({ appointments, isMobile }) {
  return(
  <div key={slot} style={{display:"flex",borderBottom:"1px solid rgba(255,255,255,0.08)",minHeight:64,background:hasApts?"#fff":"#fafafa"}}>
  <div style={{width:72,padding:"0 12px",borderRight:"1px solid rgba(255,255,255,0.08)",display:"flex",alignItems:"center",justifyContent:"flex-end",flexShrink:0,background:"#f9fafb"}}>
- <span style={{fontSize:13,fontWeight:700,color:hasApts?"#4f46e5":"#d1d5db"}}>{slot}</span>
+ <span style={{fontSize:13,fontWeight:700,color:hasApts?"#a5b4fc":"rgba(255,255,255,0.2)"}}>{slot}</span>
  </div>
  <div style={{flex:1,padding:8,display:"flex",flexDirection:"column",gap:6}}>
  {hasApts ? slotApts.map(a=>(
- <button key={a.id} onClick={()=>setSel(a)} style={{textAlign:"left",padding:"10px 14px",borderRadius:10,border:"2px solid #c7d2fe",background:"#eef2ff",cursor:"pointer",display:"block",width:"100%"}}>
+ <button key={a.id} onClick={()=>setSel(a)} style={{textAlign:"left",padding:"10px 14px",borderRadius:10,border:"1px solid rgba(99,102,241,0.4)",background:"rgba(99,102,241,0.15)",cursor:"pointer",display:"block",width:"100%"}}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5,flexWrap:"wrap",gap:6}}>
  <span style={{fontWeight:800,fontSize:14,color:"#4f46e5"}}>{a.supplierName}</span>
  <StoreBadge loc={a.storageLocation}/>
@@ -2460,7 +2473,7 @@ function CalendarView({ appointments, isMobile }) {
  </button>
  )) : (
  <div style={{display:"flex",alignItems:"center",height:"100%",minHeight:40}}>
- <span style={{fontSize:11,color:"#e5e7eb"}}>No bookings</span>
+ <span style={{fontSize:11,color:"rgba(255,255,255,0.15)"}}>No bookings</span>
  </div>
  )}
  </div>
@@ -2469,18 +2482,18 @@ function CalendarView({ appointments, isMobile }) {
  })}
  {/* Catch-all row for appointments with non-standard time formats */}
  {dayApts.filter(a=>!matchedIds.has(a.id)).length>0&&(
- <div style={{display:"flex",borderBottom:"1px solid rgba(255,255,255,0.08)",minHeight:64,background:"#fffbeb"}}>
- <div style={{width:72,padding:"0 12px",borderRight:"1px solid rgba(255,255,255,0.08)",display:"flex",alignItems:"center",justifyContent:"flex-end",flexShrink:0,background:"#fef9c3"}}>
- <span style={{fontSize:11,fontWeight:700,color:"#92400e"}}>Other</span>
+ <div style={{display:"flex",borderBottom:"1px solid rgba(255,255,255,0.08)",minHeight:64,background:"rgba(245,158,11,0.1)"}}>
+ <div style={{width:72,padding:"0 12px",borderRight:"1px solid rgba(255,255,255,0.08)",display:"flex",alignItems:"center",justifyContent:"flex-end",flexShrink:0,background:"rgba(245,158,11,0.15)"}}>
+ <span style={{fontSize:11,fontWeight:700,color:"#fcd34d"}}>Other</span>
  </div>
  <div style={{flex:1,padding:8,display:"flex",flexDirection:"column",gap:6}}>
  {dayApts.filter(a=>!matchedIds.has(a.id)).map(a=>(
  <button key={a.id} onClick={()=>setSel(a)} style={{textAlign:"left",padding:"10px 14px",borderRadius:10,border:"2px solid #fde68a",background:"#fef3c7",cursor:"pointer",display:"block",width:"100%"}}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5,flexWrap:"wrap",gap:6}}>
- <span style={{fontWeight:800,fontSize:14,color:"#92400e"}}>{a.supplierName}</span>
- <span style={{fontSize:10,color:"#92400e",background:"#fde68a",padding:"2px 6px",borderRadius:6}}>{a.time}</span>
+ <span style={{fontWeight:800,fontSize:14,color:"#fcd34d"}}>{a.supplierName}</span>
+ <span style={{fontSize:10,color:"#fcd34d",background:"rgba(245,158,11,0.3)",padding:"2px 6px",borderRadius:6}}>{a.time}</span>
  </div>
- <div style={{fontSize:11,color:"#92400e"}}>{a.totalOrders} orders · {a.totalLines} lines</div>
+ <div style={{fontSize:11,color:"#fcd34d"}}>{a.totalOrders} orders · {a.totalLines} lines</div>
  </button>
  ))}
  </div>
@@ -2513,9 +2526,9 @@ function CalendarView({ appointments, isMobile }) {
  ))}
  </div>
  {sel.offloadingEquipment&&sel.offloadingEquipment.length>0&&(
- <div style={{background:"#fffbeb",borderRadius:10,padding:"10px 12px",border:"1px solid #fde68a",marginBottom:10}}>
+ <div style={{background:"rgba(245,158,11,0.1)",borderRadius:10,padding:"10px 12px",border:"1px solid #fde68a",marginBottom:10}}>
  <div style={{fontSize:11,color:"#d97706",marginBottom:3}}>Equipment</div>
- <div style={{fontSize:13,fontWeight:600,color:"#92400e"}}>{sel.offloadingEquipment.join(", ")}</div>
+ <div style={{fontSize:13,fontWeight:600,color:"#fcd34d"}}>{sel.offloadingEquipment.join(", ")}</div>
  </div>
  )}
  {sel.additionalNotes&&(
@@ -2999,7 +3012,7 @@ function SettingsPanel({ config, onChange, isMobile }) {
 
  {credsOpen&&(
  <div style={{marginTop:16,display:"flex",flexDirection:"column",gap:12}}>
- <div style={{background:"#fef3c7",border:"1px solid #fcd34d",borderRadius:10,padding:"10px 12px",fontSize:12,color:"#92400e"}}>
+ <div style={{background:"#fef3c7",border:"1px solid #fcd34d",borderRadius:10,padding:"10px 12px",fontSize:12,color:"#fcd34d"}}>
  ⚠️ You must enter your <strong>current password</strong> to make any changes.
  </div>
 
@@ -3482,7 +3495,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  create:{bg:"#eff6ff",color:"#1d4ed8",border:"#bfdbfe",label:"📝 Created",icon:"📝"},
  approve:{bg:"#f0fdf4",color:"#15803d",border:"#bbf7d0",label:"✅ Approved",icon:"✅"},
  reject:{bg:"#fef2f2",color:"#b91c1c",border:"#fecaca",label:"❌ Rejected",icon:"❌"},
- return_for_revision:{bg:"#fef3c7",color:"#92400e",border:"#fcd34d",label:"↩️ Returned",icon:"↩️"},
+ return_for_revision:{bg:"#fef3c7",color:"#fcd34d",border:"#fcd34d",label:"↩️ Returned",icon:"↩️"},
  resubmission:{bg:"#f0f9ff",color:"#0369a1",border:"#bae6fd",label:"🔄 Resubmission",icon:"🔄"},
  delivery_complete:{bg:"#d1fae5",color:"#065f46",border:"#6ee7b7",label:"✅ Delivered",icon:"✅"},
  delivery_failed:{bg:"#fee2e2",color:"#991b1b",border:"#fca5a5",label:"❌ Failed Delivery",icon:"❌"},
@@ -4579,9 +4592,9 @@ function App() {
  </div>
  )}
  {viewApt.offloadingEquipment&&viewApt.offloadingEquipment.length>0&&(
- <div style={{background:"#fffbeb",borderRadius:10,padding:"10px 12px",border:"1px solid #fde68a",marginBottom:10}}>
+ <div style={{background:"rgba(245,158,11,0.1)",borderRadius:10,padding:"10px 12px",border:"1px solid #fde68a",marginBottom:10}}>
  <div style={{fontSize:11,color:"#d97706",marginBottom:3}}>Equipment</div>
- <div style={{fontSize:13,fontWeight:600,color:"#92400e"}}>{viewApt.offloadingEquipment.join(", ")}</div>
+ <div style={{fontSize:13,fontWeight:600,color:"#fcd34d"}}>{viewApt.offloadingEquipment.join(", ")}</div>
  </div>
  )}
  {viewApt.attachments&&viewApt.attachments.length>0&&(
