@@ -2707,6 +2707,9 @@ function EmailLog({ emailLog, isMobile }) {
  )} disabled={totalEmails===0} style={{padding:"6px 12px",background:"#7c3aed",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:totalEmails===0?"not-allowed":"pointer",opacity:totalEmails===0?0.5:1}}>
  📄 Export PDF
  </button>
+ </div>
+ </div>
+ <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Grouped by appointment with full conversation history</p>
 
  {totalEmails===0 ? (
  <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
@@ -3867,7 +3870,8 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  exportAppts.map(a=>({"ID":a.id,"Supplier":a.supplierName||"—","SBU":sbuName(a.deliveryTo),"Date":fmtDate(a.date),"Time":a.time||"—","Delivery Status":(a.deliveryStatus||"awaiting").replace(/_/g," "),"Orders":a.totalOrders||0,"Storage":Array.isArray(a.storageLocation)?a.storageLocation.join(", "):a.storageLocation||"—"}))
  )} disabled={exportAppts.length===0} style={{padding:"8px 14px",background:"#7c3aed",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer"}}>
  📄 Export PDF
- </button> style={{padding:"8px 14px",background:awaiting.length===0?"#9ca3af":"#10b981",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:awaiting.length===0?"not-allowed":"pointer",opacity:awaiting.length===0?0.5:1}}>
+ </button>
+ <button onClick={openMarkAll} disabled={awaiting.length===0} style={{padding:"8px 14px",background:awaiting.length===0?"#9ca3af":"#10b981",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:awaiting.length===0?"not-allowed":"pointer",opacity:awaiting.length===0?0.5:1}}>
  ✅ Mark All Complete ({awaiting.length})
  </button>
  </div>
