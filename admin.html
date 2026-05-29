@@ -2009,13 +2009,13 @@ function Dashboard({ appointments, setView, setAdminFilter, onApprove, onViewId,
  );})}
  </div>
 
- {/* ── Today's Schedule + Capacity ── */}
+ {/* ── Today's Schedule + SLA Meter (A) ── */}
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
   {/* Today's Schedule */}
   <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
    <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>📅 Today's Schedule</div>
-   <div style={{fontSize:11,color:"#9ca3af"}}>{today.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}</div>
+   <div style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>{today.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}</div>
   </div>
   {todayAppts.length===0?(
    <div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.3)",fontSize:13}}>No approved deliveries today</div>
@@ -2049,28 +2049,42 @@ function Dashboard({ appointments, setView, setAdminFilter, onApprove, onViewId,
   )}
   </div>
 
-  {/* Capacity Gauge */}
+  {/* SLA Compliance Meter (A) */}
   <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
-  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>📊 Today's Capacity by SBU</div>
-  <div style={{display:"flex",flexDirection:"column",gap:12}}>
-  {sbuCap.map(function(s){
-   const col=s.pct>=80?"#ef4444":s.pct>=50?"#f59e0b":"#10b981";
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+   <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>🎯 Review SLA</div>
+   <button onClick={()=>setView("kpi")} style={{fontSize:10,color:"rgba(255,255,255,0.4)",background:"none",border:"none",cursor:"pointer",textDecoration:"underline"}}>Full KPI →</button>
+  </div>
+  {(()=>{
+   const slaActioned=appointments.filter(a=>a.status!=="pending");
+   const slaWithin=slaActioned.filter(a=>{const bh=businessHoursBetween(a.createdAt,a.updatedAt);return bh!==null&&bh<=48;}).length;
+   const slaPct=slaActioned.length>0?Math.round(slaWithin/slaActioned.length*100):0;
+   const avgBh=slaActioned.length>0?Math.round(slaActioned.reduce((s,a)=>{const bh=businessHoursBetween(a.createdAt,a.updatedAt);return s+(bh||0);},0)/slaActioned.length):0;
+   const pendingBreach=appointments.filter(a=>{if(a.status!=="pending")return false;const bh=businessHoursBetween(a.createdAt,new Date().toISOString());return bh!==null&&bh>48;}).length;
+   const col=slaPct>=90?"#10b981":slaPct>=70?"#f59e0b":"#ef4444";
    return(
-   <div key={s.sbu}>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-    <span style={{fontSize:12,fontWeight:700,color:"#fff"}}>{s.sbu}</span>
-    <div style={{display:"flex",gap:8,alignItems:"center"}}>
-     <span style={{fontSize:11,color:"#6b7280"}}>{s.booked}/{s.slots} slots</span>
-     <span style={{fontSize:12,fontWeight:800,color:col}}>{s.pct}%</span>
+   <div style={{display:"flex",flexDirection:"column",gap:14}}>
+    <div>
+    <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+     <span style={{fontSize:12,color:"rgba(255,255,255,0.6)"}}>Compliance Rate</span>
+     <span style={{fontSize:22,fontWeight:800,color:col}}>{slaPct}%</span>
     </div>
+    <div style={{height:10,borderRadius:5,background:"rgba(255,255,255,0.1)",overflow:"hidden"}}>
+     <div style={{height:"100%",width:slaPct+"%",background:col,borderRadius:5,transition:"width 1s ease"}}/>
     </div>
-    <div style={{height:8,borderRadius:4,background:"rgba(255,255,255,0.08)",overflow:"hidden"}}>
-    <div style={{height:"100%",width:`${s.pct}%`,background:`linear-gradient(90deg,${col},${col}aa)`,borderRadius:4,transition:"width 1s ease"}}/>
+    <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",marginTop:4}}>Target: ≥90% · {slaActioned.length} requests reviewed</div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+    {[["⏱️ Avg Review",fmtBizHours(avgBh),"#C8962A"],["⚠️ Pending Breach",pendingBreach,pendingBreach>0?"#fca5a5":"#6ee7b7"]].map(function(item){return(
+     <div key={item[0]} style={{background:"rgba(100,52,250,0.12)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(100,52,250,0.3)",textAlign:"center"}}>
+     <div style={{fontSize:18,fontWeight:800,color:item[2]}}>{item[1]}</div>
+     <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:2}}>{item[0]}</div>
+     </div>
+    );})}
     </div>
    </div>
    );
-  })}
-  </div>
+  })()}
   </div>
  </div>
 
@@ -2139,41 +2153,6 @@ function Dashboard({ appointments, setView, setAdminFilter, onApprove, onViewId,
   </div>
  </div>
 
- {/* ── Monthly Trend + Activity Feed ── */}
- <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"2fr 1fr",gap:12}}>
-  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
-  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Monthly Booking Trend</div>
-  <BarChart data={monthlyData} color="#C8962A" height={isMobile?80:110}/>
-  <div style={{marginTop:8,display:"flex",gap:16}}>
-   <span style={{fontSize:11,color:"#9ca3af"}}>Peak: <strong style={{color:"#fff"}}>{monthlyData.reduce((m,d)=>d.value>m.value?d:m,{value:0,label:"—"}).label}</strong></span>
-   <span style={{fontSize:11,color:"#9ca3af"}}>Avg: <strong style={{color:"#fff"}}>{monthlyData.length?Math.round(monthlyData.reduce((s,d)=>s+d.value,0)/monthlyData.length):0}/mo</strong></span>
-  </div>
-  </div>
-
-  {/* Activity Feed */}
-  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
-  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:10}}>⚡ Recent Activity</div>
-  <div style={{display:"flex",flexDirection:"column",gap:0,maxHeight:180,overflowY:"auto"}}>
-  {recentAppts.map(function(a){
-   const ts=a.updatedAt||a.createdAt;
-   const mins=ts?Math.round((Date.now()-new Date(ts))/60000):0;
-   const ago=mins<60?mins+"m ago":mins<1440?Math.floor(mins/60)+"h ago":Math.floor(mins/1440)+"d ago";
-   const col=a.status==="pending"?"#fcd34d":a.status==="approved"?"#6ee7b7":a.status==="rejected"?"#fca5a5":"#fdba74";
-   return(
-   <div key={a.id} style={{padding:"7px 0",borderBottom:"1px solid rgba(255,255,255,0.05)",display:"flex",gap:8,alignItems:"flex-start"}}>
-    <div style={{width:6,height:6,borderRadius:"50%",background:col,marginTop:5,flexShrink:0}}/>
-    <div style={{flex:1,minWidth:0}}>
-    <div style={{fontSize:11,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.supplierName}</div>
-    <div style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>{a.id} · {(a.status||"").replace(/_/g," ")}</div>
-    </div>
-    <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",flexShrink:0}}>{ago}</div>
-   </div>
-   );
-  })}
-  </div>
-  </div>
- </div>
-
  {/* ── Weekly Forecast + Pending Timeline ── */}
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
@@ -2185,32 +2164,102 @@ function Dashboard({ appointments, setView, setAdminFilter, onApprove, onViewId,
  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>⏳ Pending Requests ({pending})</div>
  <span style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>Emergency first · Oldest first</span>
  </div>
- <PendingTimeline appointments={appointments} isMobile={isMobile}
- onApprove={onApprove}
- onView={onViewId}
- />
+ <PendingTimeline appointments={appointments} isMobile={isMobile} onApprove={onApprove} onView={onViewId}/>
  </div>
  </div>
 
- {/* ── Slot Heatmap ── */}
- <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
-  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Booking Density — Slot vs Day</div>
-  <SlotHeatmap appointments={filtered}/>
+ {/* ── Monthly Trend + Monthly Comparison (E) ── */}
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"2fr 1fr",gap:12}}>
+  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Monthly Booking Trend</div>
+  <BarChart data={monthlyData} color="#C8962A" height={isMobile?80:110}/>
+  <div style={{marginTop:8,display:"flex",gap:16}}>
+   <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>Peak: <strong style={{color:"#fff"}}>{monthlyData.reduce((m,d)=>d.value>m.value?d:m,{value:0,label:"—"}).label}</strong></span>
+   <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>Avg: <strong style={{color:"#fff"}}>{monthlyData.length?Math.round(monthlyData.reduce((s,d)=>s+d.value,0)/monthlyData.length):0}/mo</strong></span>
+  </div>
+  </div>
+
+  {/* Monthly Comparison (E) */}
+  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>📈 This vs Last Month</div>
+  {(()=>{
+   const now=new Date();
+   const thisMonth=now.getMonth(), thisYear=now.getFullYear();
+   const lastMonth=thisMonth===0?11:thisMonth-1, lastYear=thisMonth===0?thisYear-1:thisYear;
+   const inMonth=(a,m,y)=>{if(!a.createdAt)return false;const d=new Date(a.createdAt);return d.getMonth()===m&&d.getFullYear()===y;};
+   const tm=appointments.filter(a=>inMonth(a,thisMonth,thisYear));
+   const lm=appointments.filter(a=>inMonth(a,lastMonth,lastYear));
+   const diff=(a,b)=>b===0?"—":((a-b)/b*100).toFixed(0);
+   const rows=[
+    ["Submissions",tm.length,lm.length],
+    ["Approved",tm.filter(a=>a.status==="approved").length,lm.filter(a=>a.status==="approved").length],
+    ["Completed",tm.filter(a=>a.deliveryStatus==="completed").length,lm.filter(a=>a.deliveryStatus==="completed").length],
+    ["Emergency",tm.filter(a=>a.priority==="emergency").length,lm.filter(a=>a.priority==="emergency").length],
+   ];
+   return(
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+    {rows.map(function(row){
+     const d=parseInt(diff(row[1],row[2]));
+     const up=d>0, same=isNaN(d)||row[2]===0;
+     return(
+      <div key={row[0]} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
+      <span style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>{row[0]}</span>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+       <span style={{fontSize:11,color:"rgba(255,255,255,0.35)"}}>{row[2]}</span>
+       <span style={{fontSize:13,fontWeight:700,color:"#fff"}}>→ {row[1]}</span>
+       {!same&&<span style={{fontSize:10,fontWeight:700,color:up?"#6ee7b7":"#fca5a5"}}>{up?"↑":"↓"}{Math.abs(d)}%</span>}
+      </div>
+      </div>
+     );
+    })}
+    </div>
+   );
+  })()}
+  </div>
  </div>
 
- {/* ── Calendar Heatmap ── */}
- <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
-  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Submission Activity — Last 6 Months</div>
-  <CalendarHeatmap appointments={filtered}/>
- </div>
+ {/* ── Top Suppliers (C) + Supplier Table ── */}
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
+  {/* Top 5 This Month (C) */}
+  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>🏆 Top Suppliers This Month</div>
+  {(()=>{
+   const now=new Date();
+   const thisMonth=now.getMonth(), thisYear=now.getFullYear();
+   const monthly=appointments.filter(a=>{if(!a.createdAt)return false;const d=new Date(a.createdAt);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
+   const counts=Object.entries(monthly.reduce(function(m,a){const k=a.supplierName||"Unknown";m[k]=(m[k]||0)+1;return m;},{})).sort((a,b)=>b[1]-a[1]).slice(0,5);
+   const max=counts.length>0?counts[0][1]:1;
+   const medals=["🥇","🥈","🥉","4️⃣","5️⃣"];
+   return(
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+    {counts.map(function(item,i){return(
+     <div key={item[0]} style={{display:"flex",alignItems:"center",gap:10}}>
+     <span style={{fontSize:16,flexShrink:0}}>{medals[i]}</span>
+     <div style={{flex:1,minWidth:0}}>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+      <span style={{fontSize:12,color:"#fff",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item[0]}</span>
+      <span style={{fontSize:12,fontWeight:700,color:"#C8962A",flexShrink:0,marginLeft:8}}>{item[1]}</span>
+      </div>
+      <div style={{height:5,borderRadius:3,background:"rgba(255,255,255,0.08)",overflow:"hidden"}}>
+      <div style={{height:"100%",width:(item[1]/max*100)+"%",background:"rgba(200,150,42,0.7)",borderRadius:3}}/>
+      </div>
+     </div>
+     </div>
+    );})}
+    {counts.length===0&&<div style={{textAlign:"center",color:"rgba(255,255,255,0.3)",fontSize:12,padding:"20px 0"}}>No data this month</div>}
+    </div>
+   );
+  })()}
+  </div>
 
- {/* ── Supplier Table ── */}
- <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+  {/* Supplier Performance Table */}
+  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
   <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>Top 10 Suppliers — Performance</div>
   <span style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>Click headers to sort</span>
   </div>
   <SupplierTable appointments={filtered} isMobile={isMobile}/>
+  </div>
  </div>
 
  </div>
