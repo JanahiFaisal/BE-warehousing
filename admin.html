@@ -1608,7 +1608,114 @@ function SupplierTable({ appointments, isMobile }){
 }
 
 // ─── Full Dashboard ───────────────────────────────────────────
-function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
+// ─── Live Clock ───────────────────────────────────────────────
+function LiveClock({ appointments }) {
+ const [now,setNow]=useState(new Date());
+ useEffect(()=>{const t=setInterval(()=>setNow(new Date()),1000);return()=>clearInterval(t);},[]);
+ const todayStr=now.toISOString().slice(0,10);
+ const upcoming=appointments.filter(a=>a.date===todayStr&&a.status==="approved"&&(a.deliveryStatus==="awaiting_delivery"||!a.deliveryStatus)).sort((a,b)=>a.time.localeCompare(b.time));
+ const nextDlv=upcoming.find(a=>{const t=new Date(a.date+"T"+a.time);return t>now;});
+ const minsToNext=nextDlv?Math.round((new Date(nextDlv.date+"T"+nextDlv.time)-now)/60000):null;
+ return(
+  <div style={{background:"rgba(26,10,94,0.6)",border:"1px solid rgba(100,52,250,0.35)",borderRadius:16,padding:"14px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+   <div>
+    <div style={{fontSize:28,fontWeight:800,color:"#fff",fontVariantNumeric:"tabular-nums",letterSpacing:1}}>
+     {now.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}
+    </div>
+    <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",marginTop:2}}>
+     {now.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
+    </div>
+   </div>
+   {nextDlv&&(
+    <div style={{background:"rgba(200,150,42,0.15)",border:"1px solid rgba(200,150,42,0.3)",borderRadius:12,padding:"10px 16px",textAlign:"right"}}>
+     <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:3,textTransform:"uppercase",letterSpacing:1}}>Next Delivery</div>
+     <div style={{fontSize:14,fontWeight:700,color:"#fff"}}>{nextDlv.supplierName}</div>
+     <div style={{fontSize:12,color:"#C8962A",fontWeight:600}}>
+      {nextDlv.time} · {minsToNext<60?minsToNext+"m away":Math.floor(minsToNext/60)+"h "+minsToNext%60+"m away"}
+     </div>
+    </div>
+   )}
+   {!nextDlv&&<div style={{fontSize:12,color:"rgba(255,255,255,0.3)"}}>No more deliveries today</div>}
+  </div>
+ );
+}
+
+// ─── Weekly Forecast ─────────────────────────────────────────
+function WeeklyForecast({ appointments }) {
+ const today=new Date();
+ const days=[];
+ for(let i=0;i<7;i++){
+  const d=new Date(today);
+  d.setDate(d.getDate()+i);
+  const dow=d.getDay();
+  if(dow===5||dow===6) continue; // skip weekends
+  days.push(d);
+ }
+ const MAX_DAILY=SLOTS.length*4; // rough capacity
+ return(
+  <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4}}>
+  {days.map(function(d,i){
+   const ds=d.toISOString().slice(0,10);
+   const count=appointments.filter(a=>a.date===ds&&a.status==="approved").length;
+   const pct=Math.min(count/MAX_DAILY,1);
+   const color=pct>=0.7?"#ef4444":pct>=0.4?"#f59e0b":"#10b981";
+   const isToday=i===0;
+   return(
+    <div key={ds} style={{flex:"1 1 0",minWidth:60,textAlign:"center"}}>
+     <div style={{fontSize:10,color:isToday?"#C8962A":"rgba(255,255,255,0.4)",fontWeight:isToday?800:400,marginBottom:4,textTransform:"uppercase"}}>{isToday?"Today":d.toLocaleDateString("en-GB",{weekday:"short"})}</div>
+     <div style={{height:80,background:"rgba(255,255,255,0.06)",borderRadius:8,overflow:"hidden",position:"relative",border:`1px solid ${isToday?"rgba(200,150,42,0.4)":"rgba(255,255,255,0.08)"}`}}>
+      <div style={{position:"absolute",bottom:0,width:"100%",height:(pct*100)+"%",background:color,borderRadius:"6px 6px 0 0",transition:"height 0.8s ease"}}/>
+     </div>
+     <div style={{fontSize:12,fontWeight:700,color:"#fff",marginTop:4}}>{count}</div>
+     <div style={{fontSize:9,color:"rgba(255,255,255,0.35)"}}>{d.toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</div>
+    </div>
+   );
+  })}
+  </div>
+ );
+}
+
+// ─── Pending Timeline ─────────────────────────────────────────
+function PendingTimeline({ appointments, onApprove, onView, isMobile }) {
+ const pending=[...appointments.filter(a=>a.status==="pending")].sort((a,b)=>{
+  if(a.priority==="emergency"&&b.priority!=="emergency") return -1;
+  if(b.priority==="emergency"&&a.priority!=="emergency") return 1;
+  return new Date(a.createdAt)-new Date(b.createdAt);
+ });
+ if(pending.length===0) return(
+  <div style={{textAlign:"center",padding:"24px 0",color:"rgba(255,255,255,0.3)",fontSize:13}}>🎉 No pending requests</div>
+ );
+ return(
+  <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:360,overflowY:"auto"}}>
+  {pending.map(function(a){
+   const waitMins=a.createdAt?Math.round((Date.now()-new Date(a.createdAt))/60000):0;
+   const waitStr=waitMins<60?waitMins+"m ago":waitMins<1440?Math.floor(waitMins/60)+"h ago":Math.floor(waitMins/1440)+"d ago";
+   const isEmerg=a.priority==="emergency";
+   return(
+    <div key={a.id} style={{background:isEmerg?"rgba(239,68,68,0.12)":"rgba(100,52,250,0.12)",border:`1px solid ${isEmerg?"rgba(239,68,68,0.35)":"rgba(100,52,250,0.35)"}`,borderRadius:12,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+     <div style={{flex:1,minWidth:0}}>
+      <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:3,flexWrap:"wrap"}}>
+       {isEmerg&&<span style={{fontSize:10,background:"rgba(239,68,68,0.2)",color:"#fca5a5",border:"1px solid rgba(239,68,68,0.4)",padding:"1px 6px",borderRadius:99,fontWeight:700}}>🚨 Emergency</span>}
+       <SbuBadge code={a.deliveryTo} full={true}/>
+       <span style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>{waitStr}</span>
+      </div>
+      <div style={{fontWeight:700,fontSize:13,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.supplierName}</div>
+      <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",fontFamily:"monospace"}}>{a.id} · {fmtDate(a.date)} {a.time}</div>
+     </div>
+     <div style={{display:"flex",gap:6,flexShrink:0}}>
+      <button onClick={function(){if(onView)onView(a.id);}} style={{padding:"6px 10px",background:"rgba(100,52,250,0.2)",border:"1px solid rgba(100,52,250,0.4)",borderRadius:8,color:"#c4b5fd",fontSize:11,fontWeight:600,cursor:"pointer"}}>👁</button>
+      <button onClick={function(){if(onApprove)onApprove(a);}} style={{padding:"6px 10px",background:"rgba(16,185,129,0.2)",border:"1px solid rgba(16,185,129,0.4)",borderRadius:8,color:"#6ee7b7",fontSize:11,fontWeight:600,cursor:"pointer"}}>✓</button>
+     </div>
+    </div>
+   );
+  })}
+  </div>
+ );
+}
+
+
+
+function Dashboard({ appointments, setView, setAdminFilter, onApprove, onViewId, isMobile }) {
  // ── Filters ──────────────────────────────────────────────────
  const [dateFrom,setDateFrom]=useState("");
  const [dateTo,setDateTo]=useState("");
@@ -1854,6 +1961,31 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
   </div>
  )}
 
+ {/* ── Live Clock ── */}
+ <LiveClock appointments={appointments}/>
+
+ {/* ── Overdue Alert ── */}
+ {overdue.length>0&&(
+ <div style={{background:"rgba(239,68,68,0.12)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:14,padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+ <div style={{display:"flex",alignItems:"center",gap:10}}>
+ <span style={{fontSize:20}}>🔴</span>
+ <div>
+ <div style={{fontWeight:700,color:"#fca5a5",fontSize:14}}>{overdue.length} delivery{overdue.length!==1?"s":""} overdue right now</div>
+ <div style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>Past scheduled time and not yet completed</div>
+ </div>
+ </div>
+ <button onClick={()=>{setView("teamlead");}} style={{padding:"8px 16px",background:"rgba(239,68,68,0.3)",border:"1px solid rgba(239,68,68,0.5)",borderRadius:10,color:"#fca5a5",fontSize:12,fontWeight:700,cursor:"pointer",flexShrink:0}}>View Overdue →</button>
+ </div>
+ )}
+
+ {/* ── Quick Actions ── */}
+ <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+ <button onClick={()=>{setAdminFilter("emergency");setView("admin");}} style={{padding:"8px 14px",background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.35)",borderRadius:10,color:"#fca5a5",fontSize:12,fontWeight:700,cursor:"pointer"}}>🚨 Emergency Requests ({emergency})</button>
+ <button onClick={()=>{setAdminFilter("pending");setView("admin");}} style={{padding:"8px 14px",background:"rgba(245,158,11,0.15)",border:"1px solid rgba(245,158,11,0.35)",borderRadius:10,color:"#fcd34d",fontSize:12,fontWeight:700,cursor:"pointer"}}>⏳ Review Pending ({pending})</button>
+ <button onClick={()=>{setView("kpi");}} style={{padding:"8px 14px",background:"rgba(100,52,250,0.2)",border:"1px solid rgba(100,52,250,0.4)",borderRadius:10,color:"#c4b5fd",fontSize:12,fontWeight:700,cursor:"pointer"}}>🎯 Review KPI Report</button>
+ <button onClick={exportPDF} style={{padding:"8px 14px",background:"rgba(124,58,237,0.2)",border:"1px solid rgba(124,58,237,0.4)",borderRadius:10,color:"#c4b5fd",fontSize:12,fontWeight:700,cursor:"pointer"}}>📄 Today's Schedule PDF</button>
+ </div>
+
  {/* ── KPI Cards ── */}
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(3,1fr)",gap:12}}>
  {[
@@ -2042,6 +2174,24 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
   </div>
  </div>
 
+ {/* ── Weekly Forecast + Pending Timeline ── */}
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
+ <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+ <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>📅 Weekly Forecast — Next Working Days</div>
+ <WeeklyForecast appointments={appointments}/>
+ </div>
+ <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+ <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>⏳ Pending Requests ({pending})</div>
+ <span style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>Emergency first · Oldest first</span>
+ </div>
+ <PendingTimeline appointments={appointments} isMobile={isMobile}
+ onApprove={onApprove}
+ onView={onViewId}
+ />
+ </div>
+ </div>
+
  {/* ── Slot Heatmap ── */}
  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
   <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Booking Density — Slot vs Day</div>
@@ -2064,6 +2214,266 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
  </div>
 
  </div>
+ );
+}
+
+
+// ─── Business Hours Calculator ────────────────────────────────
+function businessHoursBetween(start, end) {
+ if(!start||!end) return null;
+ var s=new Date(start), e=new Date(end);
+ if(e<=s) return 0;
+ var hours=0;
+ var cur=new Date(s);
+ while(cur<e){
+  var dow=cur.getDay();
+  // Skip Friday(5) and Saturday(6)
+  if(dow!==5&&dow!==6){
+   var h=cur.getHours();
+   if(h>=8&&h<17) hours+=1;
+  }
+  cur=new Date(cur.getTime()+3600000);
+ }
+ return hours;
+}
+
+function fmtBizHours(h){
+ if(h===null||h===undefined) return "—";
+ if(h<1) return "<1h";
+ if(h<24) return h+"h";
+ return Math.floor(h/24)+"d "+(h%24)+"h";
+}
+
+// ─── KPI Panel ────────────────────────────────────────────────
+function KPIPanel({ appointments, isMobile }) {
+ const [sbuFilter,setSbuFilter]=useState("all");
+ const [dateFrom,setDateFrom]=useState("");
+ const [dateTo,setDateTo]=useState("");
+ const [sortKey,setSortKey]=useState("createdAt");
+ const [sortAsc,setSortAsc]=useState(false);
+ const SLA_HOURS=48;
+
+ const actioned=appointments.filter(a=>{
+  if(a.status==="pending") return false;
+  if(sbuFilter!=="all"&&a.deliveryTo!==sbuFilter) return false;
+  if(dateFrom&&a.createdAt&&a.createdAt.slice(0,10)<dateFrom) return false;
+  if(dateTo&&a.createdAt&&a.createdAt.slice(0,10)>dateTo) return false;
+  return true;
+ }).map(a=>{
+  var bh=businessHoursBetween(a.createdAt,a.updatedAt);
+  return {...a, bizHours:bh, slaOk:bh!==null&&bh<=SLA_HOURS};
+ });
+
+ const pending=appointments.filter(a=>{
+  if(a.status!=="pending") return false;
+  if(sbuFilter!=="all"&&a.deliveryTo!==sbuFilter) return false;
+  return true;
+ }).map(a=>{
+  var bh=businessHoursBetween(a.createdAt, new Date().toISOString());
+  return {...a, bizHours:bh, slaBreached:bh!==null&&bh>SLA_HOURS};
+ });
+
+ var within=actioned.filter(a=>a.slaOk).length;
+ var breached=actioned.filter(a=>!a.slaOk).length;
+ var pendingBreached=pending.filter(a=>a.slaBreached).length;
+ var compliance=actioned.length>0?Math.round(within/actioned.length*100):0;
+ var avgHours=actioned.length>0?Math.round(actioned.reduce((s,a)=>s+(a.bizHours||0),0)/actioned.length):0;
+
+ var sbuStats=["BR","BU","BG","BT"].map(function(sbu){
+  var rows=actioned.filter(function(a){return a.deliveryTo===sbu;});
+  var w=rows.filter(function(a){return a.slaOk;}).length;
+  var avg=rows.length>0?Math.round(rows.reduce(function(s,a){return s+(a.bizHours||0);},0)/rows.length):0;
+  return {sbu:sbu,total:rows.length,within:w,breached:rows.length-w,compliance:rows.length>0?Math.round(w/rows.length*100):0,avg:avg};
+ });
+
+ var actorStats=Object.values(actioned.reduce(function(m,a){
+  var actor=a.actor||"Unknown";
+  if(!m[actor]) m[actor]={actor:actor,total:0,within:0,breached:0,totalHours:0};
+  m[actor].total++;
+  if(a.slaOk) m[actor].within++; else m[actor].breached++;
+  m[actor].totalHours+=(a.bizHours||0);
+  return m;
+ },{})).map(function(x){return {...x,compliance:Math.round(x.within/x.total*100),avg:Math.round(x.totalHours/x.total)};}).sort(function(a,b){return b.total-a.total;});
+
+ var sorted=[...actioned].sort(function(a,b){
+  var av=a[sortKey]||0, bv=b[sortKey]||0;
+  return sortAsc?(av>bv?1:-1):(av<bv?1:-1);
+ });
+
+ function Hdr({k,label}){
+  return(
+   <th onClick={function(){if(sortKey===k)setSortAsc(function(p){return !p;});else{setSortKey(k);setSortAsc(false);}}}
+    style={{padding:"10px 12px",fontSize:10,fontWeight:700,color:sortKey===k?"#C8962A":"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,cursor:"pointer",whiteSpace:"nowrap",background:"rgba(100,52,250,0.2)",userSelect:"none"}}>
+    {label}{sortKey===k?(sortAsc?"↑":"↓"):""}
+   </th>
+  );
+ }
+
+ var cardS=function(bg,bd){return {background:bg,border:"1px solid "+bd,borderRadius:16,padding:isMobile?14:20};};
+
+ return(
+  <div style={{padding:isMobile?12:24,display:"flex",flexDirection:"column",gap:16,overflowY:"auto"}}>
+   {/* Header */}
+   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+    <div>
+     <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:26,margin:0}}>🎯 Review KPI</h1>
+     <p style={{color:"rgba(255,255,255,0.45)",fontSize:13,margin:"4px 0 0"}}>Measures time from submission to action — SLA target: 48 business hours (excl. Fri/Sat)</p>
+    </div>
+    <button onClick={async function(){
+     await window._loadExcelJS();
+     var data=sorted.map(function(a){return{
+      "ID":a.id,"Supplier":a.supplierName||"—","SBU":sbuName(a.deliveryTo),
+      "Status":(a.status||"").replace(/_/g," "),
+      "Submitted":fmtExcelTs(a.createdAt),"Actioned":fmtExcelTs(a.updatedAt),
+      "Business Hours":a.bizHours||0,"SLA":a.slaOk?"✅ Within SLA":"❌ Breached",
+      "Actor":a.actor||"—",
+     };});
+     await exportToExcel([
+      {name:"Summary",data:[
+       ["SLA Target","48 Business Hours"],["Total Actioned",actioned.length],
+       ["Within SLA",within],["Breached",breached],["Compliance %",compliance+"%"],
+       ["Avg Review Time",fmtBizHours(avgHours)],["Pending SLA Breach",pendingBreached],
+      ].map(function(r){return{"Metric":r[0],"Value":r[1]};})},
+      {name:"All Actioned",data:data,statusKey:"SLA",kpis:[
+       {label:"Compliance %",value:compliance+"%"},{label:"Within SLA",value:within},
+       {label:"Breached",value:breached},{label:"Avg Hours",value:avgHours},
+      ]},
+      {name:"By SBU",data:sbuStats.map(function(s){return{"SBU":sbuName(s.sbu),"Total":s.total,"Within SLA":s.within,"Breached":s.breached,"Compliance %":s.compliance+"%","Avg Hours":s.avg};})},
+      {name:"By Reviewer",data:actorStats.map(function(s){return{"Reviewer":s.actor,"Total":s.total,"Within SLA":s.within,"Breached":s.breached,"Compliance %":s.compliance+"%","Avg Hours":s.avg};})},
+      {name:"Pending Breach",data:pending.filter(function(a){return a.slaBreached;}).map(function(a){return{"ID":a.id,"Supplier":a.supplierName||"—","SBU":sbuName(a.deliveryTo),"Submitted":fmtExcelTs(a.createdAt),"Hours Elapsed":a.bizHours||0,"Overdue By":Math.max(0,(a.bizHours||0)-48)+" h"};})},
+     ],"BE_Warehouse_ReviewKPI");
+    }} style={{padding:"8px 14px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer"}}>📥 Export Excel</button>
+   </div>
+
+   {/* Filters */}
+   <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(100,52,250,0.4)",borderRadius:14,padding:14,display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
+    <select value={sbuFilter} onChange={function(e){setSbuFilter(e.target.value);}} style={{padding:"8px 12px",border:"1px solid rgba(100,52,250,0.4)",borderRadius:8,background:"rgba(100,52,250,0.12)",color:"#fff",fontSize:12,outline:"none",colorScheme:"dark"}}>
+     <option value="all">All SBUs</option>
+     {["BR","BU","BG","BT"].map(function(s){return <option key={s} value={s}>{sbuName(s)}</option>;})}
+    </select>
+    <input type="date" value={dateFrom} onChange={function(e){setDateFrom(e.target.value);}} style={{padding:"8px 12px",border:"1px solid rgba(100,52,250,0.4)",borderRadius:8,background:"rgba(100,52,250,0.12)",color:"#fff",fontSize:12,outline:"none",colorScheme:"dark"}}/>
+    <span style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>to</span>
+    <input type="date" value={dateTo} onChange={function(e){setDateTo(e.target.value);}} style={{padding:"8px 12px",border:"1px solid rgba(100,52,250,0.4)",borderRadius:8,background:"rgba(100,52,250,0.12)",color:"#fff",fontSize:12,outline:"none",colorScheme:"dark"}}/>
+    {(sbuFilter!=="all"||dateFrom||dateTo)&&<button onClick={function(){setSbuFilter("all");setDateFrom("");setDateTo("");}} style={{padding:"8px 12px",background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:8,color:"#fca5a5",fontSize:12,cursor:"pointer"}}>✕ Clear</button>}
+   </div>
+
+   {/* KPI Cards */}
+   <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(5,1fr)",gap:12}}>
+    {[
+     {label:"SLA Compliance",val:compliance+"%",color:compliance>=90?"#6ee7b7":compliance>=70?"#fcd34d":"#fca5a5",icon:"🎯",sub:"Target: ≥90%"},
+     {label:"Within SLA",val:within,color:"#6ee7b7",icon:"✅",sub:"≤48 business hrs"},
+     {label:"Breached SLA",val:breached,color:"#fca5a5",icon:"❌",sub:">48 business hrs"},
+     {label:"Avg Review Time",val:fmtBizHours(avgHours),color:"#C8962A",icon:"⏱️",sub:"Business hours"},
+     {label:"Pending Breach",val:pendingBreached,color:pendingBreached>0?"#fca5a5":"#6ee7b7",icon:"⚠️",sub:"Still pending >48h"},
+    ].map(function(item){return(
+     <div key={item.label} style={{background:"rgba(26,10,94,0.6)",border:"1px solid rgba(100,52,250,0.35)",borderRadius:16,padding:isMobile?14:18}}>
+      <div style={{fontSize:20,marginBottom:6}}>{item.icon}</div>
+      <div style={{fontSize:isMobile?22:28,fontWeight:800,color:item.color}}>{item.val}</div>
+      <div style={{color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:600,marginTop:4}}>{item.label}</div>
+      <div style={{color:"rgba(255,255,255,0.35)",fontSize:11,marginTop:2}}>{item.sub}</div>
+     </div>
+    );})}
+   </div>
+
+   {/* SBU + Reviewer breakdown */}
+   <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
+    {/* SBU Breakdown */}
+    <div style={cardS("rgba(26,10,94,0.5)","rgba(100,52,250,0.35)")}>
+     <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>📊 SLA by SBU</div>
+     {sbuStats.map(function(s){return(
+      <div key={s.sbu} style={{marginBottom:12}}>
+       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <SbuBadge code={s.sbu} full={true}/>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+         <span style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>{s.within}/{s.total}</span>
+         <span style={{fontSize:13,fontWeight:800,color:s.compliance>=90?"#6ee7b7":s.compliance>=70?"#fcd34d":"#fca5a5"}}>{s.compliance}%</span>
+        </div>
+       </div>
+       <div style={{height:6,borderRadius:3,background:"rgba(255,255,255,0.1)",overflow:"hidden"}}>
+        <div style={{height:"100%",width:s.compliance+"%",background:s.compliance>=90?"#10b981":s.compliance>=70?"#f59e0b":"#ef4444",borderRadius:3}}/>
+       </div>
+       <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",marginTop:2}}>Avg: {fmtBizHours(s.avg)}</div>
+      </div>
+     );})}
+    </div>
+
+    {/* Reviewer Breakdown */}
+    <div style={cardS("rgba(26,10,94,0.5)","rgba(100,52,250,0.35)")}>
+     <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>👤 SLA by Reviewer</div>
+     {actorStats.slice(0,6).map(function(s){return(
+      <div key={s.actor} style={{marginBottom:12}}>
+       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <span style={{fontSize:12,color:"#fff",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:120}}>{s.actor}</span>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+         <span style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>{s.within}/{s.total}</span>
+         <span style={{fontSize:13,fontWeight:800,color:s.compliance>=90?"#6ee7b7":s.compliance>=70?"#fcd34d":"#fca5a5"}}>{s.compliance}%</span>
+        </div>
+       </div>
+       <div style={{height:6,borderRadius:3,background:"rgba(255,255,255,0.1)",overflow:"hidden"}}>
+        <div style={{height:"100%",width:s.compliance+"%",background:s.compliance>=90?"#10b981":s.compliance>=70?"#f59e0b":"#ef4444",borderRadius:3}}/>
+       </div>
+       <div style={{fontSize:10,color:"rgba(255,255,255,0.35)",marginTop:2}}>Avg: {fmtBizHours(s.avg)} · {s.total} reviewed</div>
+      </div>
+     );})}
+    </div>
+   </div>
+
+   {/* Pending SLA Breaches */}
+   {pending.filter(function(a){return a.slaBreached;}).length>0&&(
+    <div style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.35)",borderRadius:16,padding:16}}>
+     <div style={{fontSize:13,fontWeight:700,color:"#fca5a5",marginBottom:10}}>🚨 Pending Requests Breaching 48h SLA ({pending.filter(function(a){return a.slaBreached;}).length})</div>
+     <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      {pending.filter(function(a){return a.slaBreached;}).sort(function(a,b){return (b.bizHours||0)-(a.bizHours||0);}).map(function(a){return(
+       <div key={a.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(239,68,68,0.1)",borderRadius:10,padding:"10px 14px",gap:10,flexWrap:"wrap"}}>
+        <div>
+         <div style={{fontSize:12,fontWeight:700,color:"#fff"}}>{a.supplierName}</div>
+         <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",fontFamily:"monospace"}}>{a.id}</div>
+        </div>
+        <SbuBadge code={a.deliveryTo} full={true}/>
+        <div style={{textAlign:"right"}}>
+         <div style={{fontSize:12,fontWeight:700,color:"#fca5a5"}}>{fmtBizHours(a.bizHours)} elapsed</div>
+         <div style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>Overdue by {fmtBizHours(Math.max(0,(a.bizHours||0)-48))}</div>
+        </div>
+       </div>
+      );})}
+     </div>
+    </div>
+   )}
+
+   {/* Detail Table */}
+   <div style={cardS("rgba(26,10,94,0.5)","rgba(100,52,250,0.35)")}>
+    <div style={{fontSize:13,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>All Actioned Requests — {actioned.length} records</div>
+    <div style={{overflowX:"auto"}}>
+     <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+      <thead><tr>
+       <Hdr k="id" label="ID"/>
+       <Hdr k="supplierName" label="Supplier"/>
+       <Hdr k="deliveryTo" label="SBU"/>
+       <Hdr k="status" label="Action"/>
+       <Hdr k="createdAt" label="Submitted"/>
+       <Hdr k="updatedAt" label="Actioned"/>
+       <Hdr k="bizHours" label="Biz Hours"/>
+       <th style={{padding:"10px 12px",fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",background:"rgba(100,52,250,0.2)"}}>SLA</th>
+      </tr></thead>
+      <tbody>
+      {sorted.slice(0,100).map(function(a){return(
+       <tr key={a.id} style={{borderBottom:"1px solid rgba(100,52,250,0.15)",background:a.slaOk?"rgba(16,185,129,0.05)":"rgba(239,68,68,0.05)"}}>
+        <td style={{padding:"10px 12px",fontFamily:"monospace",fontSize:11,color:"#fff",fontWeight:700}}>{a.id}</td>
+        <td style={{padding:"10px 12px",color:"rgba(255,255,255,0.8)"}}>{a.supplierName||"—"}</td>
+        <td style={{padding:"10px 12px"}}><SbuBadge code={a.deliveryTo} full={false}/></td>
+        <td style={{padding:"10px 12px"}}><StatusBadge status={a.status}/></td>
+        <td style={{padding:"10px 12px",color:"rgba(255,255,255,0.6)",fontSize:11}}>{fmtTs(a.createdAt)}</td>
+        <td style={{padding:"10px 12px",color:"rgba(255,255,255,0.6)",fontSize:11}}>{fmtTs(a.updatedAt)}</td>
+        <td style={{padding:"10px 12px",textAlign:"center",fontWeight:700,color:a.slaOk?"#6ee7b7":"#fca5a5"}}>{fmtBizHours(a.bizHours)}</td>
+        <td style={{padding:"10px 12px",textAlign:"center"}}>{a.slaOk?<span style={{color:"#6ee7b7",fontWeight:700}}>✅ Within</span>:<span style={{color:"#fca5a5",fontWeight:700}}>❌ Breached</span>}</td>
+       </tr>
+      );})}
+      </tbody>
+     </table>
+     {sorted.length>100&&<div style={{textAlign:"center",padding:"10px",color:"rgba(255,255,255,0.4)",fontSize:12}}>Showing 100 of {sorted.length} — export for full data</div>}
+    </div>
+   </div>
+  </div>
  );
 }
 
@@ -4541,6 +4951,7 @@ function App() {
  {id:"admin",label:"Admin Panel",icon:"📋"},
  {id:"teamlead",label:"Team Lead",icon:"👷"},
  {id:"statistics",label:"Statistics",icon:"📈"},
+ {id:"kpi",label:"Review KPI",icon:"🎯"},
  {id:"calendar",label:"Calendar",icon:"📅"},
  {id:"emails",label:"Email Log",icon:"✉️"},
  {id:"history",label:"History",icon:"📜"},
@@ -4624,7 +5035,10 @@ function App() {
  <main style={{flex:1,overflowY:"auto",background:BG,display:"flex",flexDirection:"column"}}>
  <OrgFilter value={orgFilter} onChange={setOrgFilter} isMobile={isMobile}/>
  <div style={{flex:1}}>
- {view==="dashboard" && <Dashboard appointments={filteredAppts} setView={setView} setAdminFilter={setAdminFilter} isMobile={isMobile}/>}
+ {view==="dashboard" && <Dashboard appointments={filteredAppts} setView={setView} setAdminFilter={setAdminFilter} isMobile={isMobile}
+ onApprove={a=>setConfirmDlg({msg:`Approve ${a.id}?`,sub:`${a.supplierName} — ${fmtDate(a.date)} ${a.time}`,label:"✓ Approve",color:"#059669",onConfirm:()=>{const updates={status:"approved",updatedAt:new Date().toISOString()};setAppts(p=>p.map(x=>x.id===a.id?{...x,...updates}:x));sbUpdate("appointments",a.id,updates);logTransaction("approve",{...a,...updates},{actor:getAdminCreds().nickname||"Admin",actorEmail:adminEmail});logEmail("approval",{...a,...updates});setConfirmDlg(null);}})}
+ onViewId={id=>{setViewId(id);setView("admin");}}
+ />}
  {view==="admin" && <AdminPanel appointments={filteredAppts} onApprove={handleApprove} onReject={id=>{setRejectId(id);setRejReason("");}} onView={setViewId} loading={loading} isMobile={isMobile} initialFilter={adminFilter} onFilterUsed={()=>setAdminFilter(null)}/>}
  {view==="teamlead" && <TeamLeadPanel appointments={filteredAppts} isMobile={isMobile} onMarkAll={async(targets)=>{
  const updates={deliveryStatus:"completed",completedAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
@@ -4637,6 +5051,7 @@ function App() {
  showToast(`${targets.length} deliveries marked as completed`);
  }}/>}
  {view==="statistics" && <StatisticsPanel appointments={filteredAppts} isMobile={isMobile} setView={setView} setAdminFilter={setAdminFilter}/>}
+ {view==="kpi" && <KPIPanel appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="calendar" && <CalendarView appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="emails" && <EmailLog emailLog={orgFilter==="BE"?emailLog:emailLog.filter(e=>(e.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
  {view==="history" && <TransactionsHistory transactions={orgFilter==="BE"?transactions:transactions.filter(t=>(t.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
