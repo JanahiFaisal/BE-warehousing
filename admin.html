@@ -2458,18 +2458,29 @@ function CalendarView({ appointments, isMobile }) {
  slotApts.forEach(a=>matchedIds.add(a.id));
  const hasApts=slotApts.length>0;
  return(
- <div key={slot} style={{display:"flex",borderBottom:"1px solid rgba(255,255,255,0.08)",minHeight:64,background:hasApts?"#fff":"#fafafa"}}>
- <div style={{width:72,padding:"0 12px",borderRight:"1px solid rgba(255,255,255,0.08)",display:"flex",alignItems:"center",justifyContent:"flex-end",flexShrink:0,background:"#f9fafb"}}>
+ <div key={slot} style={{display:"flex",borderBottom:"1px solid rgba(255,255,255,0.08)",minHeight:64,background:hasApts?"rgba(99,102,241,0.08)":"rgba(255,255,255,0.02)"}}>
+ <div style={{width:72,padding:"0 12px",borderRight:"1px solid rgba(255,255,255,0.08)",display:"flex",alignItems:"center",justifyContent:"flex-end",flexShrink:0,background:"rgba(255,255,255,0.04)"}}>
  <span style={{fontSize:13,fontWeight:700,color:hasApts?"#a5b4fc":"rgba(255,255,255,0.2)"}}>{slot}</span>
  </div>
  <div style={{flex:1,padding:8,display:"flex",flexDirection:"column",gap:6}}>
  {hasApts ? slotApts.map(a=>(
  <button key={a.id} onClick={()=>setSel(a)} style={{textAlign:"left",padding:"10px 14px",borderRadius:10,border:"1px solid rgba(99,102,241,0.4)",background:"rgba(99,102,241,0.15)",cursor:"pointer",display:"block",width:"100%"}}>
- <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5,flexWrap:"wrap",gap:6}}>
- <span style={{fontWeight:800,fontSize:14,color:"#4f46e5"}}>{a.supplierName}</span>
- <StoreBadge loc={a.storageLocation}/>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4,flexWrap:"wrap",gap:6}}>
+ <span style={{fontWeight:800,fontSize:14,color:"#fff"}}>{a.supplierName}</span>
+ <div style={{display:"flex",gap:6,alignItems:"center"}}>
+ {a.priority==="emergency"&&<span style={{fontSize:10,background:"rgba(239,68,68,0.2)",color:"#fca5a5",padding:"1px 6px",borderRadius:99,fontWeight:700}}>🚨 Emergency</span>}
+ <span style={{fontSize:10,background:a.deliveryTo==="BR"?"rgba(200,150,42,0.3)":a.deliveryTo==="BU"?"rgba(16,185,129,0.3)":a.deliveryTo==="BG"?"rgba(59,130,246,0.3)":"rgba(139,92,246,0.3)",color:"#fff",padding:"2px 8px",borderRadius:99,fontWeight:700}}>{a.deliveryTo}</span>
  </div>
- <div style={{fontSize:11,color:"#6b7280"}}>{a.totalOrders} orders · {a.totalLines} lines{a.offloadingEquipment&&a.offloadingEquipment.length>0?" · "+a.offloadingEquipment.join(", "):""}</div>
+ </div>
+ <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:4}}>
+ <span style={{fontSize:11,color:"rgba(255,255,255,0.6)"}}>📦 {a.totalOrders} orders · {a.totalLines} lines</span>
+ {a.offloadingEquipment&&a.offloadingEquipment.length>0&&<span style={{fontSize:11,color:"rgba(255,255,255,0.6)"}}>🔧 {a.offloadingEquipment.join(", ")}</span>}
+ </div>
+ <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+ <StoreBadge loc={a.storageLocation}/>
+ {a.poNumbers&&a.poNumbers.length>0&&<span style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>PO: {a.poNumbers.slice(0,2).join(", ")}{a.poNumbers.length>2?` +${a.poNumbers.length-2}`:""}</span>}
+ <span style={{fontSize:10,color:a.deliveryStatus==="completed"?"#6ee7b7":a.deliveryStatus==="failed"?"#fca5a5":"rgba(255,255,255,0.4)",fontWeight:600}}>{(a.deliveryStatus||"awaiting").replace(/_/g," ")}</span>
+ </div>
  </button>
  )) : (
  <div style={{display:"flex",alignItems:"center",height:"100%",minHeight:40}}>
@@ -2480,20 +2491,20 @@ function CalendarView({ appointments, isMobile }) {
  </div>
  );
  })}
- {/* Catch-all row for appointments with non-standard time formats */}
+ {/* Catch-all row for non-standard time formats */}
  {dayApts.filter(a=>!matchedIds.has(a.id)).length>0&&(
- <div style={{display:"flex",borderBottom:"1px solid rgba(255,255,255,0.08)",minHeight:64,background:"rgba(245,158,11,0.1)"}}>
- <div style={{width:72,padding:"0 12px",borderRight:"1px solid rgba(255,255,255,0.08)",display:"flex",alignItems:"center",justifyContent:"flex-end",flexShrink:0,background:"rgba(245,158,11,0.15)"}}>
+ <div style={{display:"flex",borderBottom:"1px solid rgba(255,255,255,0.08)",minHeight:64,background:"rgba(245,158,11,0.08)"}}>
+ <div style={{width:72,padding:"0 12px",borderRight:"1px solid rgba(255,255,255,0.08)",display:"flex",alignItems:"center",justifyContent:"flex-end",flexShrink:0,background:"rgba(245,158,11,0.12)"}}>
  <span style={{fontSize:11,fontWeight:700,color:"#fcd34d"}}>Other</span>
  </div>
  <div style={{flex:1,padding:8,display:"flex",flexDirection:"column",gap:6}}>
  {dayApts.filter(a=>!matchedIds.has(a.id)).map(a=>(
- <button key={a.id} onClick={()=>setSel(a)} style={{textAlign:"left",padding:"10px 14px",borderRadius:10,border:"2px solid #fde68a",background:"#fef3c7",cursor:"pointer",display:"block",width:"100%"}}>
- <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5,flexWrap:"wrap",gap:6}}>
- <span style={{fontWeight:800,fontSize:14,color:"#fcd34d"}}>{a.supplierName}</span>
- <span style={{fontSize:10,color:"#fcd34d",background:"rgba(245,158,11,0.3)",padding:"2px 6px",borderRadius:6}}>{a.time}</span>
+ <button key={a.id} onClick={()=>setSel(a)} style={{textAlign:"left",padding:"10px 14px",borderRadius:10,border:"1px solid rgba(245,158,11,0.4)",background:"rgba(245,158,11,0.1)",cursor:"pointer",display:"block",width:"100%"}}>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+ <span style={{fontWeight:800,fontSize:14,color:"#fff"}}>{a.supplierName}</span>
+ <span style={{fontSize:10,color:"#fcd34d",background:"rgba(245,158,11,0.2)",padding:"2px 6px",borderRadius:6}}>{a.time}</span>
  </div>
- <div style={{fontSize:11,color:"#fcd34d"}}>{a.totalOrders} orders · {a.totalLines} lines</div>
+ <div style={{fontSize:11,color:"rgba(255,255,255,0.6)"}}>{a.totalOrders} orders · {a.totalLines} lines</div>
  </button>
  ))}
  </div>
