@@ -1756,8 +1756,6 @@ function Dashboard({ appointments, setView, setAdminFilter, onApprove, onViewId,
  const emergency=filtered.filter(a=>a.priority==="emergency").length;
  const awaiting=filtered.filter(a=>a.status==="approved"&&(a.deliveryStatus==="awaiting_delivery"||!a.deliveryStatus));
  const overdue=awaiting.filter(a=>new Date(a.date+"T"+(a.time||"23:59"))<today);
- const awaiting=filtered.filter(a=>a.status==="approved"&&(a.deliveryStatus==="awaiting_delivery"||!a.deliveryStatus));
- const overdue=awaiting.filter(a=>new Date(a.date+"T"+a.time)<today);
  const approvalRate=total>0?Math.round(approved/total*100):0;
  const completionRate=approved>0?Math.round(completed/approved*100):0;
 
