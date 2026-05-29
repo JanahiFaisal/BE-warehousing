@@ -725,7 +725,7 @@ function Landing({ onSupplier, onAdmin, onTracker }) {
  </div>
 
  <div style={{display:"grid",gridTemplateColumns:"1fr",gap:16,width:"100%",maxWidth:700,marginBottom:16}}>
- <button onClick={onAdmin} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:20,padding:isMobile?20:28,textAlign:"left",cursor:"pointer",color:"inherit"}}>
+ <button onClick={onAdmin} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:20,padding:isMobile?20:28,textAlign:"left",cursor:"pointer",color:"inherit"}}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
  <div style={{background:"#2a5298",width:48,height:48,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>🛡️</div>
  <span style={{background:"rgba(122,175,255,0.12)",color:"#7aafff",border:"1px solid rgba(122,175,255,0.3)",padding:"3px 10px",borderRadius:99,fontSize:10,fontWeight:700}}>STAFF ONLY</span>
@@ -738,7 +738,7 @@ function Landing({ onSupplier, onAdmin, onTracker }) {
  </div>
 
  <div style={{width:"100%",maxWidth:700,marginBottom:32}}>
- <button onClick={onTracker} style={{width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:20,padding:"18px 20px",display:"flex",alignItems:"center",gap:14,cursor:"pointer",color:"inherit",textAlign:"left"}}>
+ <button onClick={onTracker} style={{width:"100%",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:20,padding:"18px 20px",display:"flex",alignItems:"center",gap:14,cursor:"pointer",color:"inherit",textAlign:"left"}}>
  <div style={{background:"rgba(52,211,153,0.2)",width:42,height:42,borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:20}}>🔍</div>
  <div style={{flex:1}}>
  <div style={{color:"#fff",fontWeight:800,fontSize:13,marginBottom:3}}>Track Your Appointment</div>
@@ -749,7 +749,7 @@ function Landing({ onSupplier, onAdmin, onTracker }) {
  </div>
 
  <div style={{width:"100%",maxWidth:700,borderTop:"1px solid #e5e7eb",paddingTop:24}}>
- <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:isMobile?"16px":"20px 24px",marginBottom:20}}>
+ <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:isMobile?"16px":"20px 24px",marginBottom:20}}>
  <div style={{color:A,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:14}}>Support &amp; Contact</div>
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:isMobile?12:16}}>
  {[
@@ -901,7 +901,7 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  <h2 style={{color:"#fff",fontWeight:800,fontSize:22,margin:"0 0 8px"}}>{editingAppointment?"Resubmitted Successfully!":"Request Submitted!"}</h2>
  <p style={{color:"rgba(255,255,255,0.55)",fontSize:13,marginBottom:24}}>{editingAppointment?"Your revised appointment has been sent back to the admin for review.":"Save your Appointment ID and PIN — you will need both to track your request."}</p>
 
- <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.18)",borderRadius:20,padding:isMobile?18:24,marginBottom:20}}>
+ <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:20,padding:isMobile?18:24,marginBottom:20}}>
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
  <div style={{background:"rgba(255,255,255,0.1)",borderRadius:14,padding:"16px 12px",textAlign:"center"}}>
  <div style={{color:"#6b7280",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Appointment ID</div>
@@ -920,7 +920,7 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
 
  <div style={{display:"flex",flexDirection:isMobile?"column":"row",gap:12,justifyContent:"center"}}>
  <button onClick={async()=>{setResult(null);setF(BLANK);setDateErr("");setPoVal("");}} style={{padding:"12px 22px",background:A,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer"}}>Submit Another</button>
- <button onClick={onBack} style={{padding:"12px 22px",background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer"}}>Back to Home</button>
+ <button onClick={onBack} style={{padding:"12px 22px",background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer"}}>Back to Home</button>
  </div>
  </div>
  </div>
@@ -1280,7 +1280,7 @@ function SupplierTracker({ appointments, onBack, onSendMessage }) {
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr",gap:10,marginBottom:12}}>
  {[["Supplier",a.supplierName],["Date",fmtDate(a.date)],["Time",a.time],["Orders / Lines",`${a.totalOrders} / ${a.totalLines}`]].map(([k,v])=>(
  <div key={k} style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6"}}>
- <div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>{k}</div>
+ <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:3}}>{k}</div>
  <div style={{fontWeight:600,fontSize:13,color:"#fff"}}>{v}</div>
  </div>
  ))}
@@ -1814,7 +1814,7 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
    🔍 {showFilters?"Hide":"Filters"}{hasFilters?" ●":""}
   </button>
   {hasFilters&&<button onClick={()=>{setSbuFilter("all");setStatusFilter("all");setPriorityFilter("all");setStorageFilter("all");setDateFrom("");setDateTo("");}} style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:10,padding:"7px 12px",color:"#fca5a5",fontSize:12,cursor:"pointer"}}>✕ Clear</button>}
-  <button onClick={exportPDF} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"7px 14px",color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:700,cursor:"pointer"}}>📄 PDF</button>
+  <button onClick={exportPDF} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"7px 14px",color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:700,cursor:"pointer"}}>📄 PDF</button>
   <button onClick={exportExcel} disabled={exportLoading} style={{background:"#059669",border:"none",borderRadius:10,padding:"7px 14px",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",opacity:exportLoading?0.7:1}}>{exportLoading?"⏳...":"📥 Excel"}</button>
   </div>
  </div>
@@ -1832,18 +1832,18 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
    ].map(function(f){return(
    <div key={f.label}>
     <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4,fontWeight:600}}>{f.label}</div>
-    <select value={f.val} onChange={e=>f.set(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 10px",color:"#fff",fontSize:12,outline:"none",colorScheme:"dark"}}>
+    <select value={f.val} onChange={e=>f.set(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"8px 10px",color:"#fff",fontSize:12,outline:"none",colorScheme:"dark"}}>
     {f.opts.map(function(o){return <option key={o[0]} value={o[0]}>{o[1]}</option>;})}
     </select>
    </div>
    );})}
    <div>
    <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4,fontWeight:600}}>Date From</div>
-   <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 10px",color:"#fff",fontSize:12,outline:"none",colorScheme:"dark",boxSizing:"border-box"}}/>
+   <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"8px 10px",color:"#fff",fontSize:12,outline:"none",colorScheme:"dark",boxSizing:"border-box"}}/>
    </div>
    <div>
    <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4,fontWeight:600}}>Date To</div>
-   <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 10px",color:"#fff",fontSize:12,outline:"none",colorScheme:"dark",boxSizing:"border-box"}}/>
+   <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"8px 10px",color:"#fff",fontSize:12,outline:"none",colorScheme:"dark",boxSizing:"border-box"}}/>
    </div>
   </div>
   </div>
@@ -2085,9 +2085,9 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  return(
  <div style={{padding:isMobile?16:28}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Admin Panel</h1>
- <p style={{color:"#6b7280",fontSize:13,margin:"0 0 16px"}}>Review and action delivery appointment requests</p>
+ <p style={{color:"rgba(255,255,255,0.45)",fontSize:13,margin:"0 0 16px"}}>Review and action delivery appointment requests</p>
  <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid #e5e7eb",borderRadius:14,padding:14,marginBottom:14,display:"flex",flexDirection:isMobile?"column":"row",gap:10,alignItems:isMobile?"stretch":"center"}}>
- <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, name, email, date, PO, status, notes…" style={{flex:1,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
+ <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, name, email, date, PO, status, notes…" style={{flex:1,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
  <button onClick={()=>setEmergencyOnly(p=>!p)} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${emergencyOnly?"#dc2626":"rgba(255,255,255,0.15)"}`,background:emergencyOnly?"#dc2626":"rgba(255,255,255,0.07)",color:emergencyOnly?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,cursor:"pointer"}}>Emergency</button>
  {["pending","approved","rejected","revision_required"].map(s=>{const on=statFs.includes(s);return(<button key={s} onClick={()=>togStat(s)} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${on?sc[s]:"rgba(255,255,255,0.15)"}`,background:on?sc[s]:"rgba(255,255,255,0.07)",color:on?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600,cursor:"pointer"}}>{statusLabels[s]}</button>);})}
@@ -2198,7 +2198,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  )}
  {standardRows.length>0&&emergencyRows.length>0&&<div style={{color:"#9ca3af",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>📋 Standard Requests</div>}
  {standardRows.map(a=>(
- <div key={a.id} style={{background:"#fff",borderRadius:16,overflow:"hidden",border:"1px solid #f3f4f6"}}>
+ <div key={a.id} style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.12)"}}>
  <div style={{padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid #f3f4f6"}}>
  <div>
  <div style={{fontWeight:700,fontSize:14,color:"#fff"}}>{a.supplierName}</div>
@@ -2235,7 +2235,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  ))}
  </div>
  ) : (
- <div style={{background:"#fff",borderRadius:16,overflow:"hidden",border:"1px solid #f3f4f6"}}>
+ <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.12)"}}>
  <div style={{overflowX:"auto"}}>
  <table style={{width:"100%",borderCollapse:"collapse",minWidth:860,fontSize:13}}>
  <thead>
@@ -2343,7 +2343,7 @@ function CalendarView({ appointments, isMobile }) {
  const sc=new Date(yr,mo,1).getDay();
  const total=Math.ceil((sc+daysInMonth)/7)*7;
  return(
- <div style={{background:"#fff",borderRadius:16,overflow:"hidden",border:"1px solid #f3f4f6",flex:1,display:"flex",flexDirection:"column"}}>
+ <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.12)",flex:1,display:"flex",flexDirection:"column"}}>
  <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",background:P,flexShrink:0}}>
  {(isMobile?DAY_SHORT:DAY_FULL).map((d,i)=>(
  <div key={i} style={{textAlign:"center",padding:isMobile?"8px 0":"10px 0",fontSize:isMobile?10:11,fontWeight:700,color:i>=5?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.85)"}}>
@@ -2382,7 +2382,7 @@ function CalendarView({ appointments, isMobile }) {
  const ws=weekStart(cur);
  const days=Array.from({length:7},(_,i)=>addDays(ws,i));
  return(
- <div style={{background:"#fff",borderRadius:16,overflow:"hidden",border:"1px solid #f3f4f6",flex:1,display:"flex",flexDirection:"column"}}>
+ <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.12)",flex:1,display:"flex",flexDirection:"column"}}>
  <div style={{display:"grid",gridTemplateColumns:"64px repeat(7,1fr)",background:P,flexShrink:0}}>
  <div style={{padding:"10px 0",borderRight:"1px solid rgba(255,255,255,0.1)"}}/>
  {days.map((d,i)=>{
@@ -2430,13 +2430,13 @@ function CalendarView({ appointments, isMobile }) {
  function normalizeTime(t){if(!t)return "";return t.trim().replace(/\s*(AM|PM)$/i,"").replace(/^(\d):/, "0$1:");}
  const matchedIds=new Set();
  return(
- <div style={{background:"#fff",borderRadius:16,overflow:"hidden",border:"1px solid #f3f4f6",flex:1,display:"flex",flexDirection:"column"}}>
+ <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.12)",flex:1,display:"flex",flexDirection:"column"}}>
  <div style={{background:P,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",flexShrink:0}}>
  <div style={{flex:1}}>
  <div style={{color:"#6b7280",fontSize:11,textTransform:"uppercase",letterSpacing:1}}>{cur.toLocaleDateString("en-GB",{weekday:"long"})}{off&&<span style={{marginLeft:8,background:"rgba(239,68,68,0.2)",color:"#fca5a5",padding:"1px 8px",borderRadius:99,fontSize:10}}>Non-working day</span>}</div>
  <div style={{color:"#fff",fontWeight:800,fontSize:isMobile?16:20}}>{cur.toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})}</div>
  </div>
- <input type="date" value={dsOf(cur)} onChange={e=>e.target.value&&setCur(new Date(e.target.value+"T00:00:00"))} style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,padding:"6px 10px",color:"#fff",fontSize:12,outline:"none",cursor:"pointer"}}/>
+ <input type="date" value={dsOf(cur)} onChange={e=>e.target.value&&setCur(new Date(e.target.value+"T00:00:00"))} style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"6px 10px",color:"#fff",fontSize:12,outline:"none",cursor:"pointer"}}/>
  <span style={{background:"rgba(255,255,255,0.2)",color:"#fff",fontSize:12,fontWeight:700,padding:"4px 12px",borderRadius:99}}>{dayApts.length} appt{dayApts.length!==1?"s":""}</span>
  </div>
  <div style={{flex:1,overflowY:"auto"}}>
@@ -2507,7 +2507,7 @@ function CalendarView({ appointments, isMobile }) {
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
  {[["Date",fmtDate(sel.date)],["Time",sel.time],["Orders",sel.totalOrders],["Lines",sel.totalLines]].map(([k,v])=>(
  <div key={k} style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6"}}>
- <div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>{k}</div>
+ <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:3}}>{k}</div>
  <div style={{fontWeight:600,fontSize:13,color:"#fff"}}>{v}</div>
  </div>
  ))}
@@ -2520,7 +2520,7 @@ function CalendarView({ appointments, isMobile }) {
  )}
  {sel.additionalNotes&&(
  <div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}>
- <div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>Notes</div>
+ <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:3}}>Notes</div>
  <div style={{fontSize:13,color:"#374151"}}>{sel.additionalNotes}</div>
  </div>
  )}
@@ -2566,26 +2566,26 @@ function CalendarView({ appointments, isMobile }) {
  <p style={{color:"rgba(255,255,255,0.45)",fontSize:11,margin:"3px 0 0"}}>Week starts Sunday · Fri & Sat are non-working days · {approved.length} approved</p>
  </div>
  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
- <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search appointments…" style={{padding:isMobile?"7px 10px":"8px 12px",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,background:"rgba(255,255,255,0.08)",color:"#fff",fontSize:12,outline:"none",width:isMobile?120:180,colorScheme:"dark"}}/>
- <select value={storageFilter} onChange={e=>setStorageFilter(e.target.value)} style={{padding:isMobile?"7px 10px":"8px 12px",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,background:storageFilter!=="all"?"rgba(200,150,42,0.3)":"rgba(255,255,255,0.08)",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",outline:"none",colorScheme:"dark"}}>
+ <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search appointments…" style={{padding:isMobile?"7px 10px":"8px 12px",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,background:"rgba(255,255,255,0.08)",color:"#fff",fontSize:12,outline:"none",width:isMobile?120:180,colorScheme:"dark"}}/>
+ <select value={storageFilter} onChange={e=>setStorageFilter(e.target.value)} style={{padding:isMobile?"7px 10px":"8px 12px",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,background:storageFilter!=="all"?"rgba(200,150,42,0.3)":"rgba(255,255,255,0.08)",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",outline:"none",colorScheme:"dark"}}>
  <option value="all">All Locations</option>
  <option value="Covered store">🏭 Covered Store</option>
  <option value="Open Yard">🌳 Open Yard</option>
  </select>
- <select value={deliveryFilter} onChange={e=>setDeliveryFilter(e.target.value)} style={{padding:isMobile?"7px 10px":"8px 12px",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,background:"rgba(255,255,255,0.08)",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",outline:"none",colorScheme:"dark"}}>
+ <select value={deliveryFilter} onChange={e=>setDeliveryFilter(e.target.value)} style={{padding:isMobile?"7px 10px":"8px 12px",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,background:"rgba(255,255,255,0.08)",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",outline:"none",colorScheme:"dark"}}>
  <option value="all">All Deliveries</option>
  <option value="emergency">🚨 Emergency</option>
  <option value="pending">⏳ Pending</option>
  <option value="completed">✅ Completed</option>
  <option value="failed">❌ Failed</option>
  </select>
- <div style={{display:"flex",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,overflow:"hidden"}}>
+ <div style={{display:"flex",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,overflow:"hidden"}}>
  {["daily","weekly","monthly"].map(v=>(
  <button key={v} onClick={()=>setView(v)} style={{padding:isMobile?"7px 10px":"8px 14px",fontSize:12,fontWeight:600,textTransform:"capitalize",background:view===v?A:"transparent",color:view===v?"#fff":"rgba(255,255,255,0.55)",border:"none",cursor:"pointer"}}>{v}</button>
  ))}
  </div>
- <button onClick={()=>setCur(new Date(TODAY))} style={{padding:isMobile?"7px 10px":"8px 14px",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,color:"#fff",background:"rgba(255,255,255,0.05)",fontSize:12,fontWeight:600,cursor:"pointer"}}>Today</button>
- <div style={{display:"flex",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,overflow:"hidden"}}>
+ <button onClick={()=>setCur(new Date(TODAY))} style={{padding:isMobile?"7px 10px":"8px 14px",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,color:"#fff",background:"rgba(255,255,255,0.05)",fontSize:12,fontWeight:600,cursor:"pointer"}}>Today</button>
+ <div style={{display:"flex",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,overflow:"hidden"}}>
  <button onClick={()=>navigate(-1)} style={{padding:"7px 12px",background:"transparent",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.7)",fontSize:18}}>‹</button>
  <button onClick={()=>navigate(1)} style={{padding:"7px 12px",background:"transparent",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.7)",fontSize:18}}>›</button>
  </div>
@@ -2709,7 +2709,7 @@ function EmailLog({ emailLog, isMobile }) {
  </button>
  </div>
  </div>
- <p style={{color:"#6b7280",fontSize:13,margin:"0 0 16px"}}>Grouped by appointment with full conversation history</p>
+ <p style={{color:"rgba(255,255,255,0.45)",fontSize:13,margin:"0 0 16px"}}>Grouped by appointment with full conversation history</p>
 
  {totalEmails===0 ? (
  <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid #e5e7eb",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
@@ -2718,20 +2718,20 @@ function EmailLog({ emailLog, isMobile }) {
  </div>
  ) : (
  <div style={{display:"flex",flexDirection:"column",gap:12}}>
- <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:isMobile?12:16}}>
+ <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:isMobile?12:16}}>
  <input 
  type="text"
  placeholder="Search by any field — ID, supplier, email, subject, body…"
  value={searchQ}
  onChange={e=>setSearchQ(e.target.value)}
- style={{width:"100%",border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:13,outline:"none",background:"#f9fafb"}}
+ style={{width:"100%",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"10px 12px",fontSize:13,outline:"none",background:"rgba(255,255,255,0.08)",color:"#fff",colorScheme:"dark"}}
  />
  </div>
 
  {filteredGroups.length===0 ? (
- <div style={{background:"#f9fafb",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:32,textAlign:"center"}}>
+ <div style={{background:"#f9fafb",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:32,textAlign:"center"}}>
  <div style={{fontSize:28,marginBottom:8}}>🔍</div>
- <div style={{color:"#9ca3af",fontSize:12}}>No conversations match "{searchQ}"</div>
+ <div style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>No conversations match "{searchQ}"</div>
  </div>
  ) : (
  <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -2743,21 +2743,21 @@ function EmailLog({ emailLog, isMobile }) {
  emails.forEach(e => typesCounts[e.type]++);
 
  return (
- <div key={aptId} style={{background:"#fff",borderRadius:16,overflow:"hidden",border:"1px solid #f3f4f6"}}>
+ <div key={aptId} style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.12)"}}>
  {/* Conversation header - always visible */}
  <div 
  onClick={()=>setExpandedApt(isExpanded?null:aptId)} 
- style={{padding:"16px 18px",display:"flex",flexDirection:isMobile?"column":"row",gap:isMobile?12:16,alignItems:isMobile?"flex-start":"center",cursor:"pointer",background:isExpanded?"#f9fafb":"#fff",borderBottom:isExpanded?"1px solid #f3f4f6":"none"}}
+ style={{padding:"16px 18px",display:"flex",flexDirection:isMobile?"column":"row",gap:isMobile?12:16,alignItems:isMobile?"flex-start":"center",cursor:"pointer",background:isExpanded?"rgba(255,255,255,0.1)":"rgba(255,255,255,0.07)",borderBottom:isExpanded?"1px solid rgba(255,255,255,0.12)":"none"}}
  >
  <div style={{flex:1,minWidth:0}}>
  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
  <span style={{fontFamily:"monospace",fontSize:13,fontWeight:800,color:P}}>{aptId}</span>
  <span style={{background:"rgba(59,130,246,0.15)",color:"#2563eb",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:99}}>{emails.length} email{emails.length!==1?"s":""}</span>
- {typesCounts.submission>0&&<span style={{background:"#eff6ff",color:"#1d4ed8",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:99}}>📨 {typesCounts.submission}</span>}
- {typesCounts.approval>0&&<span style={{background:"#f0fdf4",color:"#15803d",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:99}}>✅ {typesCounts.approval}</span>}
- {typesCounts.rejection>0&&<span style={{background:"#fef2f2",color:"#b91c1c",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:99}}>❌ {typesCounts.rejection}</span>}
+ {typesCounts.submission>0&&<span style={{background:"rgba(59,130,246,0.2)",color:"#93c5fd",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:99}}>📨 {typesCounts.submission}</span>}
+ {typesCounts.approval>0&&<span style={{background:"rgba(16,185,129,0.2)",color:"#6ee7b7",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:99}}>✅ {typesCounts.approval}</span>}
+ {typesCounts.rejection>0&&<span style={{background:"rgba(239,68,68,0.2)",color:"#fca5a5",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:99}}>❌ {typesCounts.rejection}</span>}
  </div>
- <div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>Latest: {fmtTs(latestEmail.timestamp)}</div>
+ <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:3}}>Latest: {fmtTs(latestEmail.timestamp)}</div>
  <div style={{fontSize:12,color:"#6b7280"}}>{latestEmail.subject}</div>
  </div>
  <div style={{flexShrink:0,textAlign:isMobile?"left":"right"}}>
@@ -2773,7 +2773,7 @@ function EmailLog({ emailLog, isMobile }) {
  const cfg = typeCfg[e.type]||typeCfg.submission;
  const isEmailExpanded = expandedEmail === e.id;
  return (
- <div key={e.id} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,overflow:"hidden"}}>
+ <div key={e.id} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,overflow:"hidden"}}>
  <div 
  onClick={()=>setExpandedEmail(isEmailExpanded?null:e.id)}
  style={{padding:"12px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",background:isEmailExpanded?"rgba(255,255,255,0.1)":"rgba(255,255,255,0.06)"}}
@@ -2781,7 +2781,7 @@ function EmailLog({ emailLog, isMobile }) {
  <span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,padding:"3px 9px",borderRadius:99,fontSize:10,fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>{cfg.label}</span>
  <div style={{flex:1,minWidth:0}}>
  <div style={{fontWeight:600,fontSize:12,color:"#fff",marginBottom:2}}>{e.subject}</div>
- <div style={{fontSize:10,color:"#9ca3af"}}>To: {e.recipient}{e.pin?<span style={{marginLeft:8,background:"#fef3c7",color:"#92400e",border:"1px solid #fcd34d",padding:"1px 6px",borderRadius:99,fontWeight:700,fontFamily:"monospace",fontSize:10}}>PIN: {e.pin}</span>:""}</div>
+ <div style={{fontSize:10,color:"#9ca3af"}}>To: {e.recipient}{e.pin?<span style={{marginLeft:8,background:"rgba(245,158,11,0.2)",color:"#fcd34d",border:"1px solid #fcd34d",padding:"1px 6px",borderRadius:99,fontWeight:700,fontFamily:"monospace",fontSize:10}}>PIN: {e.pin}</span>:""}</div>
  </div>
  <div style={{flexShrink:0,fontSize:10,color:"#9ca3af",textAlign:"right"}}>
  <div>{fmtTs(e.timestamp)}</div>
@@ -2854,7 +2854,7 @@ function HelpPage({ isMobile }){
  ))}
  </div>
  {/* Steps */}
- <div style={{flex:1,background:"#f9fafb",borderRadius:16,padding:20,border:"1px solid rgba(255,255,255,0.1)"}}>
+ <div style={{flex:1,background:"#f9fafb",borderRadius:16,padding:20,border:"1px solid rgba(255,255,255,0.12)"}}>
  <h3 style={{color:"#C8962A",fontWeight:800,fontSize:16,margin:"0 0 16px"}}>{content.sections[activeSection].title}</h3>
  <div style={{display:"flex",flexDirection:"column",gap:14}}>
  {content.sections[activeSection].steps.map((step,i)=>(
@@ -3065,7 +3065,7 @@ function BarRow({ label, count, max, color, sublabel }) {
 
 function StatCard({ label, value, sub, color, onClick }) {
  return (
- <div onClick={onClick} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:"18px 20px",cursor:onClick?"pointer":"default"}}>
+ <div onClick={onClick} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:"18px 20px",cursor:onClick?"pointer":"default"}}>
  <div style={{fontSize:11,color:"#9ca3af",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>{label}</div>
  <div style={{fontSize:28,fontWeight:800,color:color||"#fff",marginBottom:4,lineHeight:1}}>{value}</div>
  {sub && <div style={{fontSize:11,color:"#9ca3af"}}>{sub}</div>}
@@ -3120,7 +3120,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
 
  const slotColors=["#6366f1","#8b5cf6","#a78bfa","#c4b5fd","#ddd6fe"];
  const dayColors=["#f59e0b","#10b981","#3b82f6","#6366f1","#ec4899"];
- const inp={background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none",colorScheme:"dark"};
+ const inp={background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none",colorScheme:"dark"};
 
  return(
  <div style={{padding:isMobile?16:28,overflowY:"auto"}}>
@@ -3229,19 +3229,19 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  </button>
  </div>
  </div>
- <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:14,padding:16,marginBottom:24,display:"flex",flexWrap:"wrap",gap:12,alignItems:"center"}}>
- <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, name, email, date, PO, status…" style={{flex:1,minWidth:200,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
+ <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:14,padding:16,marginBottom:24,display:"flex",flexWrap:"wrap",gap:12,alignItems:"center"}}>
+ <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, name, email, date, PO, status…" style={{flex:1,minWidth:200,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
  <span style={{color:"#6b7280",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>Date range</span>
  <div style={{display:"flex",flexWrap:"wrap",gap:10,alignItems:"center",flex:1}}>
  <div style={{display:"flex",alignItems:"center",gap:8}}>
- <span style={{color:"#9ca3af",fontSize:12}}>From</span>
+ <span style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>From</span>
  <input type="date" value={dFrom} onChange={e=>setDFrom(e.target.value)} style={inp}/>
  </div>
  <div style={{display:"flex",alignItems:"center",gap:8}}>
- <span style={{color:"#9ca3af",fontSize:12}}>To</span>
+ <span style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>To</span>
  <input type="date" value={dTo} onChange={e=>setDTo(e.target.value)} style={inp}/>
  </div>
- {(dFrom||dTo)&&<button onClick={async()=>{setDFrom("");setDTo("");}} style={{padding:"8px 14px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"#4b5563",fontSize:12,cursor:"pointer"}}>Clear</button>}
+ {(dFrom||dTo)&&<button onClick={async()=>{setDFrom("");setDTo("");}} style={{padding:"8px 14px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:9,color:"#4b5563",fontSize:12,cursor:"pointer"}}>Clear</button>}
  </div>
  <span style={{background:"rgba(255,255,255,0.1)",color:"#4b5563",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{total} appointment{total!==1?"s":""}</span>
  </div>
@@ -3255,7 +3255,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  </div>
 
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:20,marginBottom:20}}>
- <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:18,padding:20}}>
+ <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:18,padding:20}}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
  <div>
  <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Busiest Time Slots</div>
@@ -3266,7 +3266,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  {slotData.map((d,i)=><BarRow key={d.label} label={d.label} count={d.count} max={maxSlot} color={slotColors[Math.min(i,4)]}/>)}
  {total===0&&<div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.2)",fontSize:13}}>No appointments in range</div>}
  </div>
- <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:18,padding:20}}>
+ <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:18,padding:20}}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
  <div>
  <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Busiest Days of Week</div>
@@ -3279,7 +3279,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  </div>
  </div>
 
- <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:18,padding:20,marginBottom:20}}>
+ <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:18,padding:20,marginBottom:20}}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,flexWrap:"wrap",gap:10}}>
  <div>
  <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Most Active Suppliers</div>
@@ -3293,7 +3293,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  </div>
  </div>
 
- <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:18,padding:20}}>
+ <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:18,padding:20}}>
  <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:4}}>Storage Location Breakdown</div>
  <div style={{color:"#9ca3af",fontSize:11,marginBottom:20}}>How deliveries are split across warehouse areas</div>
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:12}}>
@@ -3586,7 +3586,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  return actionCfg[last?.action]||{bg:"#f3f4f6",color:"#374151",border:"#d1d5db",label:last?.action};
  }
 
- const inpDark={background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none",colorScheme:"dark"};
+ const inpDark={background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none",colorScheme:"dark"};
 
  return(
  <div style={{padding:isMobile?16:28}}>
@@ -3602,7 +3602,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  )} disabled={filtered.length===0} style={{padding:"6px 12px",background:"#7c3aed",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:filtered.length===0?"not-allowed":"pointer",opacity:filtered.length===0?0.5:1}}>📄 Export PDF</button>
  </div>
  </div>
- <p style={{color:"#6b7280",fontSize:13,margin:"0 0 16px"}}>Full audit log — grouped by appointment</p>
+ <p style={{color:"rgba(255,255,255,0.45)",fontSize:13,margin:"0 0 16px"}}>Full audit log — grouped by appointment</p>
 
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(7,1fr)",gap:12,marginBottom:16}}>
  {[{key:"create",label:"Created",color:"#4f46e5"},{key:"resubmission",label:"Resubmission",color:"#7dd3fc"},{key:"approve",label:"Approved",color:"#6ee7b7"},{key:"reject",label:"Rejected",color:"#fca5a5"},{key:"return_for_revision",label:"Returned",color:"#fcd34d"},{key:"delivery_complete",label:"Delivered",color:"#86efac"},{key:"delivery_failed",label:"Failed",color:"#f87171"}].map(s=>(
@@ -3615,8 +3615,8 @@ function TransactionsHistory({ transactions, isMobile }) {
  ))}
  </div>
 
- <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:14,padding:14,marginBottom:14,display:"flex",flexDirection:"column",gap:10}}>
- <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, supplier, actor, action, date, details…" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
+ <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:14,padding:14,marginBottom:14,display:"flex",flexDirection:"column",gap:10}}>
+ <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, supplier, actor, action, date, details…" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
  <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
  <select value={actionFilter} onChange={e=>setActionFilter(e.target.value)} style={inpDark}>
  <option value="all">All actions</option>
@@ -3637,7 +3637,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  <input type="date" value={dFrom} onChange={e=>setDFrom(e.target.value)} style={inpDark}/>
  <span style={{color:"#9ca3af",fontSize:11}}>To</span>
  <input type="date" value={dTo} onChange={e=>setDTo(e.target.value)} style={inpDark}/>
- {(actionFilter!=="all"||supplierFilter||supplierSearchQ||dFrom||dTo||searchQ||emergencyOnly)&&<button onClick={async()=>{setActionFilter("all");setSupplierFilter("");setSupplierSearchQ("");setDFrom("");setDTo("");setSearchQ("");setEmergencyOnly(false);}} style={{padding:"8px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"#4b5563",fontSize:11,cursor:"pointer"}}>Clear filters</button>}
+ {(actionFilter!=="all"||supplierFilter||supplierSearchQ||dFrom||dTo||searchQ||emergencyOnly)&&<button onClick={async()=>{setActionFilter("all");setSupplierFilter("");setSupplierSearchQ("");setDFrom("");setDTo("");setSearchQ("");setEmergencyOnly(false);}} style={{padding:"8px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:9,color:"#4b5563",fontSize:11,cursor:"pointer"}}>Clear filters</button>}
  <button onClick={()=>setEmergencyOnly(p=>!p)} style={{padding:"8px 12px",background:emergencyOnly?"#dc2626":"rgba(255,255,255,0.08)",border:`1px solid ${emergencyOnly?"#dc2626":"rgba(255,255,255,0.15)"}`,borderRadius:9,color:emergencyOnly?"#fff":"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,cursor:"pointer"}}>🚨 Emergency</button>
  <span style={{marginLeft:"auto",background:"rgba(255,255,255,0.1)",color:"#4b5563",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{groups.length} appointment{groups.length!==1?"s":""} · {filtered.length} event{filtered.length!==1?"s":""}</span>
  </div>
@@ -3864,21 +3864,21 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  {name:"Overdue",data:overdueSheet},
  ],"BE_Warehouse_TeamLead",[["Awaiting Delivery",awaiting.length],["Completed",completed.length],["Overdue",overdue.length]]);
  }} disabled={exportAppts.length===0} style={{padding:"8px 14px",background:"#059669",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer"}}>
- 📥 Export Excel
+ 📥 Excel
  </button>
  <button onClick={()=>exportPDFTable(
  "Team Lead Dashboard","Deliveries: "+exportAppts.length+" | Generated: "+new Date().toLocaleString("en-GB"),
  ["ID","Supplier","SBU","Date","Time","Delivery Status","Orders","Storage"],
  exportAppts.map(a=>({"ID":a.id,"Supplier":a.supplierName||"—","SBU":sbuName(a.deliveryTo),"Date":fmtDate(a.date),"Time":a.time||"—","Delivery Status":(a.deliveryStatus||"awaiting").replace(/_/g," "),"Orders":a.totalOrders||0,"Storage":Array.isArray(a.storageLocation)?a.storageLocation.join(", "):a.storageLocation||"—"}))
  )} disabled={exportAppts.length===0} style={{padding:"8px 14px",background:"#7c3aed",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer"}}>
- 📄 Export PDF
+ 📄 PDF
  </button>
  <button onClick={openMarkAll} disabled={awaiting.length===0} style={{padding:"8px 14px",background:awaiting.length===0?"#9ca3af":"#10b981",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:awaiting.length===0?"not-allowed":"pointer",opacity:awaiting.length===0?0.5:1}}>
  ✅ Mark All Complete ({awaiting.length})
  </button>
  </div>
- <p style={{color:"#6b7280",fontSize:13,margin:"0 0 16px"}}>Monitor approved deliveries and track completion status</p>
- <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, supplier, date, time, PO, notes…" style={{width:"100%",marginBottom:16,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+ <p style={{color:"rgba(255,255,255,0.45)",fontSize:13,margin:"0 0 16px"}}>Monitor approved deliveries and track completion status</p>
+ <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, supplier, date, time, PO, notes…" style={{width:"100%",marginBottom:16,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
 
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12,marginBottom:20}}>
  {[
@@ -3897,9 +3897,9 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  ))}
  </div>
 
- <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,padding:12,marginBottom:20,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+ <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,padding:12,marginBottom:20,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
  <span style={{color:"#6b7280",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Filter:</span>
- <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"8px 12px",color:"#fff",fontSize:13,outline:"none",cursor:"pointer",colorScheme:"dark"}}>
+ <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"8px 12px",color:"#fff",fontSize:13,outline:"none",cursor:"pointer",colorScheme:"dark"}}>
  <option value="all">All Deliveries</option>
  <option value="emergency">🚨 Emergency</option>
  <option value="overdue">⚠️ Overdue Only</option>
@@ -3907,7 +3907,7 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  <option value="completed">✅ Completed Only</option>
  <option value="failed">❌ Failed Only</option>
  </select>
- {statusFilter!=="all"&&<button onClick={()=>setStatusFilter("all")} style={{padding:"6px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:11,cursor:"pointer"}}>Clear filter</button>}
+ {statusFilter!=="all"&&<button onClick={()=>setStatusFilter("all")} style={{padding:"6px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:11,cursor:"pointer"}}>Clear filter</button>}
  </div>
 
  {(statusFilter==="all"||statusFilter==="emergency")&&overdue.filter(a=>statusFilter!=="emergency"||(a.priority==="emergency")).length>0&&(
@@ -4430,12 +4430,12 @@ function App() {
  </div>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
  {!isMobile && <span style={{color:"#4b5563",fontSize:12,fontWeight:600}}>👤 {displayName||"Admin"}</span>}
- <span style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:syncStatus==="ok"?"rgba(16,185,129,0.2)":syncStatus==="error"&&appts.length===0?"rgba(239,68,68,0.2)":"rgba(16,185,129,0.2)",color:syncStatus==="ok"?"#6ee7b7":syncStatus==="error"&&appts.length===0?"#fca5a5":"#6ee7b7",border:"1px solid rgba(255,255,255,0.1)"}}>
+ <span style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:syncStatus==="ok"?"rgba(16,185,129,0.2)":syncStatus==="error"&&appts.length===0?"rgba(239,68,68,0.2)":"rgba(16,185,129,0.2)",color:syncStatus==="ok"?"#6ee7b7":syncStatus==="error"&&appts.length===0?"#fca5a5":"#6ee7b7",border:"1px solid rgba(255,255,255,0.12)"}}>
  {syncStatus==="ok"?"☁️ Synced":syncStatus==="error"&&appts.length===0?"⚠️ Sync Error":"☁️ Synced"}
  </span>
- <button onClick={()=>pullFromSupabase(false)} title="Refresh data" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,padding:"4px 10px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700}}>🔄</button>
+ <button onClick={()=>pullFromSupabase(false)} title="Refresh data" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"4px 10px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700}}>🔄</button>
  <button onClick={()=>setView("help")} style={{background:"rgba(200,150,42,0.15)",border:"1px solid rgba(200,150,42,0.3)",borderRadius:8,padding:"4px 10px",color:"#C8962A",fontSize:12,cursor:"pointer",fontWeight:700}}>❓ Guide</button>
- <button onClick={async()=>{setPage("landing");setView("dashboard");setAdminEmail("");sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");}} style={{color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
+ <button onClick={async()=>{setPage("landing");setView("dashboard");setAdminEmail("");sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");}} style={{color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
  </div>
  </header>
 
@@ -4557,7 +4557,7 @@ function App() {
  </div>
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
  {[["Date",fmtDate(viewApt.date)],["Time",viewApt.time],["Orders",viewApt.totalOrders],["Lines",viewApt.totalLines]].map(([k,v])=>(
- <div key={k} style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6"}}><div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>{k}</div><div style={{fontWeight:600,fontSize:13,color:"#fff"}}>{v}</div></div>
+ <div key={k} style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6"}}><div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:3}}>{k}</div><div style={{fontWeight:600,fontSize:13,color:"#fff"}}>{v}</div></div>
  ))}
  </div>
  <div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}>
@@ -4602,7 +4602,7 @@ function App() {
  </div>
  </div>
  )}
- {viewApt.additionalNotes&&<div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}><div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>Notes</div><div style={{fontSize:13,color:"#374151"}}>{viewApt.additionalNotes}</div></div>}
+ {viewApt.additionalNotes&&<div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}><div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:3}}>Notes</div><div style={{fontSize:13,color:"#374151"}}>{viewApt.additionalNotes}</div></div>}
  {viewApt.managerComments&&<div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:10,padding:"10px 12px",marginBottom:10}}><div style={{fontSize:10,fontWeight:700,color:"#ef4444",textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Manager Comments</div><div style={{fontSize:13,color:"#991b1b"}}>{viewApt.managerComments}</div></div>}
  <div style={{marginBottom:12}}>
  <ConversationThread
