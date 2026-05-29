@@ -4061,7 +4061,46 @@ function App() {
  const [adminEmail,setAdminEmail]=useState(()=>sessionStorage.getItem("be_admin_email")||"");
  const [editingId,setEditingId]=useState(null);
  const [confirmDlg,setConfirmDlg]=useState(null);
- const [adminFilter,setAdminFilter]=useState(null); // {msg,sub,label,color,onConfirm}
+ const [adminFilter,setAdminFilter]=useState(null);
+
+ // ── Session timeout (12 min inactivity) ──────────────────────
+ const [sessionWarning,setSessionWarning]=useState(false);
+ const [countdown,setCountdown]=useState(60);
+ const activityRef=useRef(Date.now());
+ const warningRef=useRef(false);
+
+ function doLogout(){
+ setPage("landing");setView("dashboard");setAdminEmail("");
+ sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");
+ setSessionWarning(false);warningRef.current=false;
+ }
+
+ function resetActivity(){
+ activityRef.current=Date.now();
+ if(warningRef.current){setSessionWarning(false);warningRef.current=false;setCountdown(60);}
+ }
+
+ useEffect(()=>{
+ const events=["mousemove","mousedown","keydown","touchstart","scroll","click"];
+ events.forEach(e=>document.addEventListener(e,resetActivity,{passive:true}));
+ return()=>events.forEach(e=>document.removeEventListener(e,resetActivity));
+ },[]);
+
+ useEffect(()=>{
+ if(page!=="admin")return;
+ const check=setInterval(()=>{
+ const idle=(Date.now()-activityRef.current)/1000;
+ if(idle>=720&&!warningRef.current){warningRef.current=true;setSessionWarning(true);setCountdown(60);}
+ },10000);
+ return()=>clearInterval(check);
+ },[page]);
+
+ useEffect(()=>{
+ if(!sessionWarning)return;
+ if(countdown<=0){doLogout();return;}
+ const t=setTimeout(()=>setCountdown(c=>c-1),1000);
+ return()=>clearTimeout(t);
+ },[sessionWarning,countdown]);
 
  // Persist session state across reloads
  useEffect(()=>{sessionStorage.setItem("be_page",page);},[page]);
@@ -4125,11 +4164,12 @@ function App() {
  });
  },[]);
 
- // Polling — 20s Safari, 60s others
+ // Polling — 20s Safari, 60s others + 30min full refresh
  useEffect(()=>{
  const isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
- const interval=setInterval(()=>pullFromSupabase(true),isSafari?20000:60000);
- return ()=>clearInterval(interval);
+ const poll=setInterval(()=>pullFromSupabase(true),isSafari?20000:60000);
+ const autoReload=setInterval(()=>pullFromSupabase(false),30*60*1000);
+ return()=>{clearInterval(poll);clearInterval(autoReload);};
  },[]);
 
  // B — Show cached data instantly on mount, then sync in background
@@ -4510,6 +4550,23 @@ function App() {
 
  return(
  <div style={{height:"100vh",display:"flex",flexDirection:"column",fontFamily:"system-ui,sans-serif"}}>
+
+ {/* ── Session Timeout Warning ── */}
+ {sessionWarning&&(
+ <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20}}>
+ <div style={{background:"rgba(15,8,60,0.98)",backdropFilter:"blur(16px)",border:"1px solid rgba(100,52,250,0.4)",borderRadius:20,padding:28,maxWidth:380,width:"100%",textAlign:"center"}}>
+ <div style={{fontSize:48,marginBottom:12}}>⏱️</div>
+ <h3 style={{color:"#fff",fontWeight:800,fontSize:20,margin:"0 0 8px"}}>Session Expiring Soon</h3>
+ <p style={{color:"rgba(255,255,255,0.5)",fontSize:14,margin:"0 0 16px"}}>You've been inactive for 12 minutes. You'll be automatically logged out in:</p>
+ <div style={{fontSize:64,fontWeight:800,color:countdown<=10?"#fca5a5":"#C8962A",margin:"0 0 20px",fontVariantNumeric:"tabular-nums",lineHeight:1}}>{countdown}s</div>
+ <div style={{display:"flex",gap:10}}>
+ <button onClick={doLogout} style={{flex:1,padding:12,background:"rgba(239,68,68,0.2)",color:"#fca5a5",border:"1px solid rgba(239,68,68,0.4)",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer"}}>Logout Now</button>
+ <button onClick={resetActivity} style={{flex:1,padding:12,background:"#C8962A",color:"#07114C",border:"none",borderRadius:12,fontSize:14,fontWeight:700,cursor:"pointer"}}>✅ Stay Logged In</button>
+ </div>
+ </div>
+ </div>
+ )}
+
  <header style={{background:BG,height:isMobile?52:56,display:"flex",alignItems:"center",justifyContent:"space-between",padding:`0 ${isMobile?14:20}px`,borderBottom:"1px solid rgba(255,255,255,0.12)",flexShrink:0}}>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
  {isMobile && (
@@ -4524,7 +4581,7 @@ function App() {
  </span>
  <button onClick={async()=>{setSyncStatus("syncing");await pullFromSupabase(false);}} title="Refresh data" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,padding:"4px 10px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700}}>🔄</button>
  <button onClick={()=>setView("help")} style={{background:"rgba(200,150,42,0.15)",border:"1px solid rgba(200,150,42,0.3)",borderRadius:8,padding:"4px 10px",color:"#C8962A",fontSize:12,cursor:"pointer",fontWeight:700}}>❓ Guide</button>
- <button onClick={async()=>{setPage("landing");setView("dashboard");setAdminEmail("");sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");}} style={{color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
+ <button onClick={async()=>{doLogout();}} style={{color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
  </div>
  </header>
 
