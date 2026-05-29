@@ -55,8 +55,23 @@ const ADMIN_PWD = "Bapco@123456";
 const ADMIN_EMAIL = "janahifaisal2@gmail.com";
 const LS_CREDS = "be_wh_creds_v1";
 function getAdminCreds(){
- try{const s=localStorage.getItem(LS_CREDS);return s?JSON.parse(s):{password:ADMIN_PWD,nickname:"Admin"};}
- catch{return {password:ADMIN_PWD,nickname:"Admin"};}
+ try{const s=localStorage.getItem(LS_CREDS);return s?JSON.parse(s):{password:ADMIN_PWD,nickname:""};}
+ catch{return {password:ADMIN_PWD,nickname:""};}
+}
+async function saveNicknameToCloud(nickname){
+ try{await window.supabase.from("config").upsert({id:"admin_nickname",data:{nickname},updated_at:new Date().toISOString()});}
+ catch(e){console.warn("Could not save nickname to cloud",e);}
+}
+async function loadNicknameFromCloud(){
+ try{
+ const {data}=await window.supabase.from("config").select("data").eq("id","admin_nickname").single();
+ if(data&&data.data&&data.data.nickname){
+ const creds=getAdminCreds();
+ localStorage.setItem(LS_CREDS,JSON.stringify({...creds,nickname:data.data.nickname}));
+ return data.data.nickname;
+ }
+ }catch(e){}
+ return null;
 }
 const LS_APPTS = "be_wh_appts_v4";
 const LS_EMAILS = "be_wh_emails_v4";
@@ -2816,7 +2831,12 @@ function SettingsPanel({ config, onChange, isMobile }) {
  if(newPwd&&newPwd!==confirmPwd){setCredsMsg({type:"error",text:"New passwords do not match."});return;}
  const updated={password:newPwd||creds.password,nickname:newNickname.trim()||creds.nickname};
  localStorage.setItem(LS_CREDS,JSON.stringify(updated));
- setCredsMsg({type:"ok",text:`✅ Saved! Nickname: "${updated.nickname}"${newPwd?" · Password updated.":""}`});
+ // Save nickname to cloud so all browsers sync
+ if(newNickname.trim()){
+ saveNicknameToCloud(newNickname.trim());
+ setDisplayName(newNickname.trim());
+ }
+ setCredsMsg({type:"ok",text:`✅ Saved! Nickname: "${updated.nickname}"${newPwd?" · Password updated.":""}. Syncing to all browsers…`});
  setCurPwd("");setNewNickname("");setNewPwd("");setConfirmPwd("");
  }
  return(
@@ -3892,6 +3912,19 @@ function App() {
  });
  }
 
+ const [displayName,setDisplayName]=useState(()=>getAdminCreds().nickname||"");
+
+ // Load nickname from cloud on mount — syncs across all browsers
+ useEffect(()=>{
+ loadNicknameFromCloud().then(n=>{
+ if(n)setDisplayName(n);
+ else{
+ const auto=adminEmail.split("@")[0].replace(/[._]/g," ").replace(/\b\w/g,c=>c.toUpperCase());
+ setDisplayName(auto||"Admin");
+ }
+ });
+ },[]);
+
  // Polling — 20s Safari, 60s others
  useEffect(()=>{
  const isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -4277,10 +4310,9 @@ function App() {
  <span style={{color:"#fff",fontWeight:800,fontSize:13}}>BE – Warehouse Appointments</span>
  </div>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
- {!isMobile && <span style={{color:"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600}}>👤 {getAdminCreds().nickname&&getAdminCreds().nickname!=="Admin"?getAdminCreds().nickname:adminEmail.split("@")[0].replace(/[^a-zA-Z]/g," ").trim()||"Admin"}</span>}
+ {!isMobile && <span style={{color:"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600}}>👤 {displayName||"Admin"}</span>}
  <span style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:syncStatus==="ok"?"rgba(16,185,129,0.2)":syncStatus==="error"&&appts.length===0?"rgba(239,68,68,0.2)":"rgba(16,185,129,0.2)",color:syncStatus==="ok"?"#6ee7b7":syncStatus==="error"&&appts.length===0?"#fca5a5":"#6ee7b7",border:"1px solid rgba(255,255,255,0.1)"}}>
  {syncStatus==="ok"?"☁️ Synced":syncStatus==="error"&&appts.length===0?"⚠️ Sync Error":"☁️ Synced"}
- {lastSynced&&<span style={{opacity:0.6,marginLeft:4,fontSize:10}}>{lastSynced.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}</span>}
  </span>
  <button onClick={()=>pullFromSupabase(false)} title="Refresh data" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,padding:"4px 10px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700}}>🔄</button>
  <button onClick={()=>setView("help")} style={{background:"rgba(200,150,42,0.15)",border:"1px solid rgba(200,150,42,0.3)",borderRadius:8,padding:"4px 10px",color:"#C8962A",fontSize:12,cursor:"pointer",fontWeight:700}}>❓ Guide</button>
