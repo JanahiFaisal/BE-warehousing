@@ -581,12 +581,12 @@ function Logo({ large }) {
 function ConfirmModal({ msg, sub, confirmLabel="Confirm", confirmColor="#059669", onConfirm, onCancel }){
  return(
  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:99,padding:16}}>
- <div style={{background:"rgba(255,255,255,0.08)",borderRadius:20,padding:24,width:"100%",maxWidth:380,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+ <div style={{background:"#fff",borderRadius:20,padding:24,width:"100%",maxWidth:380,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
  <div style={{fontSize:32,textAlign:"center",marginBottom:12}}>⚠️</div>
  <h3 style={{fontWeight:800,fontSize:17,color:"#fff",margin:"0 0 6px",textAlign:"center"}}>{msg}</h3>
- {sub&&<p style={{fontSize:13,color:"rgba(255,255,255,0.5)",margin:"0 0 20px",textAlign:"center",lineHeight:1.5}}>{sub}</p>}
+ {sub&&<p style={{fontSize:13,color:"#6b7280",margin:"0 0 20px",textAlign:"center",lineHeight:1.5}}>{sub}</p>}
  <div style={{display:"flex",gap:10,marginTop:20}}>
- <button onClick={onCancel} style={{flex:1,padding:"11px",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,fontSize:14,fontWeight:600,color:"rgba(255,255,255,0.5)",background:"transparent",cursor:"pointer"}}>Cancel</button>
+ <button onClick={onCancel} style={{flex:1,padding:"11px",border:"1px solid #e5e7eb",borderRadius:12,fontSize:14,fontWeight:600,color:"#6b7280",background:"transparent",cursor:"pointer"}}>Cancel</button>
  <button onClick={onConfirm} style={{flex:1,padding:"11px",background:confirmColor,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:700,cursor:"pointer"}}>{confirmLabel}</button>
  </div>
  </div>
@@ -611,7 +611,7 @@ function StoreBadge({ loc }) {
  return (
  <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
  {locs.map(l => {
- const c = cfg[l]||{bg:"#f3f4f6",color:"rgba(255,255,255,0.8)",border:"#d1d5db"};
+ const c = cfg[l]||{bg:"#f3f4f6",color:"#374151",border:"#d1d5db"};
  return <span key={l} style={{background:c.bg,color:c.color,border:`1px solid ${c.border}`,padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:600}}>{l}</span>;
  })}
  </div>
@@ -652,14 +652,14 @@ function HelpModal({ role="supplier", onClose }){
  const isMobile=window.innerWidth<640;
  return(
  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={onClose}>
- <div onClick={e=>e.stopPropagation()} style={{background:"rgba(15,23,42,0.97)",borderRadius:20,width:"100%",maxWidth:680,maxHeight:"85vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 25px 60px rgba(0,0,0,0.4)"}}>
+ <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:680,maxHeight:"85vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 25px 60px rgba(0,0,0,0.4)"}}>
  {/* Header */}
  <div style={{background:"#07114C",padding:"20px 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
  <div style={{display:"flex",alignItems:"center",gap:12}}>
  <span style={{fontSize:24}}>{content.icon}</span>
  <div>
  <div style={{color:"#fff",fontWeight:800,fontSize:18}}>{content.title}</div>
- <div style={{color:"rgba(255,255,255,0.5)",fontSize:12}}>Select a topic below</div>
+ <div style={{color:"#6b7280",fontSize:12}}>Select a topic below</div>
  </div>
  </div>
  <button onClick={onClose} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:10,padding:"8px 12px",color:"#fff",fontSize:18,cursor:"pointer"}}>×</button>
@@ -667,9 +667,9 @@ function HelpModal({ role="supplier", onClose }){
  {/* Body */}
  <div style={{display:"flex",flex:1,overflow:"hidden"}}>
  {/* Sidebar */}
- <div style={{width:200,background:"rgba(255,255,255,0.05)",borderRight:"1px solid rgba(255,255,255,0.1)",overflowY:"auto",flexShrink:0}}>
+ <div style={{width:200,background:"#f8fafc",borderRight:"1px solid #e5e7eb",overflowY:"auto",flexShrink:0}}>
  {content.sections.map((s,i)=>(
- <button key={i} onClick={()=>setActiveSection(i)} style={{width:"100%",padding:"12px 16px",textAlign:"left",background:activeSection===i?"#07114C":"transparent",border:"none",borderBottom:"1px solid rgba(255,255,255,0.1)",cursor:"pointer",color:activeSection===i?"#fff":"#374151",fontSize:13,fontWeight:activeSection===i?700:400,lineHeight:1.4}}>
+ <button key={i} onClick={()=>setActiveSection(i)} style={{width:"100%",padding:"12px 16px",textAlign:"left",background:activeSection===i?"#07114C":"transparent",border:"none",borderBottom:"1px solid #e5e7eb",cursor:"pointer",color:activeSection===i?"#fff":"#374151",fontSize:13,fontWeight:activeSection===i?700:400,lineHeight:1.4}}>
  {s.title}
  </button>
  ))}
@@ -681,15 +681,15 @@ function HelpModal({ role="supplier", onClose }){
  {content.sections[activeSection].steps.map((step,i)=>(
  <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start"}}>
  <div style={{width:24,height:24,borderRadius:"50%",background:"#07114C",color:"#fff",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{i+1}</div>
- <div style={{fontSize:14,color:"rgba(255,255,255,0.8)",lineHeight:1.6}}>{step}</div>
+ <div style={{fontSize:14,color:"#374151",lineHeight:1.6}}>{step}</div>
  </div>
  ))}
  </div>
  </div>
  </div>
  {/* Footer */}
- <div style={{padding:"14px 24px",borderTop:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.05)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
- <span style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>BE Warehouse — Help Center</span>
+ <div style={{padding:"14px 24px",borderTop:"1px solid #e5e7eb",background:"#f8fafc",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+ <span style={{fontSize:12,color:"#9ca3af"}}>BE Warehouse — Help Center</span>
  <button onClick={onClose} style={{padding:"8px 20px",background:"#07114C",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer"}}>Close</button>
  </div>
  </div>
@@ -699,7 +699,7 @@ function HelpModal({ role="supplier", onClose }){
 
 function TopBar({ onBack, onHelp }) {
  return (
- <div style={{background:BG,padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid rgba(255,255,255,0.1)",flexWrap:"wrap",gap:8}}>
+ <div style={{background:BG,padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid #e5e7eb",flexWrap:"wrap",gap:8}}>
  <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{color:"#fff",fontWeight:800,fontSize:13}}>BE – Warehouse</span></div>
  <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
  <a href="mailto:Faisal.Janahi@Bapcoenergies.com" style={{color:"rgba(255,255,255,0.45)",fontSize:11,textDecoration:"none",display:"flex",alignItems:"center",gap:5}}>
@@ -709,7 +709,7 @@ function TopBar({ onBack, onHelp }) {
  <span>📞</span><span>Need help?</span>
  </a>
  {onHelp&&<button onClick={onHelp} style={{color:"#C8962A",background:"rgba(200,150,42,0.15)",border:"1px solid rgba(200,150,42,0.3)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:700,padding:"5px 10px"}}>❓ Guide</button>}
- <button onClick={onBack} style={{color:"rgba(255,255,255,0.5)",background:"none",border:"none",cursor:"pointer",fontSize:12}}>← Home</button>
+ <button onClick={onBack} style={{color:"#6b7280",background:"none",border:"none",cursor:"pointer",fontSize:12}}>← Home</button>
  </div>
  </div>
  );
@@ -748,7 +748,7 @@ function Landing({ onSupplier, onAdmin, onTracker }) {
  </button>
  </div>
 
- <div style={{width:"100%",maxWidth:700,borderTop:"1px solid rgba(255,255,255,0.1)",paddingTop:24}}>
+ <div style={{width:"100%",maxWidth:700,borderTop:"1px solid #e5e7eb",paddingTop:24}}>
  <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:isMobile?"16px":"20px 24px",marginBottom:20}}>
  <div style={{color:A,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:14}}>Support &amp; Contact</div>
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:isMobile?12:16}}>
@@ -757,10 +757,10 @@ function Landing({ onSupplier, onAdmin, onTracker }) {
  {icon:"📱",label:"Mobile",value:"+973 6667 6797",href:"tel:+97366676797"},
  {icon:"📞",label:"Office",value:"17757483",href:"tel:17757483"},
  ].map(({icon,label,value,href})=>(
- <a key={label} href={href} style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:12,padding:"10px 14px"}}>
+ <a key={label} href={href} style={{display:"flex",alignItems:"center",gap:10,textDecoration:"none",background:"rgba(255,255,255,0.05)",border:"1px solid #f3f4f6",borderRadius:12,padding:"10px 14px"}}>
  <span style={{fontSize:18,flexShrink:0}}>{icon}</span>
  <div style={{minWidth:0}}>
- <div style={{color:"rgba(255,255,255,0.4)",fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>{label}</div>
+ <div style={{color:"#9ca3af",fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>{label}</div>
  <div style={{color:"#fff",fontSize:isMobile?11:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{value}</div>
  </div>
  </a>
@@ -770,7 +770,7 @@ function Landing({ onSupplier, onAdmin, onTracker }) {
  <div style={{display:"flex",justifyContent:"center",alignItems:"center",flexWrap:"wrap",gap:12}}>
  <div style={{background:"#ffffff",borderRadius:99,padding:"7px 18px",display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 12px rgba(0,0,0,0.2)"}}>
  <div style={{width:7,height:7,borderRadius:"50%",background:"#10b981"}}/>
- <span style={{color:"rgba(255,255,255,0.8)",fontSize:12,fontWeight:600}}>Made by</span>
+ <span style={{color:"#374151",fontSize:12,fontWeight:600}}>Made by</span>
  <span style={{color:"#07114C",fontSize:13,fontWeight:800}}>Faisal Janahi</span>
  </div>
  </div>
@@ -784,7 +784,7 @@ function AdminLogin({ onLogin, onBack }) {
  const [email,setEmail]=useState("");
  const [pwd,setPwd]=useState("");
  const [err,setErr]=useState("");
- const inp = {width:"100%",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,padding:"11px 14px",fontSize:14,background:"rgba(255,255,255,0.08)",color:"#fff",outline:"none",boxSizing:"border-box"};
+ const inp = {width:"100%",border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,background:"#f9fafb",outline:"none",boxSizing:"border-box"};
  function submit() {
  const creds=getAdminCreds();
  if (!email.trim()){setErr("Please enter your email.");return;}
@@ -802,18 +802,18 @@ function AdminLogin({ onLogin, onBack }) {
  <h2 style={{color:"#fff",fontWeight:800,fontSize:22,margin:0}}>Admin Login</h2>
  <p style={{color:"rgba(255,255,255,0.45)",fontSize:13,marginTop:6}}>BE – Warehouse Appointments</p>
  </div>
- <div style={{background:"rgba(255,255,255,0.08)",borderRadius:20,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+ <div style={{background:"#fff",borderRadius:20,padding:24,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
  <div style={{marginBottom:14}}>
- <label style={{display:"block",fontSize:10,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Email</label>
+ <label style={{display:"block",fontSize:10,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Email</label>
  <input type="email" style={inp} value={email} placeholder="admin@bapcoenergies.com" onChange={e=>{setEmail(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()}/>
  </div>
  <div style={{marginBottom:14}}>
- <label style={{display:"block",fontSize:10,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Password</label>
+ <label style={{display:"block",fontSize:10,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Password</label>
  <input type="password" style={inp} value={pwd} placeholder="••••••••" onChange={e=>{setPwd(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()}/>
  </div>
- {err && <p style={{fontSize:12,color:"#dc2626",background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:8,padding:"8px 12px",margin:"0 0 12px"}}>{err}</p>}
+ {err && <p style={{fontSize:12,color:"#dc2626",background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:8,padding:"8px 12px",margin:"0 0 12px"}}>{err}</p>}
  <button onClick={submit} style={{width:"100%",padding:"13px",background:P,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer",marginBottom:10}}>Log In</button>
- <button onClick={onBack} style={{width:"100%",padding:"11px",background:"transparent",color:"rgba(255,255,255,0.5)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,fontSize:13,fontWeight:500,cursor:"pointer"}}>← Back</button>
+ <button onClick={onBack} style={{width:"100%",padding:"11px",background:"transparent",color:"#6b7280",border:"1px solid #e5e7eb",borderRadius:12,fontSize:13,fontWeight:500,cursor:"pointer"}}>← Back</button>
  </div>
  </div>
  </div>
@@ -846,7 +846,7 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  const [poVal,setPoVal]=useState("");
  const poRef=useRef();
  const fileRef=useRef();
- const inp = {width:"100%",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,padding:"11px 14px",fontSize:14,background:"rgba(255,255,255,0.08)",color:"#fff",outline:"none",boxSizing:"border-box"};
+ const inp = {width:"100%",border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,background:"#f9fafb",outline:"none",boxSizing:"border-box"};
 
  function set(k){return v=>setF(p=>({...p,[k]:v}));}
  function setE(k){return e=>set(k)(e.target.value);}
@@ -897,14 +897,14 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  <TopBar onBack={onBack} onHelp={()=>setShowHelp(true)}/>
  <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
  <div style={{textAlign:"center",maxWidth:440,width:"100%"}}>
- <div style={{width:72,height:72,background:"rgba(16,185,129,0.15)",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:36}}>✅</div>
+ <div style={{width:72,height:72,background:"#d1fae5",borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:36}}>✅</div>
  <h2 style={{color:"#fff",fontWeight:800,fontSize:22,margin:"0 0 8px"}}>{editingAppointment?"Resubmitted Successfully!":"Request Submitted!"}</h2>
  <p style={{color:"rgba(255,255,255,0.55)",fontSize:13,marginBottom:24}}>{editingAppointment?"Your revised appointment has been sent back to the admin for review.":"Save your Appointment ID and PIN — you will need both to track your request."}</p>
 
  <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.18)",borderRadius:20,padding:isMobile?18:24,marginBottom:20}}>
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
  <div style={{background:"rgba(255,255,255,0.1)",borderRadius:14,padding:"16px 12px",textAlign:"center"}}>
- <div style={{color:"rgba(255,255,255,0.5)",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Appointment ID</div>
+ <div style={{color:"#6b7280",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Appointment ID</div>
  <div style={{color:"#fff",fontWeight:800,fontSize:22,fontFamily:"monospace",letterSpacing:2}}>{result.id}</div>
  </div>
  <div style={{background:"rgba(200,150,42,0.18)",border:"1px solid rgba(200,150,42,0.45)",borderRadius:14,padding:"16px 12px",textAlign:"center"}}>
@@ -933,12 +933,12 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  <TopBar onBack={onBack} onHelp={()=>setShowHelp(true)}/>
  <div style={{maxWidth:640,width:"100%",margin:"0 auto",padding:isMobile?"20px 16px":"28px 20px"}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,marginBottom:4}}>{editingAppointment?"↩️ Edit & Resubmit":"Book a Delivery"}</h1>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,marginBottom:20}}>{editingAppointment?`Revising appointment ${editingAppointment.id} — Make your changes and resubmit.`:"All requests are subject to warehouse approval."}</p>
- <div style={{background:"rgba(255,255,255,0.08)",borderRadius:20,padding:isMobile?20:28,display:"flex",flexDirection:"column",gap:18}}>
+ <p style={{color:"#6b7280",fontSize:13,marginBottom:20}}>{editingAppointment?`Revising appointment ${editingAppointment.id} — Make your changes and resubmit.`:"All requests are subject to warehouse approval."}</p>
+ <div style={{background:"#fff",borderRadius:20,padding:isMobile?20:28,display:"flex",flexDirection:"column",gap:18}}>
 
  {/* Priority Selector — TOP OF FORM */}
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Delivery Priority *</label>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>Delivery Priority *</label>
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
  <button type="button" onClick={async()=>{set("isEmergency")(false);set("emergencyJustification")("");set("emergencyDeclared")(false);setDateErr("");}} style={{padding:"14px 12px",borderRadius:12,border:`2px solid ${!f.isEmergency?"#6366f1":"#e5e7eb"}`,background:!f.isEmergency?"#eef2ff":"#f9fafb",cursor:"pointer",textAlign:"left",transition:"all 0.15s"}}>
  <div style={{fontWeight:700,fontSize:13,color:!f.isEmergency?"#4f46e5":"#6b7280",marginBottom:3}}>📦 Standard</div>
@@ -951,17 +951,17 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  </div>
  {f.isEmergency&&(
  <div style={{marginTop:12,display:"flex",flexDirection:"column",gap:10}}>
- <div style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:10,padding:"10px 12px"}}>
+ <div style={{background:"#fef2f2",border:"1px solid #fecaca",borderRadius:10,padding:"10px 12px"}}>
  <div style={{fontSize:11,fontWeight:700,color:"#dc2626",marginBottom:2}}>⚠️ Emergency Access — All restrictions bypassed. Permanently logged for management review.</div>
  </div>
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"#dc2626",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Emergency Justification * <span style={{color:"rgba(255,255,255,0.4)",fontWeight:400,textTransform:"none"}}>(min 20 characters)</span></label>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#dc2626",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Emergency Justification * <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(min 20 characters)</span></label>
  <textarea value={f.emergencyJustification} onChange={e=>set("emergencyJustification")(e.target.value)} placeholder="e.g. Compressor unit 3 failure — production at risk. Urgent replacement parts required immediately." style={{...inp,height:80,resize:"none",borderColor:f.emergencyJustification.trim().length>0&&f.emergencyJustification.trim().length<20?"#f87171":"#e5e7eb"}}/>
  {f.emergencyJustification.trim().length>0&&f.emergencyJustification.trim().length<20&&<p style={{fontSize:11,color:"#dc2626",margin:"4px 0 0"}}>⛔ {20-f.emergencyJustification.trim().length} more characters needed</p>}
  </div>
- <label style={{display:"flex",alignItems:"flex-start",gap:10,cursor:"pointer",background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:10,padding:"12px 14px"}}>
+ <label style={{display:"flex",alignItems:"flex-start",gap:10,cursor:"pointer",background:"#fff",border:"1px solid #fecaca",borderRadius:10,padding:"12px 14px"}}>
  <input type="checkbox" checked={f.emergencyDeclared} onChange={e=>set("emergencyDeclared")(e.target.checked)} style={{marginTop:3,width:16,height:16,accentColor:"#dc2626",flexShrink:0}}/>
- <div style={{fontSize:12,color:"rgba(255,255,255,0.8)",lineHeight:1.6}}>
+ <div style={{fontSize:12,color:"#374151",lineHeight:1.6}}>
  <span style={{fontWeight:700,color:"#dc2626"}}>Declaration: </span>
  I declare that this is a genuine emergency and I understand that misuse is subject to review and consequences per <span style={{fontWeight:700}}>Bapco Energies Warehouse Policy</span>. I accept full responsibility for this declaration.
  </div>
@@ -971,32 +971,32 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  </div>
 
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Supplier / Company Name *</label>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Supplier / Company Name *</label>
  <input style={inp} value={f.supplierName} onChange={setE("supplierName")} placeholder="e.g. Gulf Trading Co."/>
  </div>
 
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Email Address *</label>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Email Address *</label>
  <input type="email" style={inp} value={f.supplierEmail} onChange={setE("supplierEmail")} placeholder="dispatch@company.com"/>
  </div>
 
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Delivery To * <span style={{fontWeight:400,textTransform:"none",fontSize:12,color:"rgba(255,255,255,0.4)"}}>(Sub-organisation)</span></label>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Delivery To * <span style={{fontWeight:400,textTransform:"none",fontSize:12,color:"#9ca3af"}}>(Sub-organisation)</span></label>
  <select style={inp} value={f.deliveryTo} onChange={setE("deliveryTo")}>
  <option value="">Select an SBU…</option>
  {SBUS.map(s=><option key={s.code} value={s.code}>{s.code} – {s.name}</option>)}
  </select>
- {!f.deliveryTo && <p style={{fontSize:11,color:"rgba(255,255,255,0.4)",margin:"5px 0 0"}}>Choose the receiving sub-organisation</p>}
+ {!f.deliveryTo && <p style={{fontSize:11,color:"#9ca3af",margin:"5px 0 0"}}>Choose the receiving sub-organisation</p>}
  </div>
 
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:14}}>
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Delivery Date *</label>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Delivery Date *</label>
  <input type="date" min={today} value={f.date} onChange={handleDate} style={{...inp,borderColor:dateErr?"#f87171":"#e5e7eb"}}/>
- {dateErr ? <p style={{fontSize:12,color:"#dc2626",margin:"5px 0 0"}}>⛔ {dateErr}</p> : <p style={{fontSize:11,color:"rgba(255,255,255,0.4)",margin:"5px 0 0"}}>Sun – Thu only, excluding Bahrain public holidays</p>}
+ {dateErr ? <p style={{fontSize:12,color:"#dc2626",margin:"5px 0 0"}}>⛔ {dateErr}</p> : <p style={{fontSize:11,color:"#9ca3af",margin:"5px 0 0"}}>Sun – Thu only, excluding Bahrain public holidays</p>}
  </div>
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Delivery Time *</label>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Delivery Time *</label>
  <select style={inp} value={f.time} onChange={setE("time")}>
  <option value="">Select a slot…</option>
  {SLOTS.map(t=>{const taken=slotCount(t),full=taken>=2,past=isSlotPast(t);return <option key={t} value={t} disabled={full||past}>{t+(full?" — Full":past?" — Passed":taken===1?" (1 remaining)":"")}</option>;})}
@@ -1006,35 +1006,35 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  </div>
 
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>PO Numbers {f.isEmergency?"(optional)":"*"} <span style={{fontWeight:400,textTransform:"none",fontSize:12}}>(press Enter to add)</span></label>
- <div onClick={()=>poRef.current&&poRef.current.focus()} style={{minHeight:52,border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,padding:"8px 12px",display:"flex",flexWrap:"wrap",gap:6,alignItems:"center",background:"rgba(255,255,255,0.08)",cursor:"text"}}>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>PO Numbers {f.isEmergency?"(optional)":"*"} <span style={{fontWeight:400,textTransform:"none",fontSize:12}}>(press Enter to add)</span></label>
+ <div onClick={()=>poRef.current&&poRef.current.focus()} style={{minHeight:52,border:"1px solid #e5e7eb",borderRadius:12,padding:"8px 12px",display:"flex",flexWrap:"wrap",gap:6,alignItems:"center",background:"#f9fafb",cursor:"text"}}>
  {f.poNumbers.map(t=>(
  <span key={t} style={{display:"flex",alignItems:"center",gap:4,background:"#eef2ff",border:"1px solid #c7d2fe",color:"#3730a3",fontSize:12,fontWeight:700,padding:"5px 9px",borderRadius:8}}>
  #{t}
- <button onClick={e=>{e.stopPropagation();removePO(t);}} style={{background:"none",border:"none",cursor:"pointer",color:"#818cf8",padding:0,fontSize:14,lineHeight:1}}>×</button>
+ <button onClick={e=>{e.stopPropagation();removePO(t);}} style={{background:"none",border:"none",cursor:"pointer",color:"#4f46e5",padding:0,fontSize:14,lineHeight:1}}>×</button>
  </span>
  ))}
- <input ref={poRef} value={poVal} onChange={e=>setPoVal(e.target.value)} onKeyDown={onPoKey} onBlur={()=>addPO(poVal)} placeholder={f.poNumbers.length===0?"Type PO number, press Enter…":"Add another…"} style={{flex:1,minWidth:140,background:"transparent",border:"none",outline:"none",fontSize:13,color:"rgba(255,255,255,0.8)"}}/>
+ <input ref={poRef} value={poVal} onChange={e=>setPoVal(e.target.value)} onKeyDown={onPoKey} onBlur={()=>addPO(poVal)} placeholder={f.poNumbers.length===0?"Type PO number, press Enter…":"Add another…"} style={{flex:1,minWidth:140,background:"transparent",border:"none",outline:"none",fontSize:13,color:"#374151"}}/>
  </div>
  {tagCount>0&&<p style={{fontSize:12,color:"#059669",margin:"5px 0 0"}}>✓ {tagCount} PO{tagCount!==1?"s":""} added — Total Orders set automatically.</p>}
  </div>
 
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:14}}>
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Total Orders</label>
- <div style={{...inp,background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.5)",display:"flex",alignItems:"center",gap:8,cursor:"default"}}>
- <span style={{fontWeight:700,color:"rgba(255,255,255,0.8)",fontSize:15}}>{tagCount||"—"}</span>
- <span style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>{tagCount>0?"auto-calculated from PO tags":"add PO numbers above"}</span>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Total Orders</label>
+ <div style={{...inp,background:"rgba(255,255,255,0.08)",color:"#6b7280",display:"flex",alignItems:"center",gap:8,cursor:"default"}}>
+ <span style={{fontWeight:700,color:"#374151",fontSize:15}}>{tagCount||"—"}</span>
+ <span style={{fontSize:12,color:"#9ca3af"}}>{tagCount>0?"auto-calculated from PO tags":"add PO numbers above"}</span>
  </div>
  </div>
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Total Lines {f.isEmergency?"(optional)":"*"}</label>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Total Lines {f.isEmergency?"(optional)":"*"}</label>
  <input type="number" min="1" style={inp} value={f.totalLines} onChange={setE("totalLines")} placeholder="e.g. 23"/>
  </div>
  </div>
 
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Storage Location * <span style={{fontWeight:400,textTransform:"none",fontSize:12}}>Select one or both</span></label>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Storage Location * <span style={{fontWeight:400,textTransform:"none",fontSize:12}}>Select one or both</span></label>
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
  {STORAGE.map(loc=>{const on=f.storageLocation.includes(loc);return(
  <button key={loc} onClick={()=>toggleStorage(loc)} style={{display:"flex",alignItems:"center",gap:10,padding:"14px 12px",borderRadius:12,border:`2px solid ${on?"#818cf8":"#e5e7eb"}`,background:on?"#eef2ff":"#f9fafb",color:on?"#312e81":"#6b7280",cursor:"pointer",textAlign:"left"}}>
@@ -1052,14 +1052,14 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  </div>
 
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Off-loading Equipment Required? *</label>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Off-loading Equipment Required? *</label>
  <div style={{display:"flex",gap:10,marginBottom:10}}>
  {[false,true].map(opt=>{const on=f.needsEquipment===opt;return(
  <button key={String(opt)} onClick={async()=>{set("needsEquipment")(opt);if(!opt)set("offloadingEquipment")([]);}} style={{flex:1,padding:"12px",borderRadius:12,border:`1px solid ${on?P:"#e5e7eb"}`,background:on?`${P}14`:"#f9fafb",color:on?P:"#6b7280",fontWeight:600,fontSize:14,cursor:"pointer"}}>{opt?"Yes":"No"}</button>
  );})}
  </div>
  {f.needsEquipment && (
- <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,padding:12,background:"rgba(255,255,255,0.06)",borderRadius:12,border:"1px solid rgba(255,255,255,0.1)"}}>
+ <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,padding:12,background:"#f9fafb",borderRadius:12,border:"1px solid #f3f4f6"}}>
  {EQUIP.map(eq=>{const on=f.offloadingEquipment.includes(eq);return(
  <button key={eq} onClick={()=>toggleEq(eq)} style={{display:"flex",alignItems:"center",gap:8,padding:"11px 12px",borderRadius:10,border:`1px solid ${on?"#fcd34d":"#e5e7eb"}`,background:on?"#fffbeb":"#fff",color:on?"#92400e":"#6b7280",cursor:"pointer",fontSize:13,fontWeight:500}}>
  <div style={{width:18,height:18,border:`2px solid ${on?"#f59e0b":"#d1d5db"}`,background:on?"#f59e0b":"#fff",borderRadius:3,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -1073,25 +1073,25 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  </div>
 
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
- Attachments <span style={{fontWeight:400,textTransform:"none",fontSize:12,color:"rgba(255,255,255,0.4)"}}>(Delivery notes, supporting documents)</span>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
+ Attachments <span style={{fontWeight:400,textTransform:"none",fontSize:12,color:"#9ca3af"}}>(Delivery notes, supporting documents)</span>
  </label>
- <div style={{border:"2px dashed #e5e7eb",borderRadius:12,padding:16,background:"rgba(255,255,255,0.06)",textAlign:"center"}}>
+ <div style={{border:"2px dashed #e5e7eb",borderRadius:12,padding:16,background:"#f9fafb",textAlign:"center"}}>
  <input ref={fileRef} type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx" onChange={handleFiles} style={{display:"none"}}/>
- <button onClick={()=>fileRef.current&&fileRef.current.click()} style={{padding:"9px 18px",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:9,cursor:"pointer",color:"rgba(255,255,255,0.8)",fontSize:13,fontWeight:500}}>
+ <button onClick={()=>fileRef.current&&fileRef.current.click()} style={{padding:"9px 18px",background:"#fff",border:"1px solid #e5e7eb",borderRadius:9,cursor:"pointer",color:"#374151",fontSize:13,fontWeight:500}}>
  📎 Choose Files
  </button>
- {f.attachments.length===0&&<p style={{fontSize:12,color:"rgba(255,255,255,0.4)",margin:"8px 0 0"}}>PDF, Word, Excel or images • Optional</p>}
+ {f.attachments.length===0&&<p style={{fontSize:12,color:"#9ca3af",margin:"8px 0 0"}}>PDF, Word, Excel or images • Optional</p>}
  {f.attachments.some(a=>!a.url)&&<p style={{fontSize:12,color:"#f59e0b",margin:"8px 0 0"}}>⏳ Uploading...</p>}
  </div>
  {f.attachments.length>0&&(
  <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:6}}>
  {f.attachments.map(file=>(
- <div key={file.name} style={{display:"flex",alignItems:"center",gap:10,background:"rgba(255,255,255,0.08)",borderRadius:9,padding:"8px 12px",border:"1px solid rgba(255,255,255,0.1)"}}>
+ <div key={file.name} style={{display:"flex",alignItems:"center",gap:10,background:"#f3f4f6",borderRadius:9,padding:"8px 12px",border:"1px solid #e5e7eb"}}>
  <span style={{fontSize:16,flexShrink:0}}>{file.type&&file.type.includes("pdf")?"📄":file.type&&file.type.includes("image")?"🖼️":"📎"}</span>
- <span style={{flex:1,fontSize:13,color:"rgba(255,255,255,0.8)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{file.name}</span>
- <span style={{fontSize:11,color:"rgba(255,255,255,0.4)",flexShrink:0}}>{fmtBytes(file.size)}</span>
- <button onClick={()=>removeAttachment(file.name)} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.4)",fontSize:18,padding:0,lineHeight:1,flexShrink:0}}>×</button>
+ <span style={{flex:1,fontSize:13,color:"#374151",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{file.name}</span>
+ <span style={{fontSize:11,color:"#9ca3af",flexShrink:0}}>{fmtBytes(file.size)}</span>
+ <button onClick={()=>removeAttachment(file.name)} style={{background:"none",border:"none",cursor:"pointer",color:"#9ca3af",fontSize:18,padding:0,lineHeight:1,flexShrink:0}}>×</button>
  </div>
  ))}
  </div>
@@ -1099,7 +1099,7 @@ function SupplierForm({ onSubmit, onBack, appointments, editingAppointment }) {
  </div>
 
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Additional Notes</label>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Additional Notes</label>
  <textarea style={{...inp,height:80,resize:"none"}} value={f.additionalNotes} onChange={setE("additionalNotes")} placeholder="Special requirements (optional)"/>
  </div>
 
@@ -1211,20 +1211,20 @@ function SupplierTracker({ appointments, onBack, onSendMessage }) {
  <TopBar onBack={onBack} onHelp={()=>setShowHelp(true)}/>
  <div style={{maxWidth:640,width:"100%",margin:"0 auto",padding:isMobile?"20px 16px":"28px 20px"}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,marginBottom:4}}>Track Your Appointment</h1>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,marginBottom:20}}>Search by Appointment ID, email, supplier name, or PO number — then enter your 4-digit PIN to view details.</p>
+ <p style={{color:"#6b7280",fontSize:13,marginBottom:20}}>Search by Appointment ID, email, supplier name, or PO number — then enter your 4-digit PIN to view details.</p>
 
- <div style={{background:"rgba(255,255,255,0.07)",borderRadius:20,padding:isMobile?16:20,marginBottom:20}}>
+ <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:20,padding:isMobile?16:20,marginBottom:20}}>
  <div style={{display:"flex",flexDirection:isMobile?"column":"row",gap:10}}>
- <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder="Search by any field — ID, name, email, PO, date, status…" style={{flex:1,border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,padding:"11px 14px",fontSize:14,background:"rgba(255,255,255,0.08)",color:"#fff",outline:"none"}}/>
+ <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder="Search by any field — ID, name, email, PO, date, status…" style={{flex:1,border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,background:"#f9fafb",outline:"none"}}/>
  <button onClick={doSearch} style={{padding:"11px 20px",background:P,color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer"}}>Search</button>
  </div>
  </div>
 
  {searched&&results.length===0&&(
- <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
+ <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid #e5e7eb",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
  <div style={{fontSize:36,marginBottom:10}}>🔍</div>
  <h3 style={{color:"#fff",fontWeight:600,margin:"0 0 6px"}}>No appointments found</h3>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:0}}>Please check your search term and try again.</p>
+ <p style={{color:"#6b7280",fontSize:13,margin:0}}>Please check your search term and try again.</p>
  </div>
  )}
 
@@ -1234,7 +1234,7 @@ function SupplierTracker({ appointments, onBack, onSendMessage }) {
  const statusBg=a.status==="approved"?"#d1fae5":a.status==="rejected"?"#fee2e2":a.status==="revision_required"?"#ffedd5":"#fef3c7";
  const statusBorder=a.status==="approved"?"#6ee7b7":a.status==="rejected"?"#fca5a5":a.status==="revision_required"?"#fed7aa":"#fcd34d";
  return (
- <div key={a.id} style={{background:"#fff",borderRadius:20,marginBottom:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.08)"}}>
+ <div key={a.id} style={{background:"#fff",borderRadius:20,marginBottom:16,overflow:"hidden",border:"1px solid #f3f4f6"}}>
  {isUnlocked ? (
  <div style={{padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",background:statusBg,borderBottom:`1px solid ${statusBorder}`}}>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -1244,8 +1244,8 @@ function SupplierTracker({ appointments, onBack, onSendMessage }) {
  <span style={{fontFamily:"monospace",fontSize:12,fontWeight:800,color:P}}>{a.id}</span>
  </div>
  ) : (
- <div style={{padding:"14px 18px",background:"rgba(255,255,255,0.06)",borderBottom:"1px solid rgba(255,255,255,0.1)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
- <span style={{color:"rgba(255,255,255,0.5)",fontSize:12,fontWeight:600}}>🔒 Locked</span>
+ <div style={{padding:"14px 18px",background:"rgba(255,255,255,0.06)",borderBottom:"1px solid rgba(255,255,255,0.08)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+ <span style={{color:"#6b7280",fontSize:12,fontWeight:600}}>🔒 Locked</span>
  <span style={{fontFamily:"monospace",fontSize:12,fontWeight:800,color:P}}>{a.id}</span>
  </div>
  )}
@@ -1254,7 +1254,7 @@ function SupplierTracker({ appointments, onBack, onSendMessage }) {
  <div style={{padding:24}}>
  <div style={{textAlign:"center",marginBottom:18}}>
  <div style={{fontSize:36,marginBottom:10}}>🔐</div>
- <p style={{fontSize:13,color:"rgba(255,255,255,0.5)",margin:0}}>Enter your 4-digit PIN to view appointment details</p>
+ <p style={{fontSize:13,color:"#6b7280",margin:0}}>Enter your 4-digit PIN to view appointment details</p>
  </div>
  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10,margin:"0 auto"}}>
  <div style={{display:"flex",gap:10,width:"100%",maxWidth:220}}>
@@ -1279,8 +1279,8 @@ function SupplierTracker({ appointments, onBack, onSendMessage }) {
  <div style={{padding:18}}>
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"1fr 1fr",gap:10,marginBottom:12}}>
  {[["Supplier",a.supplierName],["Date",fmtDate(a.date)],["Time",a.time],["Orders / Lines",`${a.totalOrders} / ${a.totalLines}`]].map(([k,v])=>(
- <div key={k} style={{background:"rgba(255,255,255,0.06)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.1)"}}>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:3}}>{k}</div>
+ <div key={k} style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6"}}>
+ <div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>{k}</div>
  <div style={{fontWeight:600,fontSize:13,color:"#fff"}}>{v}</div>
  </div>
  ))}
@@ -1288,14 +1288,14 @@ function SupplierTracker({ appointments, onBack, onSendMessage }) {
  {a.storageLocation&&a.storageLocation.length>0&&<div style={{marginBottom:10}}><StoreBadge loc={a.storageLocation}/></div>}
  {a.deliveryTo&&(
  <div style={{background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:10,padding:"8px 12px",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
- <span style={{fontSize:10,fontWeight:700,color:"#a5b4fc",textTransform:"uppercase",letterSpacing:1}}>Delivery to</span>
- <span style={{fontSize:13,fontWeight:700,color:"#a5b4fc",fontFamily:"monospace"}}>{a.deliveryTo}</span>
+ <span style={{fontSize:10,fontWeight:700,color:"#4f46e5",textTransform:"uppercase",letterSpacing:1}}>Delivery to</span>
+ <span style={{fontSize:13,fontWeight:700,color:"#4f46e5",fontFamily:"monospace"}}>{a.deliveryTo}</span>
  <span style={{fontSize:12,color:"#6366f1"}}>{(SBUS.find(s=>s.code===a.deliveryTo)||{}).name||""}</span>
  </div>
  )}
  {a.attachments&&a.attachments.length>0&&(
- <div style={{background:"rgba(255,255,255,0.06)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.1)",marginBottom:10}}>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:6}}>Attachments</div>
+ <div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}>
+ <div style={{fontSize:11,color:"#9ca3af",marginBottom:6}}>Attachments</div>
  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
  {a.attachments.map(file=>(
  <span key={file.name} style={{display:"inline-flex",alignItems:"center",gap:4,background:"#e0e7ff",color:"#3730a3",fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:8,border:"1px solid #c7d2fe"}}>
@@ -1306,7 +1306,7 @@ function SupplierTracker({ appointments, onBack, onSendMessage }) {
  </div>
  )}
  {a.status==="rejected"&&a.managerComments&&(
- <div style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:12,padding:"12px 14px",marginBottom:10}}>
+ <div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:12,padding:"12px 14px",marginBottom:10}}>
  <div style={{fontSize:10,fontWeight:700,color:"#ef4444",marginBottom:4,textTransform:"uppercase",letterSpacing:1}}>Rejection Reason</div>
  <p style={{fontSize:13,color:"#991b1b",margin:0}}>{a.managerComments}</p>
  </div>
@@ -1314,7 +1314,7 @@ function SupplierTracker({ appointments, onBack, onSendMessage }) {
  {a.status==="revision_required"&&a.revisionComments&&(
  <div style={{background:"#ffedd5",border:"1px solid #fed7aa",borderRadius:12,padding:"12px 14px",marginBottom:12}}>
  <div style={{fontSize:10,fontWeight:700,color:"#ea580c",marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>⚠️ Action Required - Revision Needed</div>
- <div style={{background:"rgba(251,146,60,0.15)",borderRadius:8,padding:"10px 12px",marginBottom:10,border:"1px solid rgba(251,146,60,0.4)"}}>
+ <div style={{background:"#fff",borderRadius:8,padding:"10px 12px",marginBottom:10,border:"1px solid #fdba74"}}>
  <div style={{fontSize:10,color:"#9a3412",marginBottom:3,fontWeight:600}}>Admin Comments:</div>
  <p style={{fontSize:13,color:"#7c2d12",margin:0,fontWeight:500}}>{a.revisionComments}</p>
  </div>
@@ -1436,7 +1436,7 @@ function BarChart({ data, color="#C8962A", height=120, label="" }){
  <div style={{display:"flex",alignItems:"flex-end",gap:4,height,padding:"0 4px"}}>
  {data.map((d,i)=>(
  <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
- <div style={{fontSize:9,color:"rgba(255,255,255,0.5)",fontWeight:600}}>{d.value>0?d.value:""}</div>
+ <div style={{fontSize:9,color:"#6b7280",fontWeight:600}}>{d.value>0?d.value:""}</div>
  <div style={{width:"100%",background:typeof color==="function"?color(i,d):color,borderRadius:"4px 4px 0 0",height:`${Math.max((d.value/max)*100,d.value>0?4:0)}%`,transition:"height 0.8s ease",minHeight:d.value>0?4:0}}/>
  <div style={{fontSize:9,color:"rgba(255,255,255,0.45)",textAlign:"center",lineHeight:1.2,maxWidth:32,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{d.label}</div>
  </div>
@@ -1463,10 +1463,10 @@ function SlotHeatmap({ appointments }){
  <div style={{overflowX:"auto"}}>
  <div style={{display:"grid",gridTemplateColumns:`40px repeat(${days.length},1fr)`,gap:3,minWidth:280}}>
  <div/>
- {days.map(d=><div key={d} style={{fontSize:10,color:"rgba(255,255,255,0.5)",textAlign:"center",fontWeight:600,padding:"2px 0"}}>{d}</div>)}
+ {days.map(d=><div key={d} style={{fontSize:10,color:"#6b7280",textAlign:"center",fontWeight:600,padding:"2px 0"}}>{d}</div>)}
  {slots.map(slot=>(
  <React.Fragment key={slot}>
- <div style={{fontSize:9,color:"rgba(255,255,255,0.4)",display:"flex",alignItems:"center",justifyContent:"flex-end",paddingRight:6}}>{slot}</div>
+ <div style={{fontSize:9,color:"#9ca3af",display:"flex",alignItems:"center",justifyContent:"flex-end",paddingRight:6}}>{slot}</div>
  {dayNums.map(dow=>{
  const val=grid[`${dow}-${slot}`]||0;
  const intensity=maxVal>0?val/maxVal:0;
@@ -1482,9 +1482,9 @@ function SlotHeatmap({ appointments }){
  ))}
  </div>
  <div style={{display:"flex",alignItems:"center",gap:6,marginTop:10,justifyContent:"flex-end"}}>
- <span style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>Low</span>
+ <span style={{fontSize:10,color:"#9ca3af"}}>Low</span>
  {[0.1,0.3,0.5,0.7,0.9].map(o=><div key={o} style={{width:14,height:14,borderRadius:3,background:`rgba(200,150,42,${o})`}}/>)}
- <span style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>High</span>
+ <span style={{fontSize:10,color:"#9ca3af"}}>High</span>
  </div>
  </div>
  );
@@ -1520,7 +1520,7 @@ function CalendarHeatmap({ appointments }){
  <div style={{overflowX:"auto"}}>
  <div style={{position:"relative",paddingTop:18}}>
  <div style={{display:"flex",position:"absolute",top:0,left:0,right:0}}>
- {months.map((m,i)=><div key={i} style={{position:"absolute",left:m.col*16,fontSize:9,color:"rgba(255,255,255,0.5)",fontWeight:600}}>{m.label}</div>)}
+ {months.map((m,i)=><div key={i} style={{position:"absolute",left:m.col*16,fontSize:9,color:"#6b7280",fontWeight:600}}>{m.label}</div>)}
  </div>
  <div style={{display:"flex",gap:2}}>
  {weeks.map((wk,wi)=>(
@@ -1806,14 +1806,14 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
   </div>
   <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
   {overdue.length>0&&(
-   <button onClick={()=>navTo("approved")} style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:10,padding:"7px 14px",color:"#fca5a5",fontSize:12,fontWeight:700,cursor:"pointer",animation:"pulse 2s infinite"}}>
+   <button onClick={()=>navTo("approved")} style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:10,padding:"7px 14px",color:"#fca5a5",fontSize:12,fontWeight:700,cursor:"pointer",animation:"pulse 2s infinite"}}>
    ⚠️ {overdue.length} Overdue
    </button>
   )}
   <button onClick={()=>setShowFilters(p=>!p)} style={{background:hasFilters?"rgba(200,150,42,0.2)":"rgba(255,255,255,0.08)",border:`1px solid ${hasFilters?"rgba(200,150,42,0.5)":"rgba(255,255,255,0.15)"}`,borderRadius:10,padding:"7px 14px",color:hasFilters?"#C8962A":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,cursor:"pointer"}}>
    🔍 {showFilters?"Hide":"Filters"}{hasFilters?" ●":""}
   </button>
-  {hasFilters&&<button onClick={()=>{setSbuFilter("all");setStatusFilter("all");setPriorityFilter("all");setStorageFilter("all");setDateFrom("");setDateTo("");}} style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:10,padding:"7px 12px",color:"#fca5a5",fontSize:12,cursor:"pointer"}}>✕ Clear</button>}
+  {hasFilters&&<button onClick={()=>{setSbuFilter("all");setStatusFilter("all");setPriorityFilter("all");setStorageFilter("all");setDateFrom("");setDateTo("");}} style={{background:"#fff",border:"1px solid #fecaca",borderRadius:10,padding:"7px 12px",color:"#fca5a5",fontSize:12,cursor:"pointer"}}>✕ Clear</button>}
   <button onClick={exportPDF} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"7px 14px",color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:700,cursor:"pointer"}}>📄 PDF</button>
   <button onClick={exportExcel} disabled={exportLoading} style={{background:"#059669",border:"none",borderRadius:10,padding:"7px 14px",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",opacity:exportLoading?0.7:1}}>{exportLoading?"⏳...":"📥 Excel"}</button>
   </div>
@@ -1821,8 +1821,8 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
 
  {/* ── Advanced Filters ── */}
  {showFilters&&(
-  <div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:14,padding:16}}>
-  <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Advanced Filters</div>
+  <div style={{background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:14,padding:16}}>
+  <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Advanced Filters</div>
   <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(3,1fr) repeat(2,1fr)",gap:10}}>
    {[
    {label:"SBU",val:sbuFilter,set:setSbuFilter,opts:[["all","All SBUs"],["BR","BR — Refining"],["BU","BU — Upstream"],["BG","BG — Gas"],["BT","BT — Trading"]]},
@@ -1831,18 +1831,18 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
    {label:"Storage",val:storageFilter,set:setStorageFilter,opts:[["all","All Storage"],["Covered store","Covered Store"],["Open Yard","Open Yard"]]},
    ].map(function(f){return(
    <div key={f.label}>
-    <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4,fontWeight:600}}>{f.label}</div>
+    <div style={{fontSize:10,color:"#9ca3af",marginBottom:4,fontWeight:600}}>{f.label}</div>
     <select value={f.val} onChange={e=>f.set(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 10px",color:"#fff",fontSize:12,outline:"none",colorScheme:"dark"}}>
     {f.opts.map(function(o){return <option key={o[0]} value={o[0]}>{o[1]}</option>;})}
     </select>
    </div>
    );})}
    <div>
-   <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4,fontWeight:600}}>Date From</div>
+   <div style={{fontSize:10,color:"#9ca3af",marginBottom:4,fontWeight:600}}>Date From</div>
    <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 10px",color:"#fff",fontSize:12,outline:"none",colorScheme:"dark",boxSizing:"border-box"}}/>
    </div>
    <div>
-   <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4,fontWeight:600}}>Date To</div>
+   <div style={{fontSize:10,color:"#9ca3af",marginBottom:4,fontWeight:600}}>Date To</div>
    <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 10px",color:"#fff",fontSize:12,outline:"none",colorScheme:"dark",boxSizing:"border-box"}}/>
    </div>
   </div>
@@ -1860,7 +1860,7 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
   {label:"Emergency",val:emergency,color:"#f87171",sub:"High priority",filter:"emergency",icon:"🚨"},
  ].map(function(item){return(
   <button key={item.label} onClick={()=>navTo(item.filter)}
-   style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:isMobile?14:20,textAlign:"left",cursor:"pointer",transition:"background 0.2s"}}>
+   style={{background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:16,padding:isMobile?14:20,textAlign:"left",cursor:"pointer",transition:"background 0.2s"}}>
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
    <span style={{fontSize:20}}>{item.icon}</span>
    <span style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>Click →</span>
@@ -1878,7 +1878,7 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
   <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
    <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>📅 Today's Schedule</div>
-   <div style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>{today.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}</div>
+   <div style={{fontSize:11,color:"#9ca3af"}}>{today.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}</div>
   </div>
   {todayAppts.length===0?(
    <div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.3)",fontSize:13}}>No approved deliveries today</div>
@@ -1898,7 +1898,7 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
       <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
        <span style={{fontSize:12,color:"#fff",fontWeight:500}}>{a.supplierName}</span>
        <div style={{display:"flex",gap:6,alignItems:"center"}}>
-       <span style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>{a.deliveryTo}</span>
+       <span style={{fontSize:10,color:"#9ca3af"}}>{a.deliveryTo}</span>
        <span style={{fontSize:10,fontWeight:700,color:isDone?"#6ee7b7":isOverdue?"#fca5a5":"#fcd34d"}}>{isDone?"✅":isOverdue?"🔴":"⏳"}</span>
        </div>
       </div>
@@ -1923,7 +1923,7 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
     <span style={{fontSize:12,fontWeight:700,color:"#fff"}}>{s.sbu}</span>
     <div style={{display:"flex",gap:8,alignItems:"center"}}>
-     <span style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>{s.booked}/{s.slots} slots</span>
+     <span style={{fontSize:11,color:"#6b7280"}}>{s.booked}/{s.slots} slots</span>
      <span style={{fontSize:12,fontWeight:800,color:col}}>{s.pct}%</span>
     </div>
     </div>
@@ -1956,7 +1956,7 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
     <button key={item[0]} onClick={()=>navTo(item[3])}
     style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",padding:"2px 4px",borderRadius:6,transition:"background 0.2s"}}>
     <div style={{width:8,height:8,borderRadius:"50%",background:item[2],flexShrink:0}}/>
-    <span style={{fontSize:11,color:"rgba(255,255,255,0.6)"}}>{item[0]}</span>
+    <span style={{fontSize:11,color:"#4b5563"}}>{item[0]}</span>
     <span style={{fontSize:11,fontWeight:700,color:"#fff",marginLeft:"auto",paddingLeft:8}}>{item[1]}</span>
     </button>
    );})}
@@ -1973,7 +1973,7 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
    return(
    <button key={d.label} onClick={()=>setSbuFilter(sbuFilter===d.label?"all":d.label)}
     style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",padding:0}}>
-    <div style={{fontSize:10,color:"rgba(255,255,255,0.5)"}}>{d.value}</div>
+    <div style={{fontSize:10,color:"#6b7280"}}>{d.value}</div>
     <div style={{width:"100%",background:sbuFilter===d.label?d.color:d.color+"99",borderRadius:"4px 4px 0 0",height:`${Math.max((d.value/max)*100,d.value>0?4:0)}%`,border:sbuFilter===d.label?"2px solid #fff":"2px solid transparent",transition:"all 0.3s"}}/>
     <div style={{fontSize:11,color:sbuFilter===d.label?"#fff":"rgba(255,255,255,0.45)",fontWeight:sbuFilter===d.label?700:400}}>{d.label}</div>
    </button>
@@ -1989,9 +1989,9 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
    {label:"Delivery Rate",val:completionRate,color:"#C8962A"},
    {label:"Emergency Rate",val:total>0?Math.round(emergency/total*100):0,color:"#ef4444"},
   ].map(function(item){return(
-   <div key={item.label} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:"12px 16px"}}>
+   <div key={item.label} style={{background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:16,padding:"12px 16px"}}>
    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-    <span style={{fontSize:11,color:"rgba(255,255,255,0.6)",fontWeight:600}}>{item.label}</span>
+    <span style={{fontSize:11,color:"#4b5563",fontWeight:600}}>{item.label}</span>
     <span style={{fontSize:18,fontWeight:800,color:item.color}}>{item.val}%</span>
    </div>
    <div style={{height:6,borderRadius:3,background:"rgba(255,255,255,0.1)",overflow:"hidden"}}>
@@ -2008,8 +2008,8 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
   <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Monthly Booking Trend</div>
   <BarChart data={monthlyData} color="#C8962A" height={isMobile?80:110}/>
   <div style={{marginTop:8,display:"flex",gap:16}}>
-   <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>Peak: <strong style={{color:"#fff"}}>{monthlyData.reduce((m,d)=>d.value>m.value?d:m,{value:0,label:"—"}).label}</strong></span>
-   <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>Avg: <strong style={{color:"#fff"}}>{monthlyData.length?Math.round(monthlyData.reduce((s,d)=>s+d.value,0)/monthlyData.length):0}/mo</strong></span>
+   <span style={{fontSize:11,color:"#9ca3af"}}>Peak: <strong style={{color:"#fff"}}>{monthlyData.reduce((m,d)=>d.value>m.value?d:m,{value:0,label:"—"}).label}</strong></span>
+   <span style={{fontSize:11,color:"#9ca3af"}}>Avg: <strong style={{color:"#fff"}}>{monthlyData.length?Math.round(monthlyData.reduce((s,d)=>s+d.value,0)/monthlyData.length):0}/mo</strong></span>
   </div>
   </div>
 
@@ -2085,8 +2085,8 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  return(
  <div style={{padding:isMobile?16:28}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Admin Panel</h1>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Review and action delivery appointment requests</p>
- <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:14,padding:14,marginBottom:14,display:"flex",flexDirection:isMobile?"column":"row",gap:10,alignItems:isMobile?"stretch":"center"}}>
+ <p style={{color:"#6b7280",fontSize:13,margin:"0 0 16px"}}>Review and action delivery appointment requests</p>
+ <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid #e5e7eb",borderRadius:14,padding:14,marginBottom:14,display:"flex",flexDirection:isMobile?"column":"row",gap:10,alignItems:isMobile?"stretch":"center"}}>
  <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, name, email, date, PO, status, notes…" style={{flex:1,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
  <button onClick={()=>setEmergencyOnly(p=>!p)} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${emergencyOnly?"#dc2626":"rgba(255,255,255,0.15)"}`,background:emergencyOnly?"#dc2626":"rgba(255,255,255,0.07)",color:emergencyOnly?"#fff":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,cursor:"pointer"}}>Emergency</button>
@@ -2174,20 +2174,20 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
 
  {isMobile ? (
  <div style={{display:"flex",flexDirection:"column",gap:12}}>
- {rows.length===0 && <div style={{background:"rgba(255,255,255,0.06)",borderRadius:14,padding:40,textAlign:"center",color:"rgba(255,255,255,0.3)",fontSize:13}}>No appointments yet.</div>}
+ {rows.length===0 && <div style={{background:"#f9fafb",borderRadius:14,padding:40,textAlign:"center",color:"rgba(255,255,255,0.3)",fontSize:13}}>No appointments yet.</div>}
  {emergencyRows.length>0&&(
  <div style={{background:"rgba(220,38,38,0.12)",border:"1px solid rgba(220,38,38,0.4)",borderRadius:14,padding:"10px 14px",marginBottom:4}}>
  <div style={{color:"#fca5a5",fontSize:12,fontWeight:800,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>🚨 EMERGENCY — Immediate Action Required<span style={{background:"#dc2626",color:"#fff",borderRadius:99,padding:"1px 8px",fontSize:11}}>{emergencyRows.length}</span></div>
  {emergencyRows.map(a=>(
  <div key={a.id} style={{background:"#fff",borderRadius:12,marginBottom:8,border:"2px solid #fca5a5",overflow:"hidden"}}>
- <div style={{padding:"10px 14px",background:"rgba(239,68,68,0.15)",borderBottom:"1px solid rgba(239,68,68,0.3)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
- <div><div style={{fontWeight:700,fontSize:13,color:"#dc2626"}}>🚨 {a.supplierName}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.4)",fontFamily:"monospace",fontWeight:700}}>{a.id}</div></div>
+ <div style={{padding:"10px 14px",background:"#fef2f2",borderBottom:"1px solid #fecaca",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+ <div><div style={{fontWeight:700,fontSize:13,color:"#dc2626"}}>🚨 {a.supplierName}</div><div style={{fontSize:11,color:"#9ca3af",fontFamily:"monospace",fontWeight:700}}>{a.id}</div></div>
  <StatusBadge status={a.status}/>
  </div>
  <div style={{padding:"10px 14px"}}>
- <div style={{background:"rgba(239,68,68,0.15)",borderRadius:8,padding:"8px 10px",marginBottom:10,fontSize:12,color:"#fca5a5",fontStyle:"italic"}}>"{a.emergencyJustification}"</div>
+ <div style={{background:"#fef2f2",borderRadius:8,padding:"8px 10px",marginBottom:10,fontSize:12,color:"#991b1b",fontStyle:"italic"}}>"{a.emergencyJustification}"</div>
  <div style={{display:"flex",gap:6}}>
- <button onClick={()=>onView(a.id)} style={{flex:1,padding:"8px",background:"#f9fafb",border:"1px solid rgba(255,255,255,0.12)",borderRadius:9,cursor:"pointer",color:"rgba(255,255,255,0.5)",fontSize:12}}>👁 View</button>
+ <button onClick={()=>onView(a.id)} style={{flex:1,padding:"8px",background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:9,cursor:"pointer",color:"#6b7280",fontSize:12}}>👁 View</button>
  <button onClick={()=>onApprove(a)} style={{flex:2,padding:"8px",background:"#059669",color:"#fff",border:"none",borderRadius:9,fontSize:12,fontWeight:700,cursor:"pointer"}}>✓ Approve</button>
  <button onClick={()=>onReject(a.id)} style={{flex:1,padding:"8px",background:"#f59e0b",color:"#fff",border:"none",borderRadius:9,fontSize:12,fontWeight:600,cursor:"pointer"}}>↩</button>
  </div>
@@ -2196,28 +2196,28 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  ))}
  </div>
  )}
- {standardRows.length>0&&emergencyRows.length>0&&<div style={{color:"rgba(255,255,255,0.4)",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>📋 Standard Requests</div>}
+ {standardRows.length>0&&emergencyRows.length>0&&<div style={{color:"#9ca3af",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>📋 Standard Requests</div>}
  {standardRows.map(a=>(
- <div key={a.id} style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.1)"}}>
- <div style={{padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+ <div key={a.id} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,overflow:"hidden"}}>
+ <div style={{padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid rgba(255,255,255,0.07)"}}>
  <div>
  <div style={{fontWeight:700,fontSize:14,color:"#fff"}}>{a.supplierName}</div>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",fontFamily:"monospace",fontWeight:700}}>{a.id}</div>
+ <div style={{fontSize:11,color:"#9ca3af",fontFamily:"monospace",fontWeight:700}}>{a.id}</div>
  </div>
  <StatusBadge status={a.status}/>
  </div>
  <div style={{padding:"12px 16px"}}>
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
  {[["Date",fmtDate(a.date)],["Time",a.time],["Orders",a.totalOrders],["Lines",a.totalLines]].map(([k,v])=>(
- <div key={k} style={{background:"#f9fafb",borderRadius:8,padding:"8px 10px",border:"1px solid rgba(255,255,255,0.08)"}}>
- <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:2}}>{k}</div>
+ <div key={k} style={{background:"#f9fafb",borderRadius:8,padding:"8px 10px",border:"1px solid #f3f4f6"}}>
+ <div style={{fontSize:10,color:"#9ca3af",marginBottom:2}}>{k}</div>
  <div style={{fontWeight:600,fontSize:13,color:"#fff"}}>{v}</div>
  </div>
  ))}
  </div>
  <div style={{marginBottom:12}}><StoreBadge loc={a.storageLocation}/></div>
  <div style={{display:"flex",gap:8}}>
- <button onClick={()=>onView(a.id)} style={{flex:1,padding:"9px",background:"#f9fafb",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,cursor:"pointer",color:"rgba(255,255,255,0.5)",fontSize:13,fontWeight:500,position:"relative"}}>
+ <button onClick={()=>onView(a.id)} style={{flex:1,padding:"9px",background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:10,cursor:"pointer",color:"#6b7280",fontSize:13,fontWeight:500,position:"relative"}}>
  👁 View
  {(a.conversation||[]).some(m=>!m.read&&m.author==="supplier")&&(
  <span style={{position:"absolute",top:-4,right:-4,background:"#ef4444",color:"#fff",fontSize:9,fontWeight:700,padding:"2px 5px",borderRadius:99}}>NEW</span>
@@ -2235,13 +2235,13 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  ))}
  </div>
  ) : (
- <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.1)"}}>
+ <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,overflow:"hidden"}}>
  <div style={{overflowX:"auto"}}>
  <table style={{width:"100%",borderCollapse:"collapse",minWidth:860,fontSize:13}}>
  <thead>
- <tr style={{background:"rgba(255,255,255,0.06)",borderBottom:"1px solid rgba(255,255,255,0.1)"}}>
+ <tr style={{background:"rgba(255,255,255,0.06)",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
  {["ID","Supplier","Date","Time","Orders","Lines","Storage","Status","Actions"].map(h=>(
- <th key={h} style={{padding:"12px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",letterSpacing:0.5,whiteSpace:"nowrap"}}>{h}</th>
+ <th key={h} style={{padding:"12px 14px",textAlign:"left",fontSize:10,fontWeight:600,color:"#9ca3af",textTransform:"uppercase",letterSpacing:0.5,whiteSpace:"nowrap"}}>{h}</th>
  ))}
  </tr>
  </thead>
@@ -2249,16 +2249,16 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  {rows.map(a=>(
  <tr key={a.id} style={{borderBottom:"1px solid #f9fafb",background:a.priority==="emergency"&&a.status==="pending"?"#fff5f5":"#fff"}}>
  <td style={{padding:"12px 14px",fontFamily:"monospace",fontSize:12,color:a.priority==="emergency"?"#dc2626":"#374151",fontWeight:700,whiteSpace:"nowrap"}}>{a.priority==="emergency"&&a.status==="pending"&&"🚨 "}{a.id}</td>
- <td style={{padding:"12px 14px"}}><div style={{fontWeight:600,color:"#fff",whiteSpace:"nowrap"}}>{a.supplierName}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>{a.supplierEmail}</div>{a.priority==="emergency"&&a.status==="pending"&&<div style={{fontSize:10,color:"#dc2626",fontWeight:700,marginTop:2,fontStyle:"italic"}}>"{a.emergencyJustification?.substring(0,50)}{a.emergencyJustification?.length>50?"…":""}"</div>}</td>
- <td style={{padding:"12px 14px",whiteSpace:"nowrap",fontWeight:500,color:"rgba(255,255,255,0.8)"}}>{fmtDate(a.date)}</td>
- <td style={{padding:"12px 14px",color:"rgba(255,255,255,0.8)"}}>{a.time}</td>
- <td style={{padding:"12px 14px",textAlign:"center",fontWeight:600,color:"rgba(255,255,255,0.8)"}}>{a.totalOrders}</td>
- <td style={{padding:"12px 14px",textAlign:"center",fontWeight:600,color:"rgba(255,255,255,0.8)"}}>{a.totalLines}</td>
+ <td style={{padding:"12px 14px"}}><div style={{fontWeight:600,color:"#fff",whiteSpace:"nowrap"}}>{a.supplierName}</div><div style={{fontSize:11,color:"#9ca3af"}}>{a.supplierEmail}</div>{a.priority==="emergency"&&a.status==="pending"&&<div style={{fontSize:10,color:"#dc2626",fontWeight:700,marginTop:2,fontStyle:"italic"}}>"{a.emergencyJustification?.substring(0,50)}{a.emergencyJustification?.length>50?"…":""}"</div>}</td>
+ <td style={{padding:"12px 14px",whiteSpace:"nowrap",fontWeight:500,color:"#374151"}}>{fmtDate(a.date)}</td>
+ <td style={{padding:"12px 14px",color:"#374151"}}>{a.time}</td>
+ <td style={{padding:"12px 14px",textAlign:"center",fontWeight:600,color:"#374151"}}>{a.totalOrders}</td>
+ <td style={{padding:"12px 14px",textAlign:"center",fontWeight:600,color:"#374151"}}>{a.totalLines}</td>
  <td style={{padding:"12px 14px"}}><StoreBadge loc={a.storageLocation}/></td>
  <td style={{padding:"12px 14px",whiteSpace:"nowrap"}}><StatusBadge status={a.status}/></td>
  <td style={{padding:"12px 14px"}}>
  <div style={{display:"flex",gap:6,alignItems:"center"}}>
- <button onClick={()=>onView(a.id)} style={{padding:"5px 8px",background:"#f9fafb",border:"1px solid rgba(255,255,255,0.12)",borderRadius:8,cursor:"pointer",color:"rgba(255,255,255,0.5)",fontSize:12}}>👁</button>
+ <button onClick={()=>onView(a.id)} style={{padding:"5px 8px",background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:8,cursor:"pointer",color:"#6b7280",fontSize:12}}>👁</button>
  {a.status==="pending" && (
  <div style={{display:"flex",gap:6}}>
  <button onClick={()=>onApprove(a)} disabled={!!loading} style={{padding:"5px 10px",background:"#059669",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{loading===a.id+"-a"?"…":"✓ Approve"}</button>
@@ -2269,7 +2269,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  </td>
  </tr>
  ))}
- {rows.length===0 && <tr><td colSpan={9} style={{padding:48,textAlign:"center",color:"rgba(255,255,255,0.4)"}}>No appointments yet.</td></tr>}
+ {rows.length===0 && <tr><td colSpan={9} style={{padding:48,textAlign:"center",color:"#9ca3af"}}>No appointments yet.</td></tr>}
  </tbody>
  </table>
  </div>
@@ -2330,9 +2330,9 @@ function CalendarView({ appointments, isMobile }) {
  const statusIcon = a.deliveryStatus==="completed"?"✅":a.deliveryStatus==="failed"?"❌":"";
  return (
  <button onClick={()=>setSel(a)} style={{width:"100%",textAlign:"left",padding:isMobile?"3px 4px":"4px 7px",borderRadius:6,border:"1px solid #c7d2fe",background:"#eef2ff",fontSize:isMobile?9:10,fontWeight:600,cursor:"pointer",marginBottom:2,overflow:"hidden",display:"block"}}>
- {showTime && <span style={{color:"#a5b4fc",fontWeight:800,marginRight:3}}>{a.time}</span>}
+ {showTime && <span style={{color:"#4f46e5",fontWeight:800,marginRight:3}}>{a.time}</span>}
  {statusIcon && <span style={{marginRight:2}}>{statusIcon}</span>}
- <span style={{color:"rgba(255,255,255,0.8)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"inline-block",maxWidth:"100%"}}>{isMobile?"":a.supplierName}</span>
+ <span style={{color:"#374151",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"inline-block",maxWidth:"100%"}}>{isMobile?"":a.supplierName}</span>
  </button>
  );
  }
@@ -2343,7 +2343,7 @@ function CalendarView({ appointments, isMobile }) {
  const sc=new Date(yr,mo,1).getDay();
  const total=Math.ceil((sc+daysInMonth)/7)*7;
  return(
- <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",flex:1,display:"flex",flexDirection:"column"}}>
+ <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,overflow:"hidden",flex:1,display:"flex",flexDirection:"column"}}>
  <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",background:P,flexShrink:0}}>
  {(isMobile?DAY_SHORT:DAY_FULL).map((d,i)=>(
  <div key={i} style={{textAlign:"center",padding:isMobile?"8px 0":"10px 0",fontSize:isMobile?10:11,fontWeight:700,color:i>=5?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.85)"}}>
@@ -2360,12 +2360,12 @@ function CalendarView({ appointments, isMobile }) {
  const off=date&&isFriSat(date);
  const today=date&&isToday(date);
  return(
- <div key={i} style={{minHeight:isMobile?58:100,borderRight:"1px solid #f3f4f6",borderBottom:"1px solid rgba(255,255,255,0.08)",padding:isMobile?4:6,background:off?"#fafafa":"#fff"}}>
+ <div key={i} style={{minHeight:isMobile?58:100,borderRight:"1px solid rgba(255,255,255,0.07)",borderBottom:"1px solid rgba(255,255,255,0.07)",padding:isMobile?4:6,background:off?"#fafafa":"#fff"}}>
  {valid&&(
  <div>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
  <div style={{width:isMobile?20:26,height:isMobile?20:26,borderRadius:"50%",background:today?A:"transparent",color:today?"#fff":off?"#d1d5db":"#374151",display:"flex",alignItems:"center",justifyContent:"center",fontSize:isMobile?10:12,fontWeight:700}}>{dayNum}</div>
- {apts.length>0&&!isMobile&&<span style={{fontSize:9,color:"#a5b4fc",fontWeight:700}}>{apts.length} appt{apts.length>1?"s":""}</span>}
+ {apts.length>0&&!isMobile&&<span style={{fontSize:9,color:"#4f46e5",fontWeight:700}}>{apts.length} appt{apts.length>1?"s":""}</span>}
  </div>
  {apts.map(a=><AptChip key={a.id} a={a} showTime={true}/>)}
  </div>
@@ -2382,7 +2382,7 @@ function CalendarView({ appointments, isMobile }) {
  const ws=weekStart(cur);
  const days=Array.from({length:7},(_,i)=>addDays(ws,i));
  return(
- <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",flex:1,display:"flex",flexDirection:"column"}}>
+ <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,overflow:"hidden",flex:1,display:"flex",flexDirection:"column"}}>
  <div style={{display:"grid",gridTemplateColumns:"64px repeat(7,1fr)",background:P,flexShrink:0}}>
  <div style={{padding:"10px 0",borderRight:"1px solid rgba(255,255,255,0.1)"}}/>
  {days.map((d,i)=>{
@@ -2391,26 +2391,26 @@ function CalendarView({ appointments, isMobile }) {
  <div key={i} style={{textAlign:"center",padding:"10px 4px",opacity:off?0.35:1,borderRight:"1px solid rgba(255,255,255,0.08)"}}>
  <div style={{fontSize:10,fontWeight:600,color:"rgba(255,255,255,0.55)",textTransform:"uppercase",marginBottom:4}}>{d.toLocaleDateString("en-GB",{weekday:"short"})}</div>
  <div style={{width:28,height:28,borderRadius:"50%",background:today?A:"transparent",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,margin:"0 auto"}}>{d.getDate()}</div>
- {off&&<div style={{fontSize:9,color:"rgba(255,255,255,0.4)",marginTop:2}}>Off</div>}
+ {off&&<div style={{fontSize:9,color:"#9ca3af",marginTop:2}}>Off</div>}
  </div>
  );
  })}
  </div>
  <div style={{flex:1,overflowY:"auto"}}>
  {SLOTS.map(slot=>(
- <div key={slot} style={{display:"grid",gridTemplateColumns:"64px repeat(7,1fr)",borderBottom:"1px solid rgba(255,255,255,0.08)",minHeight:60}}>
- <div style={{padding:"0 10px",borderRight:"1px solid #f3f4f6",display:"flex",alignItems:"center",justifyContent:"flex-end",background:"#fafafa"}}>
- <span style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.4)",whiteSpace:"nowrap"}}>{slot}</span>
+ <div key={slot} style={{display:"grid",gridTemplateColumns:"64px repeat(7,1fr)",borderBottom:"1px solid rgba(255,255,255,0.07)",minHeight:60}}>
+ <div style={{padding:"0 10px",borderRight:"1px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:"flex-end",background:"rgba(255,255,255,0.02)"}}>
+ <span style={{fontSize:11,fontWeight:700,color:"#9ca3af",whiteSpace:"nowrap"}}>{slot}</span>
  </div>
  {days.map((d,i)=>{
  const off=isFriSat(d);
  const cellApts=approved.filter(a=>a.date===dsOf(d)&&a.time===slot);
  return(
- <div key={i} style={{padding:4,background:off?"#fafafa":"#fff",borderRight:"1px solid #f3f4f6",overflow:"hidden",minWidth:0}}>
+ <div key={i} style={{padding:4,background:off?"rgba(255,255,255,0.02)":"rgba(255,255,255,0.04)",borderRight:"1px solid rgba(255,255,255,0.06)",overflow:"hidden",minWidth:0}}>
  {cellApts.map(a=>(
  <button key={a.id} onClick={()=>setSel(a)} style={{width:"100%",textAlign:"left",padding:"5px 7px",borderRadius:7,border:"1px solid #c7d2fe",background:"#eef2ff",fontSize:10,cursor:"pointer",marginBottom:3,display:"block",overflow:"hidden",minWidth:0}}>
- <div style={{fontWeight:700,color:"#a5b4fc",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.supplierName}</div>
- <div style={{fontSize:9,color:"rgba(255,255,255,0.5)",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{toLocs(a.storageLocation).join(" & ")}</div>
+ <div style={{fontWeight:700,color:"#4f46e5",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.supplierName}</div>
+ <div style={{fontSize:9,color:"#6b7280",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{toLocs(a.storageLocation).join(" & ")}</div>
  </button>
  ))}
  </div>
@@ -2430,10 +2430,10 @@ function CalendarView({ appointments, isMobile }) {
  function normalizeTime(t){if(!t)return "";return t.trim().replace(/\s*(AM|PM)$/i,"").replace(/^(\d):/, "0$1:");}
  const matchedIds=new Set();
  return(
- <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",flex:1,display:"flex",flexDirection:"column"}}>
+ <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,overflow:"hidden",flex:1,display:"flex",flexDirection:"column"}}>
  <div style={{background:P,padding:"14px 18px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",flexShrink:0}}>
  <div style={{flex:1}}>
- <div style={{color:"rgba(255,255,255,0.5)",fontSize:11,textTransform:"uppercase",letterSpacing:1}}>{cur.toLocaleDateString("en-GB",{weekday:"long"})}{off&&<span style={{marginLeft:8,background:"rgba(239,68,68,0.2)",color:"#fca5a5",padding:"1px 8px",borderRadius:99,fontSize:10}}>Non-working day</span>}</div>
+ <div style={{color:"#6b7280",fontSize:11,textTransform:"uppercase",letterSpacing:1}}>{cur.toLocaleDateString("en-GB",{weekday:"long"})}{off&&<span style={{marginLeft:8,background:"rgba(239,68,68,0.2)",color:"#fca5a5",padding:"1px 8px",borderRadius:99,fontSize:10}}>Non-working day</span>}</div>
  <div style={{color:"#fff",fontWeight:800,fontSize:isMobile?16:20}}>{cur.toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})}</div>
  </div>
  <input type="date" value={dsOf(cur)} onChange={e=>e.target.value&&setCur(new Date(e.target.value+"T00:00:00"))} style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,padding:"6px 10px",color:"#fff",fontSize:12,outline:"none",cursor:"pointer"}}/>
@@ -2445,18 +2445,18 @@ function CalendarView({ appointments, isMobile }) {
  slotApts.forEach(a=>matchedIds.add(a.id));
  const hasApts=slotApts.length>0;
  return(
- <div key={slot} style={{display:"flex",borderBottom:"1px solid rgba(255,255,255,0.08)",minHeight:64,background:hasApts?"#fff":"#fafafa"}}>
- <div style={{width:72,padding:"0 12px",borderRight:"1px solid #f3f4f6",display:"flex",alignItems:"center",justifyContent:"flex-end",flexShrink:0,background:"#f9fafb"}}>
+ <div key={slot} style={{display:"flex",borderBottom:"1px solid rgba(255,255,255,0.07)",minHeight:64,background:hasApts?"rgba(255,255,255,0.06)":"rgba(255,255,255,0.02)"}}>
+ <div style={{width:72,padding:"0 12px",borderRight:"1px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:"flex-end",flexShrink:0,background:"#f9fafb"}}>
  <span style={{fontSize:13,fontWeight:700,color:hasApts?"#4f46e5":"#d1d5db"}}>{slot}</span>
  </div>
  <div style={{flex:1,padding:8,display:"flex",flexDirection:"column",gap:6}}>
  {hasApts ? slotApts.map(a=>(
  <button key={a.id} onClick={()=>setSel(a)} style={{textAlign:"left",padding:"10px 14px",borderRadius:10,border:"2px solid #c7d2fe",background:"#eef2ff",cursor:"pointer",display:"block",width:"100%"}}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5,flexWrap:"wrap",gap:6}}>
- <span style={{fontWeight:800,fontSize:14,color:"#a5b4fc"}}>{a.supplierName}</span>
+ <span style={{fontWeight:800,fontSize:14,color:"#4f46e5"}}>{a.supplierName}</span>
  <StoreBadge loc={a.storageLocation}/>
  </div>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>{a.totalOrders} orders · {a.totalLines} lines{a.offloadingEquipment&&a.offloadingEquipment.length>0?" · "+a.offloadingEquipment.join(", "):""}</div>
+ <div style={{fontSize:11,color:"#6b7280"}}>{a.totalOrders} orders · {a.totalLines} lines{a.offloadingEquipment&&a.offloadingEquipment.length>0?" · "+a.offloadingEquipment.join(", "):""}</div>
  </button>
  )) : (
  <div style={{display:"flex",alignItems:"center",height:"100%",minHeight:40}}>
@@ -2469,8 +2469,8 @@ function CalendarView({ appointments, isMobile }) {
  })}
  {/* Catch-all row for appointments with non-standard time formats */}
  {dayApts.filter(a=>!matchedIds.has(a.id)).length>0&&(
- <div style={{display:"flex",borderBottom:"1px solid rgba(255,255,255,0.08)",minHeight:64,background:"#fffbeb"}}>
- <div style={{width:72,padding:"0 12px",borderRight:"1px solid #f3f4f6",display:"flex",alignItems:"center",justifyContent:"flex-end",flexShrink:0,background:"#fef9c3"}}>
+ <div style={{display:"flex",borderBottom:"1px solid rgba(255,255,255,0.07)",minHeight:64,background:"#fffbeb"}}>
+ <div style={{width:72,padding:"0 12px",borderRight:"1px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:"flex-end",flexShrink:0,background:"#fef9c3"}}>
  <span style={{fontSize:11,fontWeight:700,color:"#92400e"}}>Other</span>
  </div>
  <div style={{flex:1,padding:8,display:"flex",flexDirection:"column",gap:6}}>
@@ -2500,14 +2500,14 @@ function CalendarView({ appointments, isMobile }) {
  <div>
  <StoreBadge loc={sel.storageLocation}/>
  <h3 style={{fontWeight:800,fontSize:17,color:P,margin:"8px 0 2px"}}>{sel.supplierName}</h3>
- <p style={{fontSize:12,color:"rgba(255,255,255,0.5)",margin:0}}>{sel.supplierEmail}</p>
+ <p style={{fontSize:12,color:"#6b7280",margin:0}}>{sel.supplierEmail}</p>
  </div>
- <button onClick={()=>setSel(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:22,color:"rgba(255,255,255,0.4)",lineHeight:1}}>×</button>
+ <button onClick={()=>setSel(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:22,color:"#9ca3af",lineHeight:1}}>×</button>
  </div>
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
  {[["Date",fmtDate(sel.date)],["Time",sel.time],["Orders",sel.totalOrders],["Lines",sel.totalLines]].map(([k,v])=>(
- <div key={k} style={{background:"rgba(255,255,255,0.06)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.1)"}}>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:3}}>{k}</div>
+ <div key={k} style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6"}}>
+ <div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>{k}</div>
  <div style={{fontWeight:600,fontSize:13,color:"#fff"}}>{v}</div>
  </div>
  ))}
@@ -2519,9 +2519,9 @@ function CalendarView({ appointments, isMobile }) {
  </div>
  )}
  {sel.additionalNotes&&(
- <div style={{background:"rgba(255,255,255,0.06)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.1)",marginBottom:10}}>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:3}}>Notes</div>
- <div style={{fontSize:13,color:"rgba(255,255,255,0.8)"}}>{sel.additionalNotes}</div>
+ <div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}>
+ <div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>Notes</div>
+ <div style={{fontSize:13,color:"#374151"}}>{sel.additionalNotes}</div>
  </div>
  )}
  {sel.status==="approved"&&sel.deliveryStatus!=="completed"&&sel.deliveryStatus!=="failed"&&(
@@ -2541,18 +2541,18 @@ function CalendarView({ appointments, isMobile }) {
  <div style={{background:"#f0fdf4",borderRadius:12,padding:12,border:"1px solid #bbf7d0",marginBottom:12,textAlign:"center"}}>
  <div style={{fontSize:28,marginBottom:4}}>✅</div>
  <div style={{fontSize:13,fontWeight:700,color:"#15803d"}}>Delivery Completed</div>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginTop:3}}>{sel.completedAt?fmtTs(sel.completedAt):""}</div>
+ <div style={{fontSize:11,color:"#6b7280",marginTop:3}}>{sel.completedAt?fmtTs(sel.completedAt):""}</div>
  </div>
  )}
  {sel.status==="approved"&&sel.deliveryStatus==="failed"&&(
  <div style={{background:"#fef2f2",borderRadius:12,padding:12,border:"1px solid #fecaca",marginBottom:12,textAlign:"center"}}>
  <div style={{fontSize:28,marginBottom:4}}>❌</div>
  <div style={{fontSize:13,fontWeight:700,color:"#b91c1c"}}>Delivery Failed</div>
- {sel.failureReason&&<div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginTop:3,fontStyle:"italic"}}>Reason: {sel.failureReason}</div>}
- <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginTop:3}}>{sel.failedAt?fmtTs(sel.failedAt):""}</div>
+ {sel.failureReason&&<div style={{fontSize:11,color:"#6b7280",marginTop:3,fontStyle:"italic"}}>Reason: {sel.failureReason}</div>}
+ <div style={{fontSize:11,color:"#6b7280",marginTop:3}}>{sel.failedAt?fmtTs(sel.failedAt):""}</div>
  </div>
  )}
- <button onClick={()=>setSel(null)} style={{marginTop:6,width:"100%",padding:12,border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,fontSize:14,fontWeight:600,color:"rgba(255,255,255,0.5)",background:"transparent",cursor:"pointer"}}>Close</button>
+ <button onClick={()=>setSel(null)} style={{marginTop:6,width:"100%",padding:12,border:"1px solid #e5e7eb",borderRadius:12,fontSize:14,fontWeight:600,color:"#6b7280",background:"transparent",cursor:"pointer"}}>Close</button>
  </div>
  </div>
  );
@@ -2661,8 +2661,8 @@ function EmailLog({ emailLog, isMobile }) {
  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10,marginBottom:4}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:0}}>Email Log</h1>
  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
- <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{totalConversations} conversation{totalConversations!==1?"s":""}</span>
- <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{totalEmails} email{totalEmails!==1?"s":""}</span>
+ <span style={{background:"rgba(255,255,255,0.1)",color:"#4b5563",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{totalConversations} conversation{totalConversations!==1?"s":""}</span>
+ <span style={{background:"rgba(255,255,255,0.1)",color:"#4b5563",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{totalEmails} email{totalEmails!==1?"s":""}</span>
  <button onClick={async()=>{
  const emailData=emailLog.map(e=>({
  "Timestamp":fmtExcelTs(e.timestamp),
@@ -2709,29 +2709,29 @@ function EmailLog({ emailLog, isMobile }) {
  </button>
  </div>
  </div>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Grouped by appointment with full conversation history</p>
+ <p style={{color:"#6b7280",fontSize:13,margin:"0 0 16px"}}>Grouped by appointment with full conversation history</p>
 
  {totalEmails===0 ? (
- <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
+ <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid #e5e7eb",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
  <div style={{fontSize:40,marginBottom:12}}>✉️</div>
- <div style={{color:"rgba(255,255,255,0.4)",fontSize:13}}>No emails yet. Approve or reject appointments to see logs here.</div>
+ <div style={{color:"#9ca3af",fontSize:13}}>No emails yet. Approve or reject appointments to see logs here.</div>
  </div>
  ) : (
  <div style={{display:"flex",flexDirection:"column",gap:12}}>
- <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,padding:isMobile?12:16}}>
+ <div style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:isMobile?12:16}}>
  <input 
  type="text"
  placeholder="Search by any field — ID, supplier, email, subject, body…"
  value={searchQ}
  onChange={e=>setSearchQ(e.target.value)}
- style={{width:"100%",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,padding:"11px 14px",fontSize:13,outline:"none",background:"#f9fafb"}}
+ style={{width:"100%",border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:13,outline:"none",background:"#f9fafb"}}
  />
  </div>
 
  {filteredGroups.length===0 ? (
- <div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:32,textAlign:"center"}}>
+ <div style={{background:"#f9fafb",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:32,textAlign:"center"}}>
  <div style={{fontSize:28,marginBottom:8}}>🔍</div>
- <div style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>No conversations match "{searchQ}"</div>
+ <div style={{color:"#9ca3af",fontSize:12}}>No conversations match "{searchQ}"</div>
  </div>
  ) : (
  <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -2743,7 +2743,7 @@ function EmailLog({ emailLog, isMobile }) {
  emails.forEach(e => typesCounts[e.type]++);
 
  return (
- <div key={aptId} style={{background:"rgba(255,255,255,0.07)",borderRadius:16,overflow:"hidden",border:"1px solid rgba(255,255,255,0.1)"}}>
+ <div key={aptId} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,overflow:"hidden"}}>
  {/* Conversation header - always visible */}
  <div 
  onClick={()=>setExpandedApt(isExpanded?null:aptId)} 
@@ -2757,23 +2757,23 @@ function EmailLog({ emailLog, isMobile }) {
  {typesCounts.approval>0&&<span style={{background:"#f0fdf4",color:"#15803d",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:99}}>✅ {typesCounts.approval}</span>}
  {typesCounts.rejection>0&&<span style={{background:"#fef2f2",color:"#b91c1c",fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:99}}>❌ {typesCounts.rejection}</span>}
  </div>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:3}}>Latest: {fmtTs(latestEmail.timestamp)}</div>
- <div style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>{latestEmail.subject}</div>
+ <div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>Latest: {fmtTs(latestEmail.timestamp)}</div>
+ <div style={{fontSize:12,color:"#6b7280"}}>{latestEmail.subject}</div>
  </div>
  <div style={{flexShrink:0,textAlign:isMobile?"left":"right"}}>
- <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginBottom:2}}>To: {latestEmail.recipient}</div>
- <div style={{fontSize:13,color:"rgba(255,255,255,0.4)"}}>{isExpanded?"▾":"▸"}</div>
+ <div style={{fontSize:12,color:"#9ca3af",marginBottom:2}}>To: {latestEmail.recipient}</div>
+ <div style={{fontSize:13,color:"#9ca3af"}}>{isExpanded?"▾":"▸"}</div>
  </div>
  </div>
 
  {/* Expanded conversation thread */}
  {isExpanded&&(
- <div style={{padding:"14px 18px",background:"#fafafa",borderTop:"1px solid #f3f4f6",display:"flex",flexDirection:"column",gap:8,maxHeight:600,overflowY:"auto"}}>
+ <div style={{padding:"14px 18px",background:"rgba(255,255,255,0.02)",borderTop:"1px solid #f3f4f6",display:"flex",flexDirection:"column",gap:8,maxHeight:600,overflowY:"auto"}}>
  {emails.map(e => {
  const cfg = typeCfg[e.type]||typeCfg.submission;
  const isEmailExpanded = expandedEmail === e.id;
  return (
- <div key={e.id} style={{background:"rgba(255,255,255,0.07)",borderRadius:12,border:"1px solid rgba(255,255,255,0.1)",overflow:"hidden"}}>
+ <div key={e.id} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,overflow:"hidden"}}>
  <div 
  onClick={()=>setExpandedEmail(isEmailExpanded?null:e.id)}
  style={{padding:"12px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer",background:isEmailExpanded?"rgba(255,255,255,0.1)":"rgba(255,255,255,0.06)"}}
@@ -2781,15 +2781,15 @@ function EmailLog({ emailLog, isMobile }) {
  <span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,padding:"3px 9px",borderRadius:99,fontSize:10,fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>{cfg.label}</span>
  <div style={{flex:1,minWidth:0}}>
  <div style={{fontWeight:600,fontSize:12,color:"#fff",marginBottom:2}}>{e.subject}</div>
- <div style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>To: {e.recipient}{e.pin?<span style={{marginLeft:8,background:"#fef3c7",color:"#92400e",border:"1px solid #fcd34d",padding:"1px 6px",borderRadius:99,fontWeight:700,fontFamily:"monospace",fontSize:10}}>PIN: {e.pin}</span>:""}</div>
+ <div style={{fontSize:10,color:"#9ca3af"}}>To: {e.recipient}{e.pin?<span style={{marginLeft:8,background:"#fef3c7",color:"#92400e",border:"1px solid #fcd34d",padding:"1px 6px",borderRadius:99,fontWeight:700,fontFamily:"monospace",fontSize:10}}>PIN: {e.pin}</span>:""}</div>
  </div>
- <div style={{flexShrink:0,fontSize:10,color:"rgba(255,255,255,0.4)",textAlign:"right"}}>
+ <div style={{flexShrink:0,fontSize:10,color:"#9ca3af",textAlign:"right"}}>
  <div>{fmtTs(e.timestamp)}</div>
  <div style={{marginTop:2}}>{isEmailExpanded?"▾":"▸"}</div>
  </div>
  </div>
  {isEmailExpanded&&e.body&&(
- <div style={{borderTop:"1px solid rgba(255,255,255,0.1)",padding:"12px 14px",background:"#f9fafb",whiteSpace:"pre-wrap",fontSize:11,lineHeight:1.6,fontFamily:"monospace",color:"rgba(255,255,255,0.8)",maxHeight:350,overflowY:"auto"}}>
+ <div style={{borderTop:"1px solid #e5e7eb",padding:"12px 14px",background:"#f9fafb",whiteSpace:"pre-wrap",fontSize:11,lineHeight:1.6,fontFamily:"monospace",color:"#374151",maxHeight:350,overflowY:"auto"}}>
  {e.body}
  </div>
  )}
@@ -2835,7 +2835,7 @@ function HelpPage({ isMobile }){
  return(
  <div style={{padding:isMobile?16:28}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Help & Guide</h1>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 20px"}}>Step-by-step instructions for using the BE Warehouse system</p>
+ <p style={{color:"#6b7280",fontSize:13,margin:"0 0 20px"}}>Step-by-step instructions for using the BE Warehouse system</p>
  {/* Role toggle */}
  <div style={{display:"flex",gap:8,marginBottom:20}}>
  {["admin","supplier"].map(r=>(
@@ -2854,7 +2854,7 @@ function HelpPage({ isMobile }){
  ))}
  </div>
  {/* Steps */}
- <div style={{flex:1,background:"rgba(255,255,255,0.06)",borderRadius:16,padding:20,border:"1px solid rgba(255,255,255,0.1)"}}>
+ <div style={{flex:1,background:"#f9fafb",borderRadius:16,padding:20,border:"1px solid rgba(255,255,255,0.1)"}}>
  <h3 style={{color:"#C8962A",fontWeight:800,fontSize:16,margin:"0 0 16px"}}>{content.sections[activeSection].title}</h3>
  <div style={{display:"flex",flexDirection:"column",gap:14}}>
  {content.sections[activeSection].steps.map((step,i)=>(
@@ -2883,7 +2883,7 @@ function HelpPage({ isMobile }){
 
 function SettingsPanel({ config, onChange, isMobile }) {
  function set(k){return e=>onChange(c=>({...c,[k]:e.target.value}));}
- const inp = {width:"100%",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,padding:"11px 14px",fontSize:14,background:"rgba(255,255,255,0.08)",color:"#fff",outline:"none",boxSizing:"border-box"};
+ const inp = {width:"100%",border:"1px solid #e5e7eb",borderRadius:12,padding:"11px 14px",fontSize:14,background:"#f9fafb",outline:"none",boxSizing:"border-box"};
  const jbOk = true;
 
  // Credentials state
@@ -2914,24 +2914,24 @@ function SettingsPanel({ config, onChange, isMobile }) {
  return(
  <div style={{padding:isMobile?16:28}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:"0 0 4px"}}>Settings</h1>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 20px"}}>System configuration</p>
+ <p style={{color:"#6b7280",fontSize:13,margin:"0 0 20px"}}>System configuration</p>
  <div style={{maxWidth:480,display:"flex",flexDirection:"column",gap:16}}>
 
  {/* Email Recipients Card */}
- <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,padding:isMobile?16:20}}>
+ <div style={{background:"#fff",borderRadius:16,padding:isMobile?16:20}}>
  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
  <span style={{fontSize:20}}>📧</span>
  <div>
  <div style={{fontWeight:700,fontSize:15,color:"#fff"}}>Email Configuration</div>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>Manage recipients — changes take effect immediately</div>
+ <div style={{fontSize:11,color:"#6b7280"}}>Manage recipients — changes take effect immediately</div>
  </div>
  </div>
 
  {/* Admin Email */}
  <div style={{marginBottom:14}}>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
  Admin Alert Email
- <span style={{fontWeight:400,textTransform:"none",color:"rgba(255,255,255,0.4)",marginLeft:6}}>receives new booking alerts</span>
+ <span style={{fontWeight:400,textTransform:"none",color:"#9ca3af",marginLeft:6}}>receives new booking alerts</span>
  </label>
  <input
  type="email"
@@ -2944,9 +2944,9 @@ function SettingsPanel({ config, onChange, isMobile }) {
 
  {/* Security Email */}
  <div style={{marginBottom:14}}>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
  Security Email
- <span style={{fontWeight:400,textTransform:"none",color:"rgba(255,255,255,0.4)",marginLeft:6}}>receives approval notifications</span>
+ <span style={{fontWeight:400,textTransform:"none",color:"#9ca3af",marginLeft:6}}>receives approval notifications</span>
  </label>
  <input
  type="email"
@@ -2958,8 +2958,8 @@ function SettingsPanel({ config, onChange, isMobile }) {
  </div>
 
  {/* Routing Summary */}
- <div style={{background:"#f9fafb",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"10px 12px",fontSize:12,color:"rgba(255,255,255,0.5)",lineHeight:1.8,marginBottom:14}}>
- <strong style={{color:"rgba(255,255,255,0.8)"}}>Email Routing:</strong><br/>
+ <div style={{background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:10,padding:"10px 12px",fontSize:12,color:"#6b7280",lineHeight:1.8,marginBottom:14}}>
+ <strong style={{color:"#374151"}}>Email Routing:</strong><br/>
  📦 New booking → Supplier + Admin<br/>
  🚨 Emergency → Supplier + Admin (urgent)<br/>
  ✅ Approved → Supplier + Security<br/>
@@ -2973,28 +2973,28 @@ function SettingsPanel({ config, onChange, isMobile }) {
  securityEmail:document.getElementById("securityEmailInput")?.value
  })}/>
  </div>
- <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,padding:isMobile?16:20}}>
+ <div style={{background:"#fff",borderRadius:16,padding:isMobile?16:20}}>
  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
  <span style={{fontSize:20}}>☁️</span>
  <div>
  <div style={{fontWeight:700,fontSize:15,color:"#fff"}}>Cloud Sync — Supabase</div>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>Real-time sync across all devices — no configuration needed</div>
+ <div style={{fontSize:11,color:"#6b7280"}}>Real-time sync across all devices — no configuration needed</div>
  </div>
  </div>
- <div style={{background:"rgba(16,185,129,0.15)",border:"1px solid #6ee7b7",borderRadius:10,padding:"10px 12px",fontSize:13,color:"#065f46",fontWeight:600}}>
+ <div style={{background:"#d1fae5",border:"1px solid #6ee7b7",borderRadius:10,padding:"10px 12px",fontSize:13,color:"#065f46",fontWeight:600}}>
  ✅ Connected — All devices sync automatically in real-time
  </div>
  </div>
 
  {/* Change Credentials Card */}
- <div style={{background:"rgba(255,255,255,0.07)",borderRadius:16,padding:isMobile?16:20}}>
+ <div style={{background:"#fff",borderRadius:16,padding:isMobile?16:20}}>
  <button onClick={async()=>{setCredsOpen(p=>!p);setCredsMsg(null);}} style={{width:"100%",display:"flex",alignItems:"center",gap:10,background:"transparent",border:"none",cursor:"pointer",textAlign:"left",padding:0}}>
  <span style={{fontSize:20}}>🔐</span>
  <div style={{flex:1}}>
  <div style={{fontWeight:700,fontSize:15,color:"#fff"}}>Change Credentials</div>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>Update your admin email or password</div>
+ <div style={{fontSize:11,color:"#6b7280"}}>Update your admin email or password</div>
  </div>
- <span style={{color:"rgba(255,255,255,0.4)",fontSize:18,transform:credsOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",display:"inline-block"}}>▾</span>
+ <span style={{color:"#9ca3af",fontSize:18,transform:credsOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",display:"inline-block"}}>▾</span>
  </button>
 
  {credsOpen&&(
@@ -3004,25 +3004,25 @@ function SettingsPanel({ config, onChange, isMobile }) {
  </div>
 
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Current Password *</label>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Current Password *</label>
  <input type="password" value={curPwd} onChange={e=>setCurPwd(e.target.value)} placeholder="Enter current password" style={inp}/>
  </div>
 
  <div style={{height:1,background:"#f3f4f6"}}/>
 
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Nickname <span style={{fontWeight:400,textTransform:"none",color:"rgba(255,255,255,0.4)"}}>(shown in transaction history)</span></label>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Nickname <span style={{fontWeight:400,textTransform:"none",color:"#9ca3af"}}>(shown in transaction history)</span></label>
  <input type="text" value={newNickname} onChange={e=>setNewNickname(e.target.value)} placeholder={getAdminCreds().nickname||"e.g. Faisal"} style={inp}/>
  </div>
 
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>New Password <span style={{fontWeight:400,textTransform:"none",color:"rgba(255,255,255,0.4)"}}>(leave blank to keep current)</span></label>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>New Password <span style={{fontWeight:400,textTransform:"none",color:"#9ca3af"}}>(leave blank to keep current)</span></label>
  <input type="password" value={newPwd} onChange={e=>setNewPwd(e.target.value)} placeholder="Min 6 characters" style={inp}/>
  </div>
 
  {newPwd&&(
  <div>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Confirm New Password *</label>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Confirm New Password *</label>
  <input type="password" value={confirmPwd} onChange={e=>setConfirmPwd(e.target.value)} placeholder="Repeat new password" style={{...inp,borderColor:confirmPwd&&confirmPwd!==newPwd?"#f87171":"#e5e7eb"}}/>
  {confirmPwd&&confirmPwd!==newPwd&&<p style={{fontSize:11,color:"#dc2626",margin:"4px 0 0"}}>⛔ Passwords do not match</p>}
  </div>
@@ -3052,7 +3052,7 @@ function BarRow({ label, count, max, color, sublabel }) {
  return (
  <div style={{marginBottom:10}}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
- <span style={{fontSize:12,color:"rgba(255,255,255,0.75)",fontWeight:500,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",paddingRight:8}}>{label}</span>
+ <span style={{fontSize:12,color:"#374151",fontWeight:500,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",paddingRight:8}}>{label}</span>
  {sublabel && <span style={{fontSize:10,color:"rgba(255,255,255,0.3)",marginRight:8,flexShrink:0}}>{sublabel}</span>}
  <span style={{fontSize:12,fontWeight:700,color:"#fff",flexShrink:0}}>{count}</span>
  </div>
@@ -3066,9 +3066,9 @@ function BarRow({ label, count, max, color, sublabel }) {
 function StatCard({ label, value, sub, color, onClick }) {
  return (
  <div onClick={onClick} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:16,padding:"18px 20px",cursor:onClick?"pointer":"default"}}>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>{label}</div>
+ <div style={{fontSize:11,color:"#9ca3af",fontWeight:600,textTransform:"uppercase",letterSpacing:0.5,marginBottom:8}}>{label}</div>
  <div style={{fontSize:28,fontWeight:800,color:color||"#fff",marginBottom:4,lineHeight:1}}>{value}</div>
- {sub && <div style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>{sub}</div>}
+ {sub && <div style={{fontSize:11,color:"#9ca3af"}}>{sub}</div>}
  {onClick&&<div style={{fontSize:9,color:"rgba(255,255,255,0.25)",marginTop:6}}>Click to filter →</div>}
  </div>
  );
@@ -3231,19 +3231,19 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  </div>
  <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:14,padding:16,marginBottom:24,display:"flex",flexWrap:"wrap",gap:12,alignItems:"center"}}>
  <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, name, email, date, PO, status…" style={{flex:1,minWidth:200,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
- <span style={{color:"rgba(255,255,255,0.5)",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>Date range</span>
+ <span style={{color:"#6b7280",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>Date range</span>
  <div style={{display:"flex",flexWrap:"wrap",gap:10,alignItems:"center",flex:1}}>
  <div style={{display:"flex",alignItems:"center",gap:8}}>
- <span style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>From</span>
+ <span style={{color:"#9ca3af",fontSize:12}}>From</span>
  <input type="date" value={dFrom} onChange={e=>setDFrom(e.target.value)} style={inp}/>
  </div>
  <div style={{display:"flex",alignItems:"center",gap:8}}>
- <span style={{color:"rgba(255,255,255,0.4)",fontSize:12}}>To</span>
+ <span style={{color:"#9ca3af",fontSize:12}}>To</span>
  <input type="date" value={dTo} onChange={e=>setDTo(e.target.value)} style={inp}/>
  </div>
- {(dFrom||dTo)&&<button onClick={async()=>{setDFrom("");setDTo("");}} style={{padding:"8px 14px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:12,cursor:"pointer"}}>Clear</button>}
+ {(dFrom||dTo)&&<button onClick={async()=>{setDFrom("");setDTo("");}} style={{padding:"8px 14px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"#4b5563",fontSize:12,cursor:"pointer"}}>Clear</button>}
  </div>
- <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{total} appointment{total!==1?"s":""}</span>
+ <span style={{background:"rgba(255,255,255,0.1)",color:"#4b5563",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{total} appointment{total!==1?"s":""}</span>
  </div>
 
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(5,1fr)",gap:12,marginBottom:24}}>
@@ -3259,7 +3259,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
  <div>
  <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Busiest Time Slots</div>
- <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{busiestSlot&&busiestSlot.count>0?"Peak: "+busiestSlot.label:"No data yet"}</div>
+ <div style={{color:"#9ca3af",fontSize:11}}>{busiestSlot&&busiestSlot.count>0?"Peak: "+busiestSlot.label:"No data yet"}</div>
  </div>
  {total>0&&<DonutChart size={80} stroke={14} segments={slotData.filter(d=>d.count>0).slice(0,5).map((d,i)=>({value:d.count,color:slotColors[i]||"#6366f1"}))}/>}
  </div>
@@ -3270,7 +3270,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
  <div>
  <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Busiest Days of Week</div>
- <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{busiestDay&&busiestDay.count>0?"Peak: "+busiestDay.label:"No data yet"}</div>
+ <div style={{color:"#9ca3af",fontSize:11}}>{busiestDay&&busiestDay.count>0?"Peak: "+busiestDay.label:"No data yet"}</div>
  </div>
  {total>0&&<DonutChart size={80} stroke={14} segments={dayData.filter(d=>d.count>0&&!d.isOff).map((d,i)=>({value:d.count,color:dayColors[i]||"#6366f1"}))}/>}
  </div>
@@ -3283,7 +3283,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,flexWrap:"wrap",gap:10}}>
  <div>
  <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Most Active Suppliers</div>
- <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{supplierData.length>0?"Top "+supplierData.length+" supplier"+(supplierData.length!==1?"s":"")+" by appointment count":"No data yet"}</div>
+ <div style={{color:"#9ca3af",fontSize:11}}>{supplierData.length>0?"Top "+supplierData.length+" supplier"+(supplierData.length!==1?"s":"")+" by appointment count":"No data yet"}</div>
  </div>
  {total>0&&supplierData.length>0&&<DonutChart size={80} stroke={14} segments={supplierData.slice(0,6).map((d,i)=>({value:d.count,color:["#f59e0b","#6366f1","#10b981","#ec4899","#3b82f6","#a78bfa"][i]||"#6366f1"}))}/>}
  </div>
@@ -3295,16 +3295,16 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
 
  <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:18,padding:20}}>
  <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:4}}>Storage Location Breakdown</div>
- <div style={{color:"rgba(255,255,255,0.4)",fontSize:11,marginBottom:20}}>How deliveries are split across warehouse areas</div>
+ <div style={{color:"#9ca3af",fontSize:11,marginBottom:20}}>How deliveries are split across warehouse areas</div>
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:12}}>
  {[{key:"Open Yard",color:"#38bdf8",icon:"🏗️"},{key:"Covered store",color:"#a78bfa",icon:"🏭"},{key:"Both",color:"#fbbf24",icon:"📦"}].map(({key,color,icon})=>{
  const count=locMap[key]||0;
  const pct=total>0?Math.round(count/total*100):0;
  return(
- <div key={key} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:16,textAlign:"center"}}>
+ <div key={key} style={{background:"rgba(255,255,255,0.05)",border:"1px solid #f3f4f6",borderRadius:14,padding:16,textAlign:"center"}}>
  <div style={{fontSize:28,marginBottom:8}}>{icon}</div>
  <div style={{fontSize:24,fontWeight:800,color,marginBottom:4}}>{count}</div>
- <div style={{fontSize:12,color:"rgba(255,255,255,0.6)",marginBottom:6}}>{key}</div>
+ <div style={{fontSize:12,color:"#4b5563",marginBottom:6}}>{key}</div>
  <div style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>{pct}% of total</div>
  <div style={{marginTop:10,height:6,background:"rgba(255,255,255,0.07)",borderRadius:99}}>
  <div style={{height:"100%",width:pct+"%",background:color,borderRadius:99}}/>
@@ -3460,7 +3460,7 @@ function OrgFilter({ value, onChange, isMobile }) {
  const opts = [{code:"BE",label:"All (BE)"},...SBUS.map(s=>({code:s.code,label:s.code}))];
  return (
  <div style={{display:"flex",gap:6,padding:isMobile?"10px 16px 0":"14px 28px 0",flexWrap:"wrap"}}>
- <span style={{color:"rgba(255,255,255,0.4)",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,alignSelf:"center",marginRight:4}}>Org:</span>
+ <span style={{color:"#9ca3af",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,alignSelf:"center",marginRight:4}}>Org:</span>
  {opts.map(o=>{
  const on = value===o.code;
  return <button key={o.code} onClick={()=>onChange(o.code)} title={o.code==="BE"?"All sub-organisations":SBUS.find(s=>s.code===o.code)?.name} style={{padding:"5px 11px",borderRadius:99,border:`1px solid ${on?A:"rgba(255,255,255,0.18)"}`,background:on?A:"rgba(255,255,255,0.06)",color:on?"#fff":"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"monospace"}}>{o.label}</button>;
@@ -3583,7 +3583,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  // Last action badge color per group
  function lastActionCfg(txList){
  const last=txList[0];
- return actionCfg[last?.action]||{bg:"#f3f4f6",color:"rgba(255,255,255,0.8)",border:"#d1d5db",label:last?.action};
+ return actionCfg[last?.action]||{bg:"#f3f4f6",color:"#374151",border:"#d1d5db",label:last?.action};
  }
 
  const inpDark={background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none",colorScheme:"dark"};
@@ -3593,7 +3593,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10,marginBottom:4}}>
  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:24,margin:0}}>Transaction History</h1>
  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
- <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{transactions.length} total</span>
+ <span style={{background:"rgba(255,255,255,0.1)",color:"#4b5563",fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:99}}>{transactions.length} total</span>
  <button onClick={exportCSV} disabled={filtered.length===0} style={{padding:"6px 12px",background:"#059669",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:filtered.length===0?"not-allowed":"pointer",opacity:filtered.length===0?0.5:1}}>📥 Export Excel</button>
  <button onClick={()=>exportPDFTable(
  "Transaction History","Records: "+filtered.length+" | Generated: "+new Date().toLocaleString("en-GB"),
@@ -3602,14 +3602,14 @@ function TransactionsHistory({ transactions, isMobile }) {
  )} disabled={filtered.length===0} style={{padding:"6px 12px",background:"#7c3aed",color:"#fff",border:"none",borderRadius:8,fontSize:11,fontWeight:700,cursor:filtered.length===0?"not-allowed":"pointer",opacity:filtered.length===0?0.5:1}}>📄 Export PDF</button>
  </div>
  </div>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Full audit log — grouped by appointment</p>
+ <p style={{color:"#6b7280",fontSize:13,margin:"0 0 16px"}}>Full audit log — grouped by appointment</p>
 
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(7,1fr)",gap:12,marginBottom:16}}>
- {[{key:"create",label:"Created",color:"#a5b4fc"},{key:"resubmission",label:"Resubmission",color:"#7dd3fc"},{key:"approve",label:"Approved",color:"#6ee7b7"},{key:"reject",label:"Rejected",color:"#fca5a5"},{key:"return_for_revision",label:"Returned",color:"#fcd34d"},{key:"delivery_complete",label:"Delivered",color:"#86efac"},{key:"delivery_failed",label:"Failed",color:"#f87171"}].map(s=>(
+ {[{key:"create",label:"Created",color:"#4f46e5"},{key:"resubmission",label:"Resubmission",color:"#7dd3fc"},{key:"approve",label:"Approved",color:"#6ee7b7"},{key:"reject",label:"Rejected",color:"#fca5a5"},{key:"return_for_revision",label:"Returned",color:"#fcd34d"},{key:"delivery_complete",label:"Delivered",color:"#86efac"},{key:"delivery_failed",label:"Failed",color:"#f87171"}].map(s=>(
  <button key={s.key} onClick={()=>setActionFilter(p=>p===s.key?"all":s.key)}
   style={{background:actionFilter===s.key?"rgba(255,255,255,0.15)":"rgba(255,255,255,0.07)",border:`1px solid ${actionFilter===s.key?"rgba(255,255,255,0.4)":"rgba(255,255,255,0.1)"}`,borderRadius:14,padding:isMobile?12:16,cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
  <div style={{color:s.color,fontSize:isMobile?22:26,fontWeight:800}}>{counts[s.key]}</div>
- <div style={{color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:500,marginTop:2}}>{s.label}</div>
+ <div style={{color:"#4b5563",fontSize:11,fontWeight:500,marginTop:2}}>{s.label}</div>
  {actionFilter===s.key&&<div style={{color:"rgba(255,255,255,0.35)",fontSize:9,marginTop:3}}>● Active filter</div>}
  </button>
  ))}
@@ -3631,22 +3631,22 @@ function TransactionsHistory({ transactions, isMobile }) {
  <div style={{position:"relative",minWidth:isMobile?140:200}}>
  <input list="supplier-list" value={supplierFilter||supplierSearchQ} onChange={e=>{setSupplierSearchQ(e.target.value);setSupplierFilter("");}} onBlur={()=>{if(filteredSuppliers.includes(supplierSearchQ))setSupplierFilter(supplierSearchQ);}} placeholder="Filter by supplier..." style={{...inpDark,width:"100%",paddingRight:supplierFilter||supplierSearchQ?"30px":"12px"}}/>
  <datalist id="supplier-list">{filteredSuppliers.map(s=><option key={s} value={s}/>)}</datalist>
- {(supplierFilter||supplierSearchQ)&&<button onClick={async()=>{setSupplierFilter("");setSupplierSearchQ("");}} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"rgba(255,255,255,0.5)",cursor:"pointer",fontSize:16,padding:0,lineHeight:1}}>×</button>}
+ {(supplierFilter||supplierSearchQ)&&<button onClick={async()=>{setSupplierFilter("");setSupplierSearchQ("");}} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:16,padding:0,lineHeight:1}}>×</button>}
  </div>
- <span style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>From</span>
+ <span style={{color:"#9ca3af",fontSize:11}}>From</span>
  <input type="date" value={dFrom} onChange={e=>setDFrom(e.target.value)} style={inpDark}/>
- <span style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>To</span>
+ <span style={{color:"#9ca3af",fontSize:11}}>To</span>
  <input type="date" value={dTo} onChange={e=>setDTo(e.target.value)} style={inpDark}/>
- {(actionFilter!=="all"||supplierFilter||supplierSearchQ||dFrom||dTo||searchQ||emergencyOnly)&&<button onClick={async()=>{setActionFilter("all");setSupplierFilter("");setSupplierSearchQ("");setDFrom("");setDTo("");setSearchQ("");setEmergencyOnly(false);}} style={{padding:"8px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:11,cursor:"pointer"}}>Clear filters</button>}
+ {(actionFilter!=="all"||supplierFilter||supplierSearchQ||dFrom||dTo||searchQ||emergencyOnly)&&<button onClick={async()=>{setActionFilter("all");setSupplierFilter("");setSupplierSearchQ("");setDFrom("");setDTo("");setSearchQ("");setEmergencyOnly(false);}} style={{padding:"8px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"#4b5563",fontSize:11,cursor:"pointer"}}>Clear filters</button>}
  <button onClick={()=>setEmergencyOnly(p=>!p)} style={{padding:"8px 12px",background:emergencyOnly?"#dc2626":"rgba(255,255,255,0.08)",border:`1px solid ${emergencyOnly?"#dc2626":"rgba(255,255,255,0.15)"}`,borderRadius:9,color:emergencyOnly?"#fff":"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,cursor:"pointer"}}>🚨 Emergency</button>
- <span style={{marginLeft:"auto",background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{groups.length} appointment{groups.length!==1?"s":""} · {filtered.length} event{filtered.length!==1?"s":""}</span>
+ <span style={{marginLeft:"auto",background:"rgba(255,255,255,0.1)",color:"#4b5563",fontSize:11,fontWeight:700,padding:"4px 10px",borderRadius:99}}>{groups.length} appointment{groups.length!==1?"s":""} · {filtered.length} event{filtered.length!==1?"s":""}</span>
  </div>
  </div>
 
  {groups.length===0 ? (
- <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
+ <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid #e5e7eb",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
  <div style={{fontSize:40,marginBottom:12}}>📜</div>
- <div style={{color:"rgba(255,255,255,0.4)",fontSize:13}}>{transactions.length===0?"No transactions yet. Actions will be recorded here.":"No transactions match your filters."}</div>
+ <div style={{color:"#9ca3af",fontSize:13}}>{transactions.length===0?"No transactions yet. Actions will be recorded here.":"No transactions match your filters."}</div>
  </div>
  ) : (
  <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -3666,7 +3666,7 @@ function TransactionsHistory({ transactions, isMobile }) {
  <span style={{background:lastCfg.bg,color:lastCfg.color,border:`1px solid ${lastCfg.border}`,padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:700}}>{lastCfg.label}</span>
  {isEmergency&&<span style={{background:"rgba(220,38,38,0.2)",color:"#fca5a5",border:"1px solid rgba(220,38,38,0.3)",padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:700}}>Emergency</span>}
  </div>
- <div style={{color:"rgba(255,255,255,0.5)",fontSize:11,display:"flex",gap:12,flexWrap:"wrap"}}>
+ <div style={{color:"#6b7280",fontSize:11,display:"flex",gap:12,flexWrap:"wrap"}}>
  <span>{first.supplierName||"—"}</span>
  <span>·</span>
  <span>{txList.length} event{txList.length!==1?"s":""}</span>
@@ -3674,14 +3674,14 @@ function TransactionsHistory({ transactions, isMobile }) {
  <span>Last: {fmtTs(last.timestamp)}</span>
  </div>
  </div>
- <span style={{color:"rgba(255,255,255,0.4)",fontSize:18,flexShrink:0,transition:"transform 0.2s",display:"inline-block",transform:isOpen?"rotate(180deg)":"rotate(0deg)"}}>▾</span>
+ <span style={{color:"#9ca3af",fontSize:18,flexShrink:0,transition:"transform 0.2s",display:"inline-block",transform:isOpen?"rotate(180deg)":"rotate(0deg)"}}>▾</span>
  </button>
 
  {/* Timeline — shown when open */}
  {isOpen&&(
  <div style={{borderTop:"1px solid rgba(255,255,255,0.08)",padding:isMobile?"12px 14px":"14px 18px",display:"flex",flexDirection:"column",gap:0}}>
  {[...txList].reverse().map((t,i,arr)=>{
- const cfg=actionCfg[t.action]||{bg:"#f3f4f6",color:"rgba(255,255,255,0.8)",border:"#d1d5db",label:t.action,icon:"•"};
+ const cfg=actionCfg[t.action]||{bg:"#f3f4f6",color:"#374151",border:"#d1d5db",label:t.action,icon:"•"};
  const isLast=i===arr.length-1;
  return(
  <div key={t.id} style={{display:"flex",gap:12,position:"relative"}}>
@@ -3696,8 +3696,8 @@ function TransactionsHistory({ transactions, isMobile }) {
  <span style={{fontSize:12,fontWeight:700,color:"#fff"}}>{cfg.label}</span>
  <span style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>{fmtTs(t.timestamp)}</span>
  </div>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginBottom:t.details?4:0}}>{t.actor} · {t.actorEmail}</div>
- {t.details&&<div style={{fontSize:11,color:"rgba(255,255,255,0.4)",fontStyle:"italic",background:"rgba(255,255,255,0.04)",borderRadius:8,padding:"6px 10px"}}>{t.details}</div>}
+ <div style={{fontSize:11,color:"#6b7280",marginBottom:t.details?4:0}}>{t.actor} · {t.actorEmail}</div>
+ {t.details&&<div style={{fontSize:11,color:"#9ca3af",fontStyle:"italic",background:"rgba(255,255,255,0.04)",borderRadius:8,padding:"6px 10px"}}>{t.details}</div>}
  </div>
  </div>
  );
@@ -3745,16 +3745,16 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  <span style={{fontSize:28}}>{icon}</span>
  <div style={{flex:1}}>
  <div style={{fontFamily:"monospace",fontSize:14,fontWeight:800,color:P,marginBottom:2}}>{a.id}</div>
- <div style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>{a.supplierName}</div>
+ <div style={{fontSize:12,color:"#6b7280"}}>{a.supplierName}</div>
  </div>
  </div>
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:8,marginBottom:10}}>
  <div>
- <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:2}}>Scheduled</div>
+ <div style={{fontSize:10,color:"#9ca3af",marginBottom:2}}>Scheduled</div>
  <div style={{fontSize:12,fontWeight:600,color:"#fff"}}>{fmtDate(a.date)} {a.time}</div>
  </div>
  <div>
- <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:2}}>Delivery To</div>
+ <div style={{fontSize:10,color:"#9ca3af",marginBottom:2}}>Delivery To</div>
  <div style={{fontSize:12,fontWeight:600,color:"#fff"}}><StoreBadge loc={a.storageLocation}/></div>
  </div>
  </div>
@@ -3809,9 +3809,9 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  <div style={{background:"#fff",borderRadius:20,padding:28,maxWidth:400,width:"100%",boxShadow:"0 25px 60px rgba(0,0,0,0.4)"}}>
  <div style={{fontSize:36,textAlign:"center",marginBottom:12}}>✅</div>
  <h3 style={{fontWeight:800,fontSize:18,color:"#fff",textAlign:"center",margin:"0 0 8px"}}>Mark All as Complete?</h3>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,textAlign:"center",margin:"0 0 20px"}}>This will mark <strong>{markAllRef.current.length} pending deliveries</strong> as completed. This action cannot be undone.</p>
+ <p style={{color:"#6b7280",fontSize:13,textAlign:"center",margin:"0 0 20px"}}>This will mark <strong>{markAllRef.current.length} pending deliveries</strong> as completed. This action cannot be undone.</p>
  <div style={{display:"flex",gap:10}}>
- <button onClick={()=>setConfirmMarkAll(false)} style={{flex:1,padding:"11px",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,fontSize:14,fontWeight:600,color:"rgba(255,255,255,0.5)",background:"transparent",cursor:"pointer"}}>Cancel</button>
+ <button onClick={()=>setConfirmMarkAll(false)} style={{flex:1,padding:"11px",border:"1px solid #e5e7eb",borderRadius:12,fontSize:14,fontWeight:600,color:"#6b7280",background:"transparent",cursor:"pointer"}}>Cancel</button>
  <button onClick={handleMarkAllComplete} style={{flex:1,padding:"11px",background:"#10b981",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:700,cursor:"pointer"}}>✅ Confirm</button>
  </div>
  </div>
@@ -3877,7 +3877,7 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  ✅ Mark All Complete ({awaiting.length})
  </button>
  </div>
- <p style={{color:"rgba(255,255,255,0.5)",fontSize:13,margin:"0 0 16px"}}>Monitor approved deliveries and track completion status</p>
+ <p style={{color:"#6b7280",fontSize:13,margin:"0 0 16px"}}>Monitor approved deliveries and track completion status</p>
  <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, supplier, date, time, PO, notes…" style={{width:"100%",marginBottom:16,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 12px",color:"#fff",fontSize:13,outline:"none",boxSizing:"border-box"}}/>
 
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12,marginBottom:20}}>
@@ -3888,7 +3888,7 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  {label:"Failed",count:failed.length,color:"#f87171",icon:"❌",filter:"failed"}
  ].map(s=>(
  <button key={s.label} onClick={()=>setStatusFilter(p=>p===s.filter?"all":s.filter)} style={{background:statusFilter===s.filter?"rgba(255,255,255,0.15)":"rgba(255,255,255,0.07)",border:`1px solid ${statusFilter===s.filter?"rgba(255,255,255,0.4)":"rgba(255,255,255,0.1)"}`,borderRadius:14,padding:isMobile?12:16,textAlign:"left",cursor:"pointer",transition:"all 0.15s"}}>
- <div style={{fontSize:isMobile?11:12,color:"rgba(255,255,255,0.6)",marginBottom:4,display:"flex",alignItems:"center",gap:6}}>
+ <div style={{fontSize:isMobile?11:12,color:"#4b5563",marginBottom:4,display:"flex",alignItems:"center",gap:6}}>
  <span>{s.icon}</span><span>{s.label}</span>
  </div>
  <div style={{fontSize:isMobile?24:28,fontWeight:800,color:s.color}}>{s.count}</div>
@@ -3897,8 +3897,8 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  ))}
  </div>
 
- <div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,padding:12,marginBottom:20,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
- <span style={{color:"rgba(255,255,255,0.5)",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Filter:</span>
+ <div style={{background:"#f9fafb",border:"1px solid rgba(255,255,255,0.1)",borderRadius:12,padding:12,marginBottom:20,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+ <span style={{color:"#6b7280",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Filter:</span>
  <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"8px 12px",color:"#fff",fontSize:13,outline:"none",cursor:"pointer",colorScheme:"dark"}}>
  <option value="all">All Deliveries</option>
  <option value="emergency">🚨 Emergency</option>
@@ -3907,7 +3907,7 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  <option value="completed">✅ Completed Only</option>
  <option value="failed">❌ Failed Only</option>
  </select>
- {statusFilter!=="all"&&<button onClick={()=>setStatusFilter("all")} style={{padding:"6px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"rgba(255,255,255,0.6)",fontSize:11,cursor:"pointer"}}>Clear filter</button>}
+ {statusFilter!=="all"&&<button onClick={()=>setStatusFilter("all")} style={{padding:"6px 12px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:9,color:"#4b5563",fontSize:11,cursor:"pointer"}}>Clear filter</button>}
  </div>
 
  {(statusFilter==="all"||statusFilter==="emergency")&&overdue.filter(a=>statusFilter!=="emergency"||(a.priority==="emergency")).length>0&&(
@@ -3955,9 +3955,9 @@ function TeamLeadPanel({ appointments, isMobile, onMarkAll }) {
  )}
 
  {approved.length===0&&(
- <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
+ <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid #e5e7eb",borderRadius:20,padding:isMobile?40:60,textAlign:"center"}}>
  <div style={{fontSize:40,marginBottom:12}}>👷</div>
- <div style={{color:"rgba(255,255,255,0.4)",fontSize:13}}>No approved deliveries to monitor yet.</div>
+ <div style={{color:"#9ca3af",fontSize:13}}>No approved deliveries to monitor yet.</div>
  </div>
  )}
  </div>
@@ -4421,7 +4421,7 @@ function App() {
 
  return(
  <div style={{height:"100vh",display:"flex",flexDirection:"column",fontFamily:"system-ui,sans-serif"}}>
- <header style={{background:BG,height:isMobile?52:56,display:"flex",alignItems:"center",justifyContent:"space-between",padding:`0 ${isMobile?14:20}px`,borderBottom:"1px solid rgba(255,255,255,0.1)",flexShrink:0}}>
+ <header style={{background:BG,height:isMobile?52:56,display:"flex",alignItems:"center",justifyContent:"space-between",padding:`0 ${isMobile?14:20}px`,borderBottom:"1px solid #e5e7eb",flexShrink:0}}>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
  {isMobile && (
  <button onClick={()=>setNavOpen(o=>!o)} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.7)",fontSize:20,padding:"4px 6px",marginRight:4}}>☰</button>
@@ -4429,13 +4429,13 @@ function App() {
  <span style={{color:"#fff",fontWeight:800,fontSize:13}}>BE – Warehouse Appointments</span>
  </div>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
- {!isMobile && <span style={{color:"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600}}>👤 {displayName||"Admin"}</span>}
+ {!isMobile && <span style={{color:"#4b5563",fontSize:12,fontWeight:600}}>👤 {displayName||"Admin"}</span>}
  <span style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:syncStatus==="ok"?"rgba(16,185,129,0.2)":syncStatus==="error"&&appts.length===0?"rgba(239,68,68,0.2)":"rgba(16,185,129,0.2)",color:syncStatus==="ok"?"#6ee7b7":syncStatus==="error"&&appts.length===0?"#fca5a5":"#6ee7b7",border:"1px solid rgba(255,255,255,0.1)"}}>
  {syncStatus==="ok"?"☁️ Synced":syncStatus==="error"&&appts.length===0?"⚠️ Sync Error":"☁️ Synced"}
  </span>
  <button onClick={()=>pullFromSupabase(false)} title="Refresh data" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,padding:"4px 10px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700}}>🔄</button>
  <button onClick={()=>setView("help")} style={{background:"rgba(200,150,42,0.15)",border:"1px solid rgba(200,150,42,0.3)",borderRadius:8,padding:"4px 10px",color:"#C8962A",fontSize:12,cursor:"pointer",fontWeight:700}}>❓ Guide</button>
- <button onClick={async()=>{setPage("landing");setView("dashboard");setAdminEmail("");sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");}} style={{color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
+ <button onClick={async()=>{setPage("landing");setView("dashboard");setAdminEmail("");sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");}} style={{color:"#4b5563",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
  </div>
  </header>
 
@@ -4444,9 +4444,9 @@ function App() {
  navOpen && (
  <div style={{position:"absolute",inset:0,zIndex:30,display:"flex"}}>
  <div style={{width:220,background:"rgba(7,17,76,0.98)",display:"flex",flexDirection:"column",padding:12,boxShadow:"4px 0 20px rgba(0,0,0,0.4)"}}>
- <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,paddingBottom:10,borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
- <span style={{color:"rgba(255,255,255,0.5)",fontSize:12,fontWeight:600}}>Navigation</span>
- <button onClick={()=>setNavOpen(false)} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.4)",fontSize:18}}>×</button>
+ <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,paddingBottom:10,borderBottom:"1px solid rgba(255,255,255,0.07)"}}>
+ <span style={{color:"#6b7280",fontSize:12,fontWeight:600}}>Navigation</span>
+ <button onClick={()=>setNavOpen(false)} style={{background:"none",border:"none",cursor:"pointer",color:"#9ca3af",fontSize:18}}>×</button>
  </div>
  {nav.map(item=>(
  <button key={item.id} onClick={async()=>{setView(item.id);setNavOpen(false);}}
@@ -4527,15 +4527,15 @@ function App() {
  <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:isMobile?"flex-end":"center",justifyContent:"center",zIndex:40,padding:isMobile?0:16}}>
  <div style={{background:"#fff",borderRadius:isMobile?"24px 24px 0 0":"24px",padding:22,width:"100%",maxWidth:isMobile?"100%":420}}>
  <h3 style={{fontWeight:800,fontSize:18,color:P,margin:"0 0 4px"}}>Action Required</h3>
- <p style={{fontSize:13,color:"rgba(255,255,255,0.5)",margin:"0 0 14px"}}>Supplier will be notified with your comments.</p>
- <label style={{display:"block",fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Manager Comments *</label>
- <textarea value={rejReason} onChange={e=>setRejReason(e.target.value)} placeholder="e.g. Please change delivery time to afternoon slot (after 1 PM)" autoFocus style={{width:"100%",border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,padding:12,fontSize:14,resize:"none",height:100,outline:"none",boxSizing:"border-box",background:"#f9fafb"}}/>
+ <p style={{fontSize:13,color:"#6b7280",margin:"0 0 14px"}}>Supplier will be notified with your comments.</p>
+ <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Manager Comments *</label>
+ <textarea value={rejReason} onChange={e=>setRejReason(e.target.value)} placeholder="e.g. Please change delivery time to afternoon slot (after 1 PM)" autoFocus style={{width:"100%",border:"1px solid #e5e7eb",borderRadius:12,padding:12,fontSize:14,resize:"none",height:100,outline:"none",boxSizing:"border-box",background:"#f9fafb"}}/>
  <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:14}}>
  <div style={{display:"flex",gap:10}}>
  <button onClick={handleReturnSubmit} disabled={!rejReason.trim()} style={{flex:1,padding:12,background:"#f59e0b",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer",opacity:!rejReason.trim()?0.4:1}}>↩️ Return for Revision</button>
  <button onClick={handleRejectSubmit} disabled={!rejReason.trim()} style={{flex:1,padding:12,background:"#dc2626",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:600,cursor:"pointer",opacity:!rejReason.trim()?0.4:1}}>❌ Reject</button>
  </div>
- <button onClick={()=>setRejectId(null)} style={{width:"100%",padding:12,border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,fontSize:14,fontWeight:600,color:"rgba(255,255,255,0.5)",background:"transparent",cursor:"pointer"}}>Cancel</button>
+ <button onClick={()=>setRejectId(null)} style={{width:"100%",padding:12,border:"1px solid #e5e7eb",borderRadius:12,fontSize:14,fontWeight:600,color:"#6b7280",background:"transparent",cursor:"pointer"}}>Cancel</button>
  </div>
  </div>
  </div>
@@ -4548,31 +4548,31 @@ function App() {
  <div>
  <div style={{fontFamily:"monospace",fontSize:12,color:P,fontWeight:800,marginBottom:4}}>{viewApt.id}</div>
  <h3 style={{fontWeight:800,fontSize:17,color:P,margin:"0 0 2px"}}>{viewApt.supplierName}</h3>
- <p style={{fontSize:12,color:"rgba(255,255,255,0.5)",margin:0}}>{viewApt.supplierEmail}</p>
+ <p style={{fontSize:12,color:"#6b7280",margin:0}}>{viewApt.supplierEmail}</p>
  </div>
  <div style={{display:"flex",alignItems:"center",gap:8}}>
  <StatusBadge status={viewApt.status}/>
- <button onClick={()=>setViewId(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:"rgba(255,255,255,0.4)"}}>×</button>
+ <button onClick={()=>setViewId(null)} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:"#9ca3af"}}>×</button>
  </div>
  </div>
  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
  {[["Date",fmtDate(viewApt.date)],["Time",viewApt.time],["Orders",viewApt.totalOrders],["Lines",viewApt.totalLines]].map(([k,v])=>(
- <div key={k} style={{background:"rgba(255,255,255,0.06)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.1)"}}><div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:3}}>{k}</div><div style={{fontWeight:600,fontSize:13,color:"#fff"}}>{v}</div></div>
+ <div key={k} style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6"}}><div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>{k}</div><div style={{fontWeight:600,fontSize:13,color:"#fff"}}>{v}</div></div>
  ))}
  </div>
- <div style={{background:"rgba(255,255,255,0.06)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.1)",marginBottom:10}}>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:6}}>Storage Location</div>
+ <div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}>
+ <div style={{fontSize:11,color:"#9ca3af",marginBottom:6}}>Storage Location</div>
  <StoreBadge loc={viewApt.storageLocation}/>
  </div>
  {viewApt.deliveryTo && (
  <div style={{background:"#eef2ff",border:"1px solid #c7d2fe",borderRadius:10,padding:"10px 12px",marginBottom:10}}>
- <div style={{fontSize:11,color:"#a5b4fc",fontWeight:600,marginBottom:3}}>Delivery To (SBU)</div>
- <div style={{fontSize:13,fontWeight:700,color:"#a5b4fc"}}>{viewApt.deliveryTo} – {(SBUS.find(s=>s.code===viewApt.deliveryTo)||{}).name||"Unknown"}</div>
+ <div style={{fontSize:11,color:"#4f46e5",fontWeight:600,marginBottom:3}}>Delivery To (SBU)</div>
+ <div style={{fontSize:13,fontWeight:700,color:"#4f46e5"}}>{viewApt.deliveryTo} – {(SBUS.find(s=>s.code===viewApt.deliveryTo)||{}).name||"Unknown"}</div>
  </div>
  )}
  {viewApt.poNumbers&&viewApt.poNumbers.length>0&&(
- <div style={{background:"rgba(255,255,255,0.06)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.1)",marginBottom:10}}>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:6}}>PO Numbers</div>
+ <div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}>
+ <div style={{fontSize:11,color:"#9ca3af",marginBottom:6}}>PO Numbers</div>
  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
  {viewApt.poNumbers.map(p=><span key={p} style={{background:"#eef2ff",border:"1px solid #c7d2fe",color:"#3730a3",fontSize:12,fontWeight:700,padding:"3px 9px",borderRadius:8}}>#{p}</span>)}
  </div>
@@ -4589,21 +4589,21 @@ function App() {
  <div style={{fontSize:11,color:"#0369a1",marginBottom:6,fontWeight:600}}>📎 Attachments ({viewApt.attachments.length})</div>
  <div style={{display:"flex",flexDirection:"column",gap:5}}>
  {viewApt.attachments.map(file=>(
- <div key={file.name} style={{display:"flex",alignItems:"center",gap:8,fontSize:13,color:"rgba(255,255,255,0.8)"}}>
+ <div key={file.name} style={{display:"flex",alignItems:"center",gap:8,fontSize:13,color:"#374151"}}>
  <span>{file.type&&file.type.includes("pdf")?"📄":file.type&&file.type.includes("image")?"🖼️":"📎"}</span>
  {file.url?(
  <a href={file.url} target="_blank" rel="noreferrer" style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#0369a1",textDecoration:"underline",cursor:"pointer",fontWeight:600}}>{file.name}</a>
  ):(
- <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"rgba(255,255,255,0.4)"}}>{file.name} (unavailable)</span>
+ <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#9ca3af"}}>{file.name} (unavailable)</span>
  )}
- <span style={{fontSize:11,color:"rgba(255,255,255,0.4)",flexShrink:0}}>{fmtBytes(file.size)}</span>
+ <span style={{fontSize:11,color:"#9ca3af",flexShrink:0}}>{fmtBytes(file.size)}</span>
  </div>
  ))}
  </div>
  </div>
  )}
- {viewApt.additionalNotes&&<div style={{background:"rgba(255,255,255,0.06)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(255,255,255,0.1)",marginBottom:10}}><div style={{fontSize:11,color:"rgba(255,255,255,0.4)",marginBottom:3}}>Notes</div><div style={{fontSize:13,color:"rgba(255,255,255,0.8)"}}>{viewApt.additionalNotes}</div></div>}
- {viewApt.managerComments&&<div style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:10,padding:"10px 12px",marginBottom:10}}><div style={{fontSize:10,fontWeight:700,color:"#ef4444",textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Manager Comments</div><div style={{fontSize:13,color:"#991b1b"}}>{viewApt.managerComments}</div></div>}
+ {viewApt.additionalNotes&&<div style={{background:"#f9fafb",borderRadius:10,padding:"10px 12px",border:"1px solid #f3f4f6",marginBottom:10}}><div style={{fontSize:11,color:"#9ca3af",marginBottom:3}}>Notes</div><div style={{fontSize:13,color:"#374151"}}>{viewApt.additionalNotes}</div></div>}
+ {viewApt.managerComments&&<div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:10,padding:"10px 12px",marginBottom:10}}><div style={{fontSize:10,fontWeight:700,color:"#ef4444",textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Manager Comments</div><div style={{fontSize:13,color:"#991b1b"}}>{viewApt.managerComments}</div></div>}
  <div style={{marginBottom:12}}>
  <ConversationThread
  conversation={viewApt.conversation||[]}
@@ -4613,7 +4613,7 @@ function App() {
  onSend={async(msg)=>{ await handleSendMessage(viewApt.id, msg, getAdminCreds().nickname||"Admin", "admin"); }}
  />
  </div>
- <button onClick={()=>setViewId(null)} style={{width:"100%",padding:12,border:"1px solid rgba(255,255,255,0.12)",borderRadius:12,fontSize:14,fontWeight:600,color:"rgba(255,255,255,0.5)",background:"transparent",cursor:"pointer",marginTop:4}}>Close</button>
+ <button onClick={()=>setViewId(null)} style={{width:"100%",padding:12,border:"1px solid #e5e7eb",borderRadius:12,fontSize:14,fontWeight:600,color:"#6b7280",background:"transparent",cursor:"pointer",marginTop:4}}>Close</button>
  </div>
  </div>
  )}
