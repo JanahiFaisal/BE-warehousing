@@ -1366,14 +1366,14 @@ function Sparkline({ data, color="#C8962A", height=40, width=120 }){
 }
 
 // ─── Donut Chart ──────────────────────────────────────────────
-function DonutChart({ segments, size=120, thickness=24, stroke }){
+function DonutChart({ segments, size=120, thickness=24, stroke, onSegmentClick }){
  const th=stroke||thickness;
  const total=segments.reduce((s,x)=>s+x.value,0)||1;
  let offset=0;
  const r=(size-th)/2;
  const circ=2*Math.PI*r;
  return(
- <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+ <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{cursor:onSegmentClick?"pointer":"default"}}>
  {segments.map((seg,i)=>{
  const pct=seg.value/total;
  const dash=pct*circ;
@@ -1382,7 +1382,12 @@ function DonutChart({ segments, size=120, thickness=24, stroke }){
   fill="none" stroke={seg.color} strokeWidth={th}
   strokeDasharray={`${dash} ${gap}`}
   strokeDashoffset={-offset*circ+circ/4}
-  strokeLinecap="butt"/>;
+  strokeLinecap="butt"
+  style={{cursor:onSegmentClick&&seg.value>0?"pointer":"default",transition:"opacity 0.2s"}}
+  onClick={onSegmentClick&&seg.value>0?()=>onSegmentClick(seg):undefined}
+  onMouseEnter={e=>{if(onSegmentClick&&seg.value>0)e.target.style.opacity="0.7";}}
+  onMouseLeave={e=>{e.target.style.opacity="1";}}
+ />;
  offset+=pct;
  return el;
  })}
@@ -1651,7 +1656,11 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
  const hasFilters=sbuFilter!=="all"||statusFilter!=="all"||priorityFilter!=="all"||storageFilter!=="all"||dateFrom||dateTo;
 
  // ── Navigate with filter ──────────────────────────────────────
- function navTo(filter){setAdminFilter(filter);setView("admin");}
+ function navTo(filter){
+ if(filter==="emergency"){setAdminFilter("emergency_only");setView("admin");}
+ else if(filter==="all"){setAdminFilter("all");setView("admin");}
+ else{setAdminFilter(filter);setView("admin");}
+ }
 
  // ── Donut click ───────────────────────────────────────────────
  function onDonutClick(seg){
@@ -1811,16 +1820,16 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
  {/* ── KPI Cards ── */}
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12}}>
  {[
-  {label:"Total",val:total,color:"#C8962A",sub:`${approvalRate}% approval rate`,filter:null,icon:"📦"},
+  {label:"Total",val:total,color:"#C8962A",sub:`${approvalRate}% approval rate`,filter:"all",icon:"📦"},
   {label:"Pending",val:pending,color:"#fcd34d",sub:"Awaiting action",filter:"pending",icon:"⏳"},
   {label:"Approved",val:approved,color:"#6ee7b7",sub:`${completionRate}% delivered`,filter:"approved",icon:"✅"},
-  {label:"Emergency",val:emergency,color:"#fca5a5",sub:"High priority",filter:null,icon:"🚨"},
+  {label:"Emergency",val:emergency,color:"#fca5a5",sub:"High priority",filter:"emergency",icon:"🚨"},
  ].map(function(item){return(
-  <button key={item.label} onClick={item.filter?()=>navTo(item.filter):undefined}
-   style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:isMobile?14:20,textAlign:"left",cursor:item.filter?"pointer":"default"}}>
+  <button key={item.label} onClick={()=>navTo(item.filter)}
+   style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:isMobile?14:20,textAlign:"left",cursor:"pointer",transition:"background 0.2s"}}>
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
    <span style={{fontSize:20}}>{item.icon}</span>
-   {item.filter&&<span style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>Click</span>}
+   <span style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>Click →</span>
   </div>
   <AnimCounter target={item.val} color={item.color} size={isMobile?28:36}/>
   <div style={{color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:600,marginTop:4}}>{item.label}</div>
@@ -1900,9 +1909,13 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
   <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
   <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Status Distribution</div>
   <div style={{display:"flex",alignItems:"center",gap:16,justifyContent:"center"}}>
-   <DonutChart size={isMobile?100:120} thickness={22} segments={[
-   {value:pending,color:"#f59e0b"},{value:approved,color:"#10b981"},
-   {value:rejected,color:"#ef4444"},{value:revision,color:"#fb923c"},
+   <DonutChart size={isMobile?100:120} thickness={22}
+   onSegmentClick={function(seg){if(seg.filter)navTo(seg.filter);}}
+   segments={[
+   {value:pending,color:"#f59e0b",filter:"pending"},
+   {value:approved,color:"#10b981",filter:"approved"},
+   {value:rejected,color:"#ef4444",filter:"rejected"},
+   {value:revision,color:"#fb923c",filter:"revision_required"},
    ]}/>
    <div style={{display:"flex",flexDirection:"column",gap:6}}>
    {[["Pending",pending,"#fcd34d","pending"],["Approved",approved,"#6ee7b7","approved"],["Rejected",rejected,"#fca5a5","rejected"],["Revision",revision,"#fdba74","revision_required"]].map(function(item){return(
@@ -2024,7 +2037,11 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
 
  // Apply initial filter from dashboard card click
  useEffect(()=>{
- if(initialFilter){setStatFs([initialFilter]);onFilterUsed&&onFilterUsed();}
+ if(!initialFilter)return;
+ if(initialFilter==="emergency_only"){setEmergencyOnly(true);setStatFs([]);}
+ else if(initialFilter==="all"){setStatFs([]);setEmergencyOnly(false);}
+ else{setStatFs([initialFilter]);setEmergencyOnly(false);}
+ onFilterUsed&&onFilterUsed();
  },[initialFilter]);
  const rows=useMemo(()=>appointments.filter(a=>{if(searchQ&&!matchesAppt(a,searchQ))return false;if(statFs.length&&!statFs.includes(a.status))return false;if(emergencyOnly&&a.priority!=="emergency")return false;return true;}).sort((a,b)=>{if(a.priority==="emergency"&&b.priority!=="emergency")return -1;if(b.priority==="emergency"&&a.priority!=="emergency")return 1;return new Date(b.createdAt)-new Date(a.createdAt);}),[appointments,searchQ,statFs,emergencyOnly]);
  const emergencyRows=rows.filter(a=>a.priority==="emergency"&&a.status==="pending");
