@@ -395,7 +395,7 @@ async function exportPDFTable(title, subtitle, columns, rows, filename){
  w.document.close();
 }
 
-(sheets,filename,meta){
+async function exportToExcel(sheets,filename,meta){
  // Load ExcelJS on demand (not on page load to avoid blocking Supabase)
  await window._loadExcelJS();
  meta=meta||[];
