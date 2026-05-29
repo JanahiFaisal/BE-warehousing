@@ -1552,172 +1552,454 @@ function SupplierTable({ appointments, isMobile }){
 
 // ─── Full Dashboard ───────────────────────────────────────────
 function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
- const total=appointments.length;
- const pending=appointments.filter(a=>a.status==="pending").length;
- const approved=appointments.filter(a=>a.status==="approved").length;
- const rejected=appointments.filter(a=>a.status==="rejected").length;
- const revision=appointments.filter(a=>a.status==="revision_required").length;
- const completed=appointments.filter(a=>a.deliveryStatus==="completed").length;
- const emergency=appointments.filter(a=>a.priority==="emergency").length;
+ // ── Filters ──────────────────────────────────────────────────
+ const [dateFrom,setDateFrom]=useState("");
+ const [dateTo,setDateTo]=useState("");
+ const [sbuFilter,setSbuFilter]=useState("all");
+ const [statusFilter,setStatusFilter]=useState("all");
+ const [priorityFilter,setPriorityFilter]=useState("all");
+ const [storageFilter,setStorageFilter]=useState("all");
+ const [showFilters,setShowFilters]=useState(false);
+ const [activeSegment,setActiveSegment]=useState(null);
+ const [exportLoading,setExportLoading]=useState(false);
+
+ const today=new Date();
+ const todayStr=today.toISOString().slice(0,10);
+
+ // ── Apply filters ─────────────────────────────────────────────
+ const filtered=useMemo(()=>{
+  return appointments.filter(a=>{
+   if(sbuFilter!=="all"&&a.deliveryTo!==sbuFilter)return false;
+   if(statusFilter!=="all"&&a.status!==statusFilter)return false;
+   if(priorityFilter!=="all"&&a.priority!==priorityFilter)return false;
+   if(storageFilter!=="all"){
+    const locs=Array.isArray(a.storageLocation)?a.storageLocation:[a.storageLocation].filter(Boolean);
+    if(!locs.some(l=>l===storageFilter))return false;
+   }
+   if(dateFrom&&a.date&&a.date<dateFrom)return false;
+   if(dateTo&&a.date&&a.date>dateTo)return false;
+   return true;
+  });
+ },[appointments,sbuFilter,statusFilter,priorityFilter,storageFilter,dateFrom,dateTo]);
+
+ // ── KPIs ──────────────────────────────────────────────────────
+ const total=filtered.length;
+ const pending=filtered.filter(a=>a.status==="pending").length;
+ const approved=filtered.filter(a=>a.status==="approved").length;
+ const rejected=filtered.filter(a=>a.status==="rejected").length;
+ const revision=filtered.filter(a=>a.status==="revision_required").length;
+ const completed=filtered.filter(a=>a.deliveryStatus==="completed").length;
+ const emergency=filtered.filter(a=>a.priority==="emergency").length;
+ const awaiting=filtered.filter(a=>a.status==="approved"&&(a.deliveryStatus==="awaiting_delivery"||!a.deliveryStatus));
+ const overdue=awaiting.filter(a=>new Date(a.date+"T"+a.time)<today);
  const approvalRate=total>0?Math.round(approved/total*100):0;
  const completionRate=approved>0?Math.round(completed/approved*100):0;
 
- // Monthly trend (last 6 months)
- const monthlyData=(()=>{
- const map={};
- const now=new Date();
- for(let i=5;i>=0;i--){
- const d=new Date(now.getFullYear(),now.getMonth()-i,1);
- const key=d.toLocaleDateString("en-GB",{month:"short"});
- map[key]=0;
- }
- appointments.forEach(a=>{
- if(!a.createdAt)return;
- const d=new Date(a.createdAt);
- const key=d.toLocaleDateString("en-GB",{month:"short"});
- if(key in map)map[key]++;
+ // ── Today's schedule ──────────────────────────────────────────
+ const todayAppts=filtered.filter(a=>a.date===todayStr&&a.status==="approved")
+  .sort((a,b)=>a.time.localeCompare(b.time));
+
+ // ── Capacity today ────────────────────────────────────────────
+ const sbuCap=["BR","BU","BG","BT"].map(sbu=>{
+  const booked=filtered.filter(a=>a.date===todayStr&&a.deliveryTo===sbu&&a.status==="approved").length;
+  const slots=SLOTS.length*2; // 2 per slot
+  return{sbu,booked,slots,pct:Math.min(Math.round(booked/slots*100),100)};
  });
- return Object.entries(map).map(([label,value])=>({label,value}));
+
+ // ── Activity feed ─────────────────────────────────────────────
+ const recentAppts=[...filtered].sort((a,b)=>new Date(b.updatedAt||b.createdAt)-new Date(a.updatedAt||a.createdAt)).slice(0,8);
+
+ // ── Monthly trend ─────────────────────────────────────────────
+ const monthlyData=(()=>{
+  const map={};
+  const now=new Date();
+  for(let i=5;i>=0;i--){
+   const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+   const key=d.toLocaleDateString("en-GB",{month:"short"});
+   map[key]=0;
+  }
+  filtered.forEach(a=>{
+   if(!a.createdAt)return;
+   const d=new Date(a.createdAt);
+   const key=d.toLocaleDateString("en-GB",{month:"short"});
+   if(key in map)map[key]++;
+  });
+  return Object.entries(map).map(([label,value])=>({label,value}));
  })();
 
  const sbuData=["BR","BU","BG","BT"].map((sbu,i)=>({
- label:sbu,
- value:appointments.filter(a=>a.deliveryTo===sbu).length,
- color:["#C8962A","#10b981","#3b82f6","#8b5cf6"][i],
+  label:sbu,value:filtered.filter(a=>a.deliveryTo===sbu).length,
+  color:["#C8962A","#10b981","#3b82f6","#8b5cf6"][i],
  }));
 
- const cardStyle=(bg,bd)=>({background:bg,border:`1px solid ${bd}`,borderRadius:16,padding:isMobile?14:20});
+ const cardStyle=(bg,bd)=>({background:bg,border:"1px solid "+bd,borderRadius:16,padding:isMobile?14:20});
+ const hasFilters=sbuFilter!=="all"||statusFilter!=="all"||priorityFilter!=="all"||storageFilter!=="all"||dateFrom||dateTo;
+
+ // ── Navigate with filter ──────────────────────────────────────
+ function navTo(filter){setAdminFilter(filter);setView("admin");}
+
+ // ── Donut click ───────────────────────────────────────────────
+ function onDonutClick(seg){
+  if(seg.filter){navTo(seg.filter);}
+ }
+
+ // ── PDF Export ────────────────────────────────────────────────
+ function exportPDF(){
+  const w=window.open("","_blank");
+  const rows=filtered.slice(0,200);
+  const html=`<html><head><title>BE Warehouse Dashboard</title>
+  <style>body{font-family:Calibri,sans-serif;color:#1e293b;margin:20px}
+  h1{color:#07114C;font-size:22px;margin:0 0 4px}
+  .sub{color:#64748b;font-size:13px;margin:0 0 16px}
+  .kpis{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+  .kpi{background:#f1f5f9;border-radius:10px;padding:12px 18px;min-width:120px}
+  .kpi-val{font-size:26px;font-weight:800;color:#07114C}
+  .kpi-lbl{font-size:11px;color:#64748b;margin-top:2px}
+  table{width:100%;border-collapse:collapse;font-size:11px;margin-top:16px}
+  th{background:#07114C;color:#C8962A;padding:8px;text-align:left;font-size:10px}
+  td{padding:6px 8px;border-bottom:1px solid #e2e8f0}
+  tr:nth-child(even){background:#f8fafc}
+  .badge{padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700}
+  .pending{background:#fef9c3;color:#92400e}
+  .approved{background:#d1fae5;color:#065f46}
+  .rejected{background:#fee2e2;color:#991b1b}
+  .revision{background:#fed7aa;color:#92400e}
+  .footer{margin-top:20px;font-size:10px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:8px}
+  </style></head><body>
+  <h1>BE Warehouse — Dashboard Report</h1>
+  <p class="sub">Generated: ${new Date().toLocaleString("en-GB")} | Filters: ${hasFilters?"Applied":"None"} | Records: ${total}</p>
+  <div class="kpis">
+  <div class="kpi"><div class="kpi-val">${total}</div><div class="kpi-lbl">Total</div></div>
+  <div class="kpi"><div class="kpi-val">${pending}</div><div class="kpi-lbl">Pending</div></div>
+  <div class="kpi"><div class="kpi-val">${approved}</div><div class="kpi-lbl">Approved</div></div>
+  <div class="kpi"><div class="kpi-val">${rejected}</div><div class="kpi-lbl">Rejected</div></div>
+  <div class="kpi"><div class="kpi-val">${completed}</div><div class="kpi-lbl">Completed</div></div>
+  <div class="kpi"><div class="kpi-val">${approvalRate}%</div><div class="kpi-lbl">Approval Rate</div></div>
+  <div class="kpi"><div class="kpi-val">${completionRate}%</div><div class="kpi-lbl">Delivery Rate</div></div>
+  <div class="kpi"><div class="kpi-val">${emergency}</div><div class="kpi-lbl">Emergency</div></div>
+  </div>
+  <h3 style="color:#07114C;margin:0 0 8px">Appointments (max 200)</h3>
+  <table><thead><tr><th>ID</th><th>Supplier</th><th>SBU</th><th>Date</th><th>Time</th><th>Status</th><th>Priority</th><th>Orders</th><th>Storage</th></tr></thead>
+  <tbody>${rows.map(a=>`<tr>
+  <td>${a.id}</td><td>${a.supplierName||"—"}</td><td>${a.deliveryTo||"—"}</td>
+  <td>${a.date||"—"}</td><td>${a.time||"—"}</td>
+  <td><span class="badge ${a.status}">${(a.status||"").replace(/_/g," ")}</span></td>
+  <td>${a.priority||"standard"}</td><td>${a.totalOrders||0}</td>
+  <td>${Array.isArray(a.storageLocation)?a.storageLocation.join(", "):a.storageLocation||"—"}</td>
+  </tr>`).join("")}</tbody></table>
+  <div class="footer">Bapco Energies — BE Warehouse System | CONFIDENTIAL</div>
+  </body></html>`;
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>{w.print();},500);
+ }
+
+ // ── Excel Export ──────────────────────────────────────────────
+ async function exportExcel(){
+  setExportLoading(true);
+  try{
+  const data=filtered.map(a=>({
+   "ID":a.id,"Supplier":a.supplierName||"—","Email":a.supplierEmail||"—",
+   "SBU":sbuName(a.deliveryTo),"Date":fmtExcelDate(a.date),"Time":a.time||"—",
+   "Status":(a.status||"—").replace(/_/g," "),"Priority":a.priority||"standard",
+   "Delivery Status":(a.deliveryStatus||"—").replace(/_/g," "),
+   "Total Orders":a.totalOrders||0,"Total Lines":a.totalLines||0,
+   "PO Numbers":(a.poNumbers||[]).join(", ")||"—",
+   "Storage":Array.isArray(a.storageLocation)?a.storageLocation.join(", "):a.storageLocation||"—",
+   "Equipment":(a.offloadingEquipment||[]).join(", ")||"None",
+   "Emergency Justification":a.emergencyJustification||"—",
+   "Manager Comments":a.managerComments||"—",
+   "Created":fmtExcelTs(a.createdAt),"Completed At":fmtExcelTs(a.completedAt),
+  }));
+  const summary=[
+   {"Metric":"Total","Value":total},{"Metric":"Pending","Value":pending},
+   {"Metric":"Approved","Value":approved},{"Metric":"Rejected","Value":rejected},
+   {"Metric":"Completed","Value":completed},{"Metric":"Emergency","Value":emergency},
+   {"Metric":"Approval Rate","Value":approvalRate+"%"},{"Metric":"Delivery Rate","Value":completionRate+"%"},
+   {"Metric":"Filters Applied","Value":hasFilters?"Yes":"None"},
+   {"Metric":"Generated","Value":new Date().toLocaleString("en-GB")},
+  ];
+  const sbuBreak=["BR","BU","BG","BT"].map(s=>({
+   "SBU":sbuName(s),"Total":filtered.filter(a=>a.deliveryTo===s).length,
+   "Approved":filtered.filter(a=>a.deliveryTo===s&&a.status==="approved").length,
+   "Rejected":filtered.filter(a=>a.deliveryTo===s&&a.status==="rejected").length,
+   "Completed":filtered.filter(a=>a.deliveryTo===s&&a.deliveryStatus==="completed").length,
+  }));
+  await exportToExcel([
+   {name:"Summary",data:summary},
+   {name:"Appointments",data,statusKey:"Status",kpis:[
+    {label:"Total",value:total},{label:"Pending",value:pending},
+    {label:"Approved",value:approved},{label:"Completed",value:completed},
+    {label:"Emergency",value:emergency},
+   ]},
+   {name:"By SBU",data:sbuBreak},
+  ],"BE_Warehouse_Dashboard",[["Filters",hasFilters?"Applied":"None"],["Total Records",total]]);
+  }finally{setExportLoading(false);}
+ }
 
  return(
  <div style={{padding:isMobile?12:24,display:"flex",flexDirection:"column",gap:16,overflowY:"auto"}}>
- {/* Header */}
+
+ {/* ── Header ── */}
  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
- <div>
- <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:26,margin:0}}>Dashboard</h1>
- <p style={{color:"rgba(255,255,255,0.45)",fontSize:13,margin:"4px 0 0"}}>Live warehouse delivery overview</p>
- </div>
- <div style={{fontSize:11,color:"rgba(255,255,255,0.35)",background:"rgba(255,255,255,0.06)",padding:"6px 12px",borderRadius:99,border:"1px solid rgba(255,255,255,0.1)"}}>
- Last updated: {new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}
- </div>
+  <div>
+  <h1 style={{color:"#fff",fontWeight:800,fontSize:isMobile?20:26,margin:0}}>Dashboard</h1>
+  <p style={{color:"rgba(255,255,255,0.45)",fontSize:13,margin:"4px 0 0"}}>
+   {hasFilters?<span style={{color:"#C8962A"}}>Filtered view — {total} records</span>:"Live warehouse delivery overview"}
+  </p>
+  </div>
+  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+  {overdue.length>0&&(
+   <button onClick={()=>navTo("approved")} style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.4)",borderRadius:10,padding:"7px 14px",color:"#fca5a5",fontSize:12,fontWeight:700,cursor:"pointer",animation:"pulse 2s infinite"}}>
+   ⚠️ {overdue.length} Overdue
+   </button>
+  )}
+  <button onClick={()=>setShowFilters(p=>!p)} style={{background:hasFilters?"rgba(200,150,42,0.2)":"rgba(255,255,255,0.08)",border:`1px solid ${hasFilters?"rgba(200,150,42,0.5)":"rgba(255,255,255,0.15)"}`,borderRadius:10,padding:"7px 14px",color:hasFilters?"#C8962A":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+   🔍 {showFilters?"Hide":"Filters"}{hasFilters?" ●":""}
+  </button>
+  {hasFilters&&<button onClick={()=>{setSbuFilter("all");setStatusFilter("all");setPriorityFilter("all");setStorageFilter("all");setDateFrom("");setDateTo("");}} style={{background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:10,padding:"7px 12px",color:"#fca5a5",fontSize:12,cursor:"pointer"}}>✕ Clear</button>}
+  <button onClick={exportPDF} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"7px 14px",color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:700,cursor:"pointer"}}>📄 PDF</button>
+  <button onClick={exportExcel} disabled={exportLoading} style={{background:"#059669",border:"none",borderRadius:10,padding:"7px 14px",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",opacity:exportLoading?0.7:1}}>{exportLoading?"⏳...":"📥 Excel"}</button>
+  </div>
  </div>
 
- {/* KPI Cards */}
+ {/* ── Advanced Filters ── */}
+ {showFilters&&(
+  <div style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:14,padding:16}}>
+  <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>Advanced Filters</div>
+  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(3,1fr) repeat(2,1fr)",gap:10}}>
+   {[
+   {label:"SBU",val:sbuFilter,set:setSbuFilter,opts:[["all","All SBUs"],["BR","BR — Refining"],["BU","BU — Upstream"],["BG","BG — Gas"],["BT","BT — Trading"]]},
+   {label:"Status",val:statusFilter,set:setStatusFilter,opts:[["all","All Status"],["pending","Pending"],["approved","Approved"],["rejected","Rejected"],["revision_required","Revision"]]},
+   {label:"Priority",val:priorityFilter,set:setPriorityFilter,opts:[["all","All Priority"],["standard","Standard"],["emergency","Emergency"]]},
+   {label:"Storage",val:storageFilter,set:setStorageFilter,opts:[["all","All Storage"],["Covered store","Covered Store"],["Open Yard","Open Yard"]]},
+   ].map(function(f){return(
+   <div key={f.label}>
+    <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4,fontWeight:600}}>{f.label}</div>
+    <select value={f.val} onChange={e=>f.set(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 10px",color:"#fff",fontSize:12,outline:"none",colorScheme:"dark"}}>
+    {f.opts.map(function(o){return <option key={o[0]} value={o[0]}>{o[1]}</option>;})}
+    </select>
+   </div>
+   );})}
+   <div>
+   <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4,fontWeight:600}}>Date From</div>
+   <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 10px",color:"#fff",fontSize:12,outline:"none",colorScheme:"dark",boxSizing:"border-box"}}/>
+   </div>
+   <div>
+   <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:4,fontWeight:600}}>Date To</div>
+   <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 10px",color:"#fff",fontSize:12,outline:"none",colorScheme:"dark",boxSizing:"border-box"}}/>
+   </div>
+  </div>
+  </div>
+ )}
+
+ {/* ── KPI Cards ── */}
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:12}}>
  {[
- {label:"Total",val:total,color:"#C8962A",sub:`${approvalRate}% approval rate`,filter:null,icon:"📦"},
- {label:"Pending",val:pending,color:"#fcd34d",sub:"Awaiting action",filter:"pending",icon:"⏳"},
- {label:"Approved",val:approved,color:"#6ee7b7",sub:`${completionRate}% delivered`,filter:"approved",icon:"✅"},
- {label:"Emergency",val:emergency,color:"#fca5a5",sub:"High priority",filter:null,icon:"🚨"},
+  {label:"Total",val:total,color:"#C8962A",sub:`${approvalRate}% approval rate`,filter:null,icon:"📦"},
+  {label:"Pending",val:pending,color:"#fcd34d",sub:"Awaiting action",filter:"pending",icon:"⏳"},
+  {label:"Approved",val:approved,color:"#6ee7b7",sub:`${completionRate}% delivered`,filter:"approved",icon:"✅"},
+  {label:"Emergency",val:emergency,color:"#fca5a5",sub:"High priority",filter:null,icon:"🚨"},
  ].map(function(item){return(
- <button key={item.label} onClick={item.filter?()=>{setAdminFilter(item.filter);setView("admin");}:undefined}
-  style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:isMobile?14:20,textAlign:"left",cursor:item.filter?"pointer":"default"}}>
- <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
- <span style={{fontSize:20}}>{item.icon}</span>
- {item.filter&&<span style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>Click</span>}
- </div>
- <AnimCounter target={item.val} color={item.color} size={isMobile?28:36}/>
- <div style={{color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:600,marginTop:4}}>{item.label}</div>
- <div style={{color:"rgba(255,255,255,0.35)",fontSize:11,marginTop:2}}>{item.sub}</div>
- </button>
+  <button key={item.label} onClick={item.filter?()=>navTo(item.filter):undefined}
+   style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:isMobile?14:20,textAlign:"left",cursor:item.filter?"pointer":"default"}}>
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+   <span style={{fontSize:20}}>{item.icon}</span>
+   {item.filter&&<span style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>Click</span>}
+  </div>
+  <AnimCounter target={item.val} color={item.color} size={isMobile?28:36}/>
+  <div style={{color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:600,marginTop:4}}>{item.label}</div>
+  <div style={{color:"rgba(255,255,255,0.35)",fontSize:11,marginTop:2}}>{item.sub}</div>
+  </button>
  );})}
  </div>
 
- {/* Charts Row */}
+ {/* ── Today's Schedule + Capacity ── */}
+ <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:12}}>
+  {/* Today's Schedule */}
+  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+   <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>📅 Today's Schedule</div>
+   <div style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>{today.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}</div>
+  </div>
+  {todayAppts.length===0?(
+   <div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.3)",fontSize:13}}>No approved deliveries today</div>
+  ):(
+   <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:220,overflowY:"auto"}}>
+   {SLOTS.map(function(slot){
+    const slotAppts=todayAppts.filter(a=>a.time===slot);
+    if(slotAppts.length===0)return null;
+    return(
+    <div key={slot} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"8px 10px",background:"rgba(255,255,255,0.04)",borderRadius:10,borderLeft:"3px solid #C8962A"}}>
+     <div style={{fontSize:11,fontWeight:700,color:"#C8962A",minWidth:42,paddingTop:2}}>{slot}</div>
+     <div style={{flex:1}}>
+     {slotAppts.map(function(a){
+      const isOverdue=new Date(a.date+"T"+a.time)<today&&a.deliveryStatus!=="completed";
+      const isDone=a.deliveryStatus==="completed";
+      return(
+      <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+       <span style={{fontSize:12,color:"#fff",fontWeight:500}}>{a.supplierName}</span>
+       <div style={{display:"flex",gap:6,alignItems:"center"}}>
+       <span style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>{a.deliveryTo}</span>
+       <span style={{fontSize:10,fontWeight:700,color:isDone?"#6ee7b7":isOverdue?"#fca5a5":"#fcd34d"}}>{isDone?"✅":isOverdue?"🔴":"⏳"}</span>
+       </div>
+      </div>
+      );
+     })}
+     </div>
+    </div>
+    );
+   }).filter(Boolean)}
+   </div>
+  )}
+  </div>
+
+  {/* Capacity Gauge */}
+  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>📊 Today's Capacity by SBU</div>
+  <div style={{display:"flex",flexDirection:"column",gap:12}}>
+  {sbuCap.map(function(s){
+   const col=s.pct>=80?"#ef4444":s.pct>=50?"#f59e0b":"#10b981";
+   return(
+   <div key={s.sbu}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+    <span style={{fontSize:12,fontWeight:700,color:"#fff"}}>{s.sbu}</span>
+    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+     <span style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>{s.booked}/{s.slots} slots</span>
+     <span style={{fontSize:12,fontWeight:800,color:col}}>{s.pct}%</span>
+    </div>
+    </div>
+    <div style={{height:8,borderRadius:4,background:"rgba(255,255,255,0.08)",overflow:"hidden"}}>
+    <div style={{height:"100%",width:`${s.pct}%`,background:`linear-gradient(90deg,${col},${col}aa)`,borderRadius:4,transition:"width 1s ease"}}/>
+    </div>
+   </div>
+   );
+  })}
+  </div>
+  </div>
+ </div>
+
+ {/* ── Charts Row ── */}
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr 1fr",gap:12}}>
- {/* Donut */}
- <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
- <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Status Distribution</div>
- <div style={{display:"flex",alignItems:"center",gap:16,justifyContent:"center"}}>
- <DonutChart size={isMobile?100:120} thickness={22} segments={[
- {value:pending,color:"#f59e0b"},{value:approved,color:"#10b981"},
- {value:rejected,color:"#ef4444"},{value:revision,color:"#fb923c"},
- ]}/>
- <div style={{display:"flex",flexDirection:"column",gap:6}}>
- {[["Pending",pending,"#fcd34d"],["Approved",approved,"#6ee7b7"],["Rejected",rejected,"#fca5a5"],["Revision",revision,"#fdba74"]].map(function(item){return(
- <div key={item[0]} style={{display:"flex",alignItems:"center",gap:6}}>
- <div style={{width:8,height:8,borderRadius:"50%",background:item[2],flexShrink:0}}/>
- <span style={{fontSize:11,color:"rgba(255,255,255,0.6)"}}>{item[0]}</span>
- <span style={{fontSize:11,fontWeight:700,color:"#fff",marginLeft:"auto",paddingLeft:8}}>{item[1]}</span>
- </div>
- );})}
- </div>
- </div>
- </div>
- {/* SBU Bar */}
- <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
- <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>By SBU</div>
- <BarChart data={sbuData} color={(i)=>sbuData[i].color} height={100}/>
- </div>
- {/* Rates */}
- <div style={{display:"flex",flexDirection:"column",gap:12}}>
- {[
- {label:"Approval Rate",val:approvalRate,color:"#10b981"},
- {label:"Delivery Rate",val:completionRate,color:"#C8962A"},
- {label:"Emergency Rate",val:total>0?Math.round(emergency/total*100):0,color:"#ef4444"},
- ].map(function(item){return(
- <div key={item.label} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:"12px 16px"}}>
- <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
- <span style={{fontSize:11,color:"rgba(255,255,255,0.6)",fontWeight:600}}>{item.label}</span>
- <span style={{fontSize:18,fontWeight:800,color:item.color}}>{item.val}%</span>
- </div>
- <div style={{height:6,borderRadius:3,background:"rgba(255,255,255,0.1)",overflow:"hidden"}}>
- <div style={{height:"100%",width:`${item.val}%`,background:item.color,borderRadius:3}}/>
- </div>
- </div>
- );})}
- </div>
+  {/* Donut — clickable segments */}
+  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Status Distribution</div>
+  <div style={{display:"flex",alignItems:"center",gap:16,justifyContent:"center"}}>
+   <DonutChart size={isMobile?100:120} thickness={22} segments={[
+   {value:pending,color:"#f59e0b"},{value:approved,color:"#10b981"},
+   {value:rejected,color:"#ef4444"},{value:revision,color:"#fb923c"},
+   ]}/>
+   <div style={{display:"flex",flexDirection:"column",gap:6}}>
+   {[["Pending",pending,"#fcd34d","pending"],["Approved",approved,"#6ee7b7","approved"],["Rejected",rejected,"#fca5a5","rejected"],["Revision",revision,"#fdba74","revision_required"]].map(function(item){return(
+    <button key={item[0]} onClick={()=>navTo(item[3])}
+    style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",padding:"2px 4px",borderRadius:6,transition:"background 0.2s"}}>
+    <div style={{width:8,height:8,borderRadius:"50%",background:item[2],flexShrink:0}}/>
+    <span style={{fontSize:11,color:"rgba(255,255,255,0.6)"}}>{item[0]}</span>
+    <span style={{fontSize:11,fontWeight:700,color:"#fff",marginLeft:"auto",paddingLeft:8}}>{item[1]}</span>
+    </button>
+   );})}
+   </div>
+  </div>
+  </div>
+
+  {/* SBU Bar — clickable */}
+  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>By SBU <span style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>click to filter</span></div>
+  <div style={{display:"flex",alignItems:"flex-end",gap:8,height:100,padding:"0 4px"}}>
+  {sbuData.map(function(d,i){
+   const max=Math.max(...sbuData.map(x=>x.value),1);
+   return(
+   <button key={d.label} onClick={()=>setSbuFilter(sbuFilter===d.label?"all":d.label)}
+    style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4,background:"none",border:"none",cursor:"pointer",padding:0}}>
+    <div style={{fontSize:10,color:"rgba(255,255,255,0.5)"}}>{d.value}</div>
+    <div style={{width:"100%",background:sbuFilter===d.label?d.color:d.color+"99",borderRadius:"4px 4px 0 0",height:`${Math.max((d.value/max)*100,d.value>0?4:0)}%`,border:sbuFilter===d.label?"2px solid #fff":"2px solid transparent",transition:"all 0.3s"}}/>
+    <div style={{fontSize:11,color:sbuFilter===d.label?"#fff":"rgba(255,255,255,0.45)",fontWeight:sbuFilter===d.label?700:400}}>{d.label}</div>
+   </button>
+   );
+  })}
+  </div>
+  </div>
+
+  {/* Rates */}
+  <div style={{display:"flex",flexDirection:"column",gap:12}}>
+  {[
+   {label:"Approval Rate",val:approvalRate,color:"#10b981"},
+   {label:"Delivery Rate",val:completionRate,color:"#C8962A"},
+   {label:"Emergency Rate",val:total>0?Math.round(emergency/total*100):0,color:"#ef4444"},
+  ].map(function(item){return(
+   <div key={item.label} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:"12px 16px"}}>
+   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+    <span style={{fontSize:11,color:"rgba(255,255,255,0.6)",fontWeight:600}}>{item.label}</span>
+    <span style={{fontSize:18,fontWeight:800,color:item.color}}>{item.val}%</span>
+   </div>
+   <div style={{height:6,borderRadius:3,background:"rgba(255,255,255,0.1)",overflow:"hidden"}}>
+    <div style={{height:"100%",width:`${item.val}%`,background:item.color,borderRadius:3}}/>
+   </div>
+   </div>
+  );})}
+  </div>
  </div>
 
- {/* Monthly Trend + Quick Stats */}
+ {/* ── Monthly Trend + Activity Feed ── */}
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"2fr 1fr",gap:12}}>
- <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
- <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Monthly Booking Trend</div>
- <BarChart data={monthlyData} color="#C8962A" height={isMobile?80:110}/>
- <div style={{marginTop:8,display:"flex",gap:16}}>
- <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>Peak: <strong style={{color:"#fff"}}>{monthlyData.reduce((m,d)=>d.value>m.value?d:m,{value:0,label:"—"}).label}</strong></span>
- <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>Avg: <strong style={{color:"#fff"}}>{monthlyData.length?Math.round(monthlyData.reduce((s,d)=>s+d.value,0)/monthlyData.length):0}/mo</strong></span>
- </div>
- </div>
- <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
- <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:10}}>Quick Stats</div>
- {[
- {label:"Completed",val:completed,color:"#6ee7b7"},
- {label:"Revision",val:revision,color:"#fdba74"},
- {label:"Rejected",val:rejected,color:"#fca5a5"},
- {label:"Total Orders",val:appointments.reduce((s,a)=>s+(a.totalOrders||0),0),color:"#C8962A"},
- {label:"Total Lines",val:appointments.reduce((s,a)=>s+(a.totalLines||0),0),color:"#a5b4fc"},
- ].map(function(item){return(
- <div key={item.label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
- <span style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>{item.label}</span>
- <span style={{fontSize:13,fontWeight:700,color:item.color}}>{item.val.toLocaleString()}</span>
- </div>
- );})}
- </div>
+  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Monthly Booking Trend</div>
+  <BarChart data={monthlyData} color="#C8962A" height={isMobile?80:110}/>
+  <div style={{marginTop:8,display:"flex",gap:16}}>
+   <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>Peak: <strong style={{color:"#fff"}}>{monthlyData.reduce((m,d)=>d.value>m.value?d:m,{value:0,label:"—"}).label}</strong></span>
+   <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>Avg: <strong style={{color:"#fff"}}>{monthlyData.length?Math.round(monthlyData.reduce((s,d)=>s+d.value,0)/monthlyData.length):0}/mo</strong></span>
+  </div>
+  </div>
+
+  {/* Activity Feed */}
+  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
+  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:10}}>⚡ Recent Activity</div>
+  <div style={{display:"flex",flexDirection:"column",gap:0,maxHeight:180,overflowY:"auto"}}>
+  {recentAppts.map(function(a){
+   const ts=a.updatedAt||a.createdAt;
+   const mins=ts?Math.round((Date.now()-new Date(ts))/60000):0;
+   const ago=mins<60?mins+"m ago":mins<1440?Math.floor(mins/60)+"h ago":Math.floor(mins/1440)+"d ago";
+   const col=a.status==="pending"?"#fcd34d":a.status==="approved"?"#6ee7b7":a.status==="rejected"?"#fca5a5":"#fdba74";
+   return(
+   <div key={a.id} style={{padding:"7px 0",borderBottom:"1px solid rgba(255,255,255,0.05)",display:"flex",gap:8,alignItems:"flex-start"}}>
+    <div style={{width:6,height:6,borderRadius:"50%",background:col,marginTop:5,flexShrink:0}}/>
+    <div style={{flex:1,minWidth:0}}>
+    <div style={{fontSize:11,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.supplierName}</div>
+    <div style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>{a.id} · {(a.status||"").replace(/_/g," ")}</div>
+    </div>
+    <div style={{fontSize:10,color:"rgba(255,255,255,0.3)",flexShrink:0}}>{ago}</div>
+   </div>
+   );
+  })}
+  </div>
+  </div>
  </div>
 
- {/* Slot Heatmap */}
+ {/* ── Slot Heatmap ── */}
  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
- <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Booking Density — Slot vs Day</div>
- <SlotHeatmap appointments={appointments}/>
+  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Booking Density — Slot vs Day</div>
+  <SlotHeatmap appointments={filtered}/>
  </div>
 
- {/* Calendar Heatmap */}
+ {/* ── Calendar Heatmap ── */}
  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
- <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Submission Activity — Last 6 Months</div>
- <CalendarHeatmap appointments={appointments}/>
+  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)",marginBottom:12}}>Submission Activity — Last 6 Months</div>
+  <CalendarHeatmap appointments={filtered}/>
  </div>
 
- {/* Supplier Table */}
+ {/* ── Supplier Table ── */}
  <div style={cardStyle("rgba(255,255,255,0.06)","rgba(255,255,255,0.12)")}>
- <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
- <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>Top 10 Suppliers — Performance</div>
- <span style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>Click headers to sort</span>
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+  <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>Top 10 Suppliers — Performance</div>
+  <span style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>Click headers to sort</span>
+  </div>
+  <SupplierTable appointments={filtered} isMobile={isMobile}/>
  </div>
- <SupplierTable appointments={appointments} isMobile={isMobile}/>
- </div>
+
  </div>
  );
 }
+
 
 function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobile, initialFilter, onFilterUsed }) {
  const [searchQ,setSearchQ]=useState("");
