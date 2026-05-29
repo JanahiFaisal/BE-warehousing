@@ -2216,7 +2216,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  <StatusBadge status={a.status}/>
  </div>
  <div style={{padding:"12px 16px"}}>
- <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+ <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
  {[["Date",fmtDate(a.date)],["Time",a.time],["Orders",a.totalOrders],["Lines",a.totalLines]].map(([k,v])=>(
  <div key={k} style={{background:"rgba(100,52,250,0.12)",borderRadius:8,padding:"8px 10px",border:"1px solid rgba(100,52,250,0.35)"}}>
  <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:2}}>{k}</div>
@@ -2224,7 +2224,17 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  </div>
  ))}
  </div>
- <div style={{marginBottom:12}}><StoreBadge loc={a.storageLocation}/></div>
+ <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+ <div style={{background:"rgba(100,52,250,0.12)",borderRadius:8,padding:"8px 10px",border:"1px solid rgba(100,52,250,0.35)"}}>
+ <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:2}}>🔧 Equipment</div>
+ <div style={{fontWeight:600,fontSize:12,color:a.offloadingEquipment&&a.offloadingEquipment.length>0?"#fcd34d":"rgba(255,255,255,0.4)"}}>{a.offloadingEquipment&&a.offloadingEquipment.length>0?a.offloadingEquipment.join(", "):"—"}</div>
+ </div>
+ <div style={{background:"rgba(100,52,250,0.12)",borderRadius:8,padding:"8px 10px",border:"1px solid rgba(100,52,250,0.35)"}}>
+ <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:2}}>📄 PO Numbers</div>
+ <div style={{fontWeight:600,fontSize:11,color:"rgba(255,255,255,0.7)",fontFamily:"monospace"}}>{a.poNumbers&&a.poNumbers.length>0?a.poNumbers.slice(0,2).join(", ")+(a.poNumbers.length>2?` +${a.poNumbers.length-2}`:""):"—"}</div>
+ </div>
+ </div>
+ <div style={{marginBottom:10}}><StoreBadge loc={a.storageLocation}/></div>
  <div style={{display:"flex",gap:8}}>
  <button onClick={()=>onView(a.id)} style={{flex:1,padding:"9px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,cursor:"pointer",color:"#fff",fontSize:13,fontWeight:500,position:"relative"}}>
  👁 View
@@ -2355,9 +2365,6 @@ function CalendarView({ appointments, isMobile }) {
  )}
  {!isMobile&&a.poNumbers&&a.poNumbers.length>0&&(
  <div style={{fontSize:8,color:"rgba(255,255,255,0.4)",marginTop:2}}>PO: {a.poNumbers.slice(0,2).join(", ")}{a.poNumbers.length>2?` +${a.poNumbers.length-2}`:""}</div>
- )}
- {!isMobile&&(
- <div style={{fontSize:8,color:"#fcd34d",marginTop:1}}>🔧 {a.offloadingEquipment&&a.offloadingEquipment.length>0?a.offloadingEquipment.join(", "):"—"}</div>
  )}
  </button>
  );
@@ -2583,12 +2590,10 @@ function CalendarView({ appointments, isMobile }) {
  )}
 
  {/* ── Equipment ── */}
- {sel.offloadingEquipment&&sel.offloadingEquipment.length>0&&(
  <div style={{background:"rgba(245,158,11,0.1)",borderRadius:10,padding:"10px 12px",border:"1px solid rgba(245,158,11,0.3)",marginBottom:10}}>
  <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginBottom:3}}>🔧 Equipment Required</div>
- <div style={{fontSize:13,fontWeight:600,color:"#fcd34d"}}>{sel.offloadingEquipment.join(", ")}</div>
+ <div style={{fontSize:13,fontWeight:600,color:sel.offloadingEquipment&&sel.offloadingEquipment.length>0?"#fcd34d":"rgba(255,255,255,0.35)"}}>{sel.offloadingEquipment&&sel.offloadingEquipment.length>0?sel.offloadingEquipment.join(", "):"—"}</div>
  </div>
- )}
 
  {/* ── Emergency Justification ── */}
  {sel.priority==="emergency"&&sel.emergencyJustification&&(
