@@ -3872,18 +3872,29 @@ function App() {
  const [transactions,setTransactions]=useState(()=>{
  try{const s=localStorage.getItem(LS_TRANSACTIONS);return s?JSON.parse(s):[];}catch{return [];}
  });
- const [syncStatus,setSyncStatus]=useState("idle");
+ const [syncStatus,setSyncStatus]=useState("syncing");
 
- // B — Pull function (reusable for background + manual + focus)
+ // B — Pull function
  function pullFromSupabase(silent=false){
- if(!silent) setSyncStatus("syncing");
+ if(!silent)setSyncStatus("syncing");
  Promise.all([sbGetAll("appointments"),sbGetAll("emails"),sbGetAll("transactions")]).then(([a,e,t])=>{
  if(a){setAppts(a.sort((x,y)=>new Date(y.createdAt)-new Date(x.createdAt)));localStorage.setItem(LS_APPTS,JSON.stringify(a));}
  if(e){setEmailLog(e.sort((x,y)=>new Date(y.timestamp)-new Date(x.timestamp)));localStorage.setItem(LS_EMAILS,JSON.stringify(e));}
  if(t){setTransactions(t.sort((x,y)=>new Date(y.timestamp)-new Date(x.timestamp)));localStorage.setItem(LS_TRANSACTIONS,JSON.stringify(t));}
  setSyncStatus("ok");
- }).catch(()=>setSyncStatus("error"));
+ }).catch(err=>{
+ console.warn("Sync failed, retrying...",err);
+ setSyncStatus("error");
+ setTimeout(()=>pullFromSupabase(true),8000);
+ });
  }
+
+ // Safari polling — every 20 seconds (WebSocket unreliable in Safari)
+ useEffect(()=>{
+ const isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+ const interval=setInterval(()=>pullFromSupabase(true), isSafari?20000:60000);
+ return ()=>clearInterval(interval);
+ },[]);
 
  // B — Show cached data instantly on mount, then sync in background
  useEffect(()=>{
@@ -4226,7 +4237,16 @@ function App() {
  if(page==="landing") return <Landing onSupplier={()=>{setEditingId(null);setPage("supplier");}} onAdmin={()=>setPage("admin-login")} onTracker={()=>setPage("tracker")}/>;
  if(page==="supplier") return <SupplierForm onSubmit={handleBook} onBack={()=>{setEditingId(null);setPage("landing");}} appointments={appts} editingAppointment={editingAppt}/>;
  if(page==="tracker") return <SupplierTracker appointments={appts} onBack={()=>setPage("landing")} onSendMessage={async(aptId,msg,authorName)=>await handleSendMessage(aptId,msg,authorName,"supplier")}/>;
- if(page==="admin-login") return <AdminLogin onLogin={e=>{setAdminEmail(e);setPage("admin");setView("dashboard");}} onBack={()=>setPage("landing")}/>;
+ if(page==="admin-login") return <AdminLogin onLogin={e=>{
+ setAdminEmail(e);
+ // Auto-set nickname from email if never been set
+ const creds=getAdminCreds();
+ if(!creds.nickname||creds.nickname==="Admin"){
+ const autoName=e.split("@")[0].replace(/[._]/g," ").replace(/\b\w/g,c=>c.toUpperCase());
+ localStorage.setItem(LS_CREDS,JSON.stringify({...creds,nickname:autoName}));
+ }
+ setPage("admin");setView("dashboard");
+ }} onBack={()=>setPage("landing")}/>;
 
  const pending = appts.filter(a=>a.status==="pending");
  const emergencyCount = pending.filter(a=>a.priority==="emergency").length;
@@ -4254,7 +4274,7 @@ function App() {
  <span style={{color:"#fff",fontWeight:800,fontSize:13}}>BE – Warehouse Appointments</span>
  </div>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
- {!isMobile && <span style={{color:"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600}}>👤 {getAdminCreds().nickname||adminEmail}</span>}
+ {!isMobile && <span style={{color:"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600}}>👤 {getAdminCreds().nickname&&getAdminCreds().nickname!=="Admin"?getAdminCreds().nickname:adminEmail.split("@")[0].replace(/[^a-zA-Z]/g," ").trim()||"Admin"}</span>}
  <span style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:syncStatus==="ok"?"rgba(16,185,129,0.2)":syncStatus==="error"?"rgba(239,68,68,0.2)":"rgba(200,150,42,0.2)",color:syncStatus==="ok"?"#6ee7b7":syncStatus==="error"?"#fca5a5":"#fcd34d",border:"1px solid rgba(255,255,255,0.1)"}}>{syncStatus==="ok"?"☁️ Synced":syncStatus==="error"?"⚠️ Sync Error":"⏳ Syncing…"}</span>
  <button onClick={()=>pullFromSupabase(false)} title="Refresh data" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,padding:"4px 10px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700}}>🔄</button>
  <button onClick={()=>setView("help")} style={{background:"rgba(200,150,42,0.15)",border:"1px solid rgba(200,150,42,0.3)",borderRadius:8,padding:"4px 10px",color:"#C8962A",fontSize:12,cursor:"pointer",fontWeight:700}}>❓ Guide</button>
