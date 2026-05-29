@@ -5020,7 +5020,7 @@ function App() {
  ];
 
  return(
- <div style={{height:"100vh",display:"flex",flexDirection:"column",fontFamily:"system-ui,sans-serif"}}>
+ <div style={{height:"100vh",display:"flex",flexDirection:"column",fontFamily:"system-ui,sans-serif",background:BG}}>
 
  {/* ── Session Timeout Warning ── */}
  {sessionWarning&&(
@@ -5038,7 +5038,7 @@ function App() {
  </div>
  )}
 
- <header style={{background:BG,height:isMobile?52:56,display:"flex",alignItems:"center",justifyContent:"space-between",padding:`0 ${isMobile?14:20}px`,borderBottom:"1px solid rgba(255,255,255,0.12)",flexShrink:0}}>
+ <header style={{background:"rgba(7,17,76,0.7)",backdropFilter:"blur(12px)",borderBottom:"1px solid rgba(255,255,255,0.1)",height:isMobile?52:56,display:"flex",alignItems:"center",justifyContent:"space-between",padding:`0 ${isMobile?14:20}px`,borderBottom:"1px solid rgba(255,255,255,0.12)",flexShrink:0}}>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
  {isMobile && (
  <button onClick={()=>setNavOpen(o=>!o)} style={{background:"none",border:"none",cursor:"pointer",color:"rgba(255,255,255,0.7)",fontSize:20,padding:"4px 6px",marginRight:4}}>☰</button>
@@ -5060,9 +5060,9 @@ function App() {
  {isMobile ? (
  navOpen && (
  <div style={{position:"absolute",inset:0,zIndex:30,display:"flex"}}>
- <div style={{width:220,background:"rgba(7,17,76,0.98)",display:"flex",flexDirection:"column",padding:12,boxShadow:"4px 0 20px rgba(0,0,0,0.4)"}}>
+ <div style={{width:220,background:"rgba(7,17,76,0.7)",display:"flex",flexDirection:"column",padding:12,boxShadow:"4px 0 20px rgba(0,0,0,0.4)"}}>
  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,paddingBottom:10,borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
- <span style={{color:"#6b7280",fontSize:12,fontWeight:600}}>Navigation</span>
+ <span style={{color:"rgba(255,255,255,0.4)",fontSize:12,fontWeight:600}}>Navigation</span>
  <button onClick={()=>setNavOpen(false)} style={{background:"none",border:"none",cursor:"pointer",color:"#9ca3af",fontSize:18}}>×</button>
  </div>
  {nav.map(item=>(
@@ -5078,7 +5078,7 @@ function App() {
  </div>
  )
  ) : (
- <aside style={{width:isTablet?56:200,background:"rgba(7,17,76,0.97)",borderRight:"1px solid rgba(255,255,255,0.08)",display:"flex",flexDirection:"column",flexShrink:0}}>
+ <aside style={{width:isTablet?56:200,background:"rgba(7,17,76,0.6)",borderRight:"1px solid rgba(255,255,255,0.08)",display:"flex",flexDirection:"column",flexShrink:0}}>
  <nav style={{flex:1,padding:8,display:"flex",flexDirection:"column",gap:2}}>
  {nav.map(item=>(
  <button key={item.id} onClick={()=>setView(item.id)} title={isTablet?item.label:undefined}
@@ -5092,7 +5092,7 @@ function App() {
  </aside>
  )}
 
- <main style={{flex:1,overflowY:"auto",background:BG,display:"flex",flexDirection:"column"}}>
+ <main style={{flex:1,overflowY:"auto",background:"transparent",display:"flex",flexDirection:"column"}}>
  <OrgFilter value={orgFilter} onChange={setOrgFilter} isMobile={isMobile}/>
  <div style={{flex:1}}>
  {view==="dashboard" && <Dashboard appointments={filteredAppts} setView={setView} setAdminFilter={setAdminFilter} isMobile={isMobile}
