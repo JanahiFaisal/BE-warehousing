@@ -1813,7 +1813,7 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
   <button onClick={()=>setShowFilters(p=>!p)} style={{background:hasFilters?"rgba(200,150,42,0.2)":"rgba(255,255,255,0.08)",border:`1px solid ${hasFilters?"rgba(200,150,42,0.5)":"rgba(255,255,255,0.15)"}`,borderRadius:10,padding:"7px 14px",color:hasFilters?"#C8962A":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,cursor:"pointer"}}>
    🔍 {showFilters?"Hide":"Filters"}{hasFilters?" ●":""}
   </button>
-  {hasFilters&&<button onClick={()=>{setSbuFilter("all");setStatusFilter("all");setPriorityFilter("all");setStorageFilter("all");setDateFrom("");setDateTo("");}} style={{background:"#fff",border:"1px solid #fecaca",borderRadius:10,padding:"7px 12px",color:"#fca5a5",fontSize:12,cursor:"pointer"}}>✕ Clear</button>}
+  {hasFilters&&<button onClick={()=>{setSbuFilter("all");setStatusFilter("all");setPriorityFilter("all");setStorageFilter("all");setDateFrom("");setDateTo("");}} style={{background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:10,padding:"7px 12px",color:"#fca5a5",fontSize:12,cursor:"pointer"}}>✕ Clear</button>}
   <button onClick={exportPDF} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"7px 14px",color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:700,cursor:"pointer"}}>📄 PDF</button>
   <button onClick={exportExcel} disabled={exportLoading} style={{background:"#059669",border:"none",borderRadius:10,padding:"7px 14px",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",opacity:exportLoading?0.7:1}}>{exportLoading?"⏳...":"📥 Excel"}</button>
   </div>
@@ -1860,7 +1860,7 @@ function Dashboard({ appointments, setView, setAdminFilter, isMobile }) {
   {label:"Emergency",val:emergency,color:"#f87171",sub:"High priority",filter:"emergency",icon:"🚨"},
  ].map(function(item){return(
   <button key={item.label} onClick={()=>navTo(item.filter)}
-   style={{background:"#f9fafb",border:"1px solid #e5e7eb",borderRadius:16,padding:isMobile?14:20,textAlign:"left",cursor:"pointer",transition:"background 0.2s"}}>
+   style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:isMobile?14:20,textAlign:"left",cursor:"pointer",transition:"background 0.2s"}}>
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
    <span style={{fontSize:20}}>{item.icon}</span>
    <span style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>Click →</span>
@@ -4435,7 +4435,7 @@ function App() {
  </span>
  <button onClick={()=>pullFromSupabase(false)} title="Refresh data" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,padding:"4px 10px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700}}>🔄</button>
  <button onClick={()=>setView("help")} style={{background:"rgba(200,150,42,0.15)",border:"1px solid rgba(200,150,42,0.3)",borderRadius:8,padding:"4px 10px",color:"#C8962A",fontSize:12,cursor:"pointer",fontWeight:700}}>❓ Guide</button>
- <button onClick={async()=>{setPage("landing");setView("dashboard");setAdminEmail("");sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");}} style={{color:"#4b5563",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
+ <button onClick={async()=>{setPage("landing");setView("dashboard");setAdminEmail("");sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");}} style={{color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
  </div>
  </header>
 
