@@ -3873,6 +3873,7 @@ function App() {
  try{const s=localStorage.getItem(LS_TRANSACTIONS);return s?JSON.parse(s):[];}catch{return [];}
  });
  const [syncStatus,setSyncStatus]=useState("syncing");
+ const [lastSynced,setLastSynced]=useState(null);
 
  // B — Pull function
  function pullFromSupabase(silent=false){
@@ -3882,17 +3883,19 @@ function App() {
  if(e){setEmailLog(e.sort((x,y)=>new Date(y.timestamp)-new Date(x.timestamp)));localStorage.setItem(LS_EMAILS,JSON.stringify(e));}
  if(t){setTransactions(t.sort((x,y)=>new Date(y.timestamp)-new Date(x.timestamp)));localStorage.setItem(LS_TRANSACTIONS,JSON.stringify(t));}
  setSyncStatus("ok");
+ setLastSynced(new Date());
  }).catch(err=>{
- console.warn("Sync failed, retrying...",err);
- setSyncStatus("error");
- setTimeout(()=>pullFromSupabase(true),8000);
+ console.warn("Full sync failed (real-time still active):",err);
+ // Only show error if we have no data at all
+ setSyncStatus(p=>p==="ok"?"ok":"error");
+ setTimeout(()=>pullFromSupabase(true),15000);
  });
  }
 
- // Safari polling — every 20 seconds (WebSocket unreliable in Safari)
+ // Polling — 20s Safari, 60s others
  useEffect(()=>{
  const isSafari=/^((?!chrome|android).)*safari/i.test(navigator.userAgent);
- const interval=setInterval(()=>pullFromSupabase(true), isSafari?20000:60000);
+ const interval=setInterval(()=>pullFromSupabase(true),isSafari?20000:60000);
  return ()=>clearInterval(interval);
  },[]);
 
@@ -4275,7 +4278,10 @@ function App() {
  </div>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
  {!isMobile && <span style={{color:"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600}}>👤 {getAdminCreds().nickname&&getAdminCreds().nickname!=="Admin"?getAdminCreds().nickname:adminEmail.split("@")[0].replace(/[^a-zA-Z]/g," ").trim()||"Admin"}</span>}
- <span style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:syncStatus==="ok"?"rgba(16,185,129,0.2)":syncStatus==="error"?"rgba(239,68,68,0.2)":"rgba(200,150,42,0.2)",color:syncStatus==="ok"?"#6ee7b7":syncStatus==="error"?"#fca5a5":"#fcd34d",border:"1px solid rgba(255,255,255,0.1)"}}>{syncStatus==="ok"?"☁️ Synced":syncStatus==="error"?"⚠️ Sync Error":"⏳ Syncing…"}</span>
+ <span style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:syncStatus==="ok"?"rgba(16,185,129,0.2)":syncStatus==="error"&&appts.length===0?"rgba(239,68,68,0.2)":"rgba(16,185,129,0.2)",color:syncStatus==="ok"?"#6ee7b7":syncStatus==="error"&&appts.length===0?"#fca5a5":"#6ee7b7",border:"1px solid rgba(255,255,255,0.1)"}}>
+ {syncStatus==="ok"?"☁️ Synced":syncStatus==="error"&&appts.length===0?"⚠️ Sync Error":"☁️ Synced"}
+ {lastSynced&&<span style={{opacity:0.6,marginLeft:4,fontSize:10}}>{lastSynced.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}</span>}
+ </span>
  <button onClick={()=>pullFromSupabase(false)} title="Refresh data" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,padding:"4px 10px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700}}>🔄</button>
  <button onClick={()=>setView("help")} style={{background:"rgba(200,150,42,0.15)",border:"1px solid rgba(200,150,42,0.3)",borderRadius:8,padding:"4px 10px",color:"#C8962A",fontSize:12,cursor:"pointer",fontWeight:700}}>❓ Guide</button>
  <button onClick={async()=>{setPage("landing");setView("dashboard");setAdminEmail("");sessionStorage.removeItem("be_page");sessionStorage.removeItem("be_view");sessionStorage.removeItem("be_admin_email");}} style={{color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:500,padding:"6px 12px"}}>Logout</button>
