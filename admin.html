@@ -3912,15 +3912,27 @@ function App() {
  });
  }
 
- const [displayName,setDisplayName]=useState(()=>getAdminCreds().nickname||"");
+ const [displayName,setDisplayName]=useState(()=>{
+ const creds=getAdminCreds();
+ if(creds.nickname&&creds.nickname!=="Admin"&&creds.nickname!=="")return creds.nickname;
+ return "";
+ });
 
  // Load nickname from cloud on mount — syncs across all browsers
  useEffect(()=>{
  loadNicknameFromCloud().then(n=>{
- if(n)setDisplayName(n);
+ if(n){setDisplayName(n);}
  else{
+ // Use localStorage nickname if set, otherwise fall back to email
+ const creds=getAdminCreds();
+ if(creds.nickname&&creds.nickname!=="Admin"&&creds.nickname!==""){
+ setDisplayName(creds.nickname);
+ // Save it to cloud so other browsers get it
+ saveNicknameToCloud(creds.nickname);
+ }else{
  const auto=adminEmail.split("@")[0].replace(/[._]/g," ").replace(/\b\w/g,c=>c.toUpperCase());
  setDisplayName(auto||"Admin");
+ }
  }
  });
  },[]);
