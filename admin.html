@@ -2356,8 +2356,8 @@ function CalendarView({ appointments, isMobile }) {
  {!isMobile&&a.poNumbers&&a.poNumbers.length>0&&(
  <div style={{fontSize:8,color:"rgba(255,255,255,0.4)",marginTop:2}}>PO: {a.poNumbers.slice(0,2).join(", ")}{a.poNumbers.length>2?` +${a.poNumbers.length-2}`:""}</div>
  )}
- {!isMobile&&a.offloadingEquipment&&a.offloadingEquipment.length>0&&(
- <div style={{fontSize:8,color:"#fcd34d",marginTop:1}}>🔧 {a.offloadingEquipment.join(", ")}</div>
+ {!isMobile&&(
+ <div style={{fontSize:8,color:"#fcd34d",marginTop:1}}>🔧 {a.offloadingEquipment&&a.offloadingEquipment.length>0?a.offloadingEquipment.join(", "):"—"}</div>
  )}
  </button>
  );
@@ -2441,6 +2441,7 @@ function CalendarView({ appointments, isMobile }) {
  <StoreBadge loc={a.storageLocation}/>
  </div>
  {a.poNumbers&&a.poNumbers.length>0&&<div style={{fontSize:8,color:"rgba(255,255,255,0.4)"}}>PO: {a.poNumbers.slice(0,2).join(", ")}{a.poNumbers.length>2?` +${a.poNumbers.length-2}`:""}</div>}
+ <div style={{fontSize:8,color:"#fcd34d"}}>🔧 {a.offloadingEquipment&&a.offloadingEquipment.length>0?a.offloadingEquipment.join(", "):"—"}</div>
  </button>
  ))}
  </div>
@@ -2491,7 +2492,7 @@ function CalendarView({ appointments, isMobile }) {
  </div>
  <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:4}}>
  <span style={{fontSize:11,color:"rgba(255,255,255,0.6)"}}>📦 {a.totalOrders} orders · {a.totalLines} lines</span>
- {a.offloadingEquipment&&a.offloadingEquipment.length>0&&<span style={{fontSize:11,color:"rgba(255,255,255,0.6)"}}>🔧 {a.offloadingEquipment.join(", ")}</span>}
+ <span style={{fontSize:11,color:"#fcd34d"}}>🔧 {a.offloadingEquipment&&a.offloadingEquipment.length>0?a.offloadingEquipment.join(", "):"—"}</span>
  </div>
  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
  <StoreBadge loc={a.storageLocation}/>
