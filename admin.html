@@ -3261,7 +3261,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Busiest Time Slots</div>
  <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{busiestSlot&&busiestSlot.count>0?"Peak: "+busiestSlot.label:"No data yet"}</div>
  </div>
- {total>0&&<DonutChart size={80} stroke={14} centerLabel={total} segments={slotData.filter(d=>d.count>0).slice(0,5).map((d,i)=>({value:d.count,color:slotColors[i]||"#6366f1"}))}/>}
+ {total>0&&<DonutChart size={80} stroke={14} segments={slotData.filter(d=>d.count>0).slice(0,5).map((d,i)=>({value:d.count,color:slotColors[i]||"#6366f1"}))}/>}
  </div>
  {slotData.map((d,i)=><BarRow key={d.label} label={d.label} count={d.count} max={maxSlot} color={slotColors[Math.min(i,4)]}/>)}
  {total===0&&<div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.2)",fontSize:13}}>No appointments in range</div>}
@@ -3272,7 +3272,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Busiest Days of Week</div>
  <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{busiestDay&&busiestDay.count>0?"Peak: "+busiestDay.label:"No data yet"}</div>
  </div>
- {total>0&&<DonutChart size={80} stroke={14} centerLabel={total} segments={dayData.filter(d=>d.count>0&&!d.isOff).map((d,i)=>({value:d.count,color:dayColors[i]||"#6366f1"}))}/>}
+ {total>0&&<DonutChart size={80} stroke={14} segments={dayData.filter(d=>d.count>0&&!d.isOff).map((d,i)=>({value:d.count,color:dayColors[i]||"#6366f1"}))}/>}
  </div>
  {dayData.map((d,i)=><BarRow key={d.label} label={d.label} count={d.count} max={maxDay} color={d.isOff?"rgba(255,255,255,0.1)":dayColors[Math.min(i,4)]} sublabel={d.isOff?"Off":""}/>)}
  {total===0&&<div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.2)",fontSize:13}}>No appointments in range</div>}
@@ -3285,7 +3285,7 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  <div style={{color:"#fff",fontWeight:700,fontSize:15,marginBottom:3}}>Most Active Suppliers</div>
  <div style={{color:"rgba(255,255,255,0.4)",fontSize:11}}>{supplierData.length>0?"Top "+supplierData.length+" supplier"+(supplierData.length!==1?"s":"")+" by appointment count":"No data yet"}</div>
  </div>
- {total>0&&supplierData.length>0&&<DonutChart size={80} stroke={14} centerLabel={total} segments={supplierData.slice(0,6).map((d,i)=>({value:d.count,color:["#f59e0b","#6366f1","#10b981","#ec4899","#3b82f6","#a78bfa"][i]||"#6366f1"}))}/>}
+ {total>0&&supplierData.length>0&&<DonutChart size={80} stroke={14} segments={supplierData.slice(0,6).map((d,i)=>({value:d.count,color:["#f59e0b","#6366f1","#10b981","#ec4899","#3b82f6","#a78bfa"][i]||"#6366f1"}))}/>}
  </div>
  {supplierData.length===0&&<div style={{textAlign:"center",padding:"20px 0",color:"rgba(255,255,255,0.2)",fontSize:13}}>No appointments in range</div>}
  <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"0 32px"}}>
