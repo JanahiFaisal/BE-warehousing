@@ -4012,7 +4012,15 @@ function App() {
  const subT=window.supabase.channel("tx-changes").on("postgres_changes",{event:"INSERT",schema:"public",table:"transactions"},payload=>{
  setTransactions(p=>[payload.new.data,...p.filter(x=>x.id!==payload.new.data.id)]);
  }).subscribe();
- return ()=>{subA.unsubscribe();subE.unsubscribe();subT.unsubscribe();};
+ const subC=window.supabase.channel("config-changes").on("postgres_changes",{event:"*",schema:"public",table:"config"},payload=>{
+ if(payload.new&&payload.new.id==="admin_nickname"&&payload.new.data&&payload.new.data.nickname){
+ const n=payload.new.data.nickname;
+ setDisplayName(n);
+ const creds=getAdminCreds();
+ localStorage.setItem(LS_CREDS,JSON.stringify({...creds,nickname:n}));
+ }
+ }).subscribe();
+ return ()=>{subA.unsubscribe();subE.unsubscribe();subT.unsubscribe();subC.unsubscribe();};
  },[]);
 
  // === LOCALSTORAGE PERSISTENCE (offline fallback) ===
