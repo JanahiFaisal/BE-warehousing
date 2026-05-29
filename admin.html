@@ -2169,6 +2169,10 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  )} disabled={rows.length===0} style={{padding:"8px 12px",background:"#7c3aed",color:"#fff",border:"none",borderRadius:10,fontSize:12,fontWeight:700,cursor:rows.length===0?"not-allowed":"pointer",opacity:rows.length===0?0.5:1}}>
  📄 Export PDF
  </button>
+ </div>
+ </div>
+
+ {isMobile ? (
  <div style={{display:"flex",flexDirection:"column",gap:12}}>
  {rows.length===0 && <div style={{background:"rgba(255,255,255,0.06)",borderRadius:14,padding:40,textAlign:"center",color:"rgba(255,255,255,0.3)",fontSize:13}}>No appointments yet.</div>}
  {emergencyRows.length>0&&(
