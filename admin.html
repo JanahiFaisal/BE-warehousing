@@ -52,6 +52,8 @@ const SBUS = [
 ];
 const ORG_OPTIONS = [{code:"BE",name:"Bapco Energies (All)"},...SBUS];
 const sbuName = code => { const s = SBUS.find(x=>x.code===code); return s?s.name:code; };
+const SBU_COLORS={"BR":{bg:"rgba(200,150,42,0.25)",color:"#fcd34d",border:"rgba(200,150,42,0.5)"},"BU":{bg:"rgba(16,185,129,0.25)",color:"#6ee7b7",border:"rgba(16,185,129,0.5)"},"BG":{bg:"rgba(59,130,246,0.25)",color:"#93c5fd",border:"rgba(59,130,246,0.5)"},"BT":{bg:"rgba(139,92,246,0.25)",color:"#c4b5fd",border:"rgba(139,92,246,0.5)"}};
+function SbuBadge({code,full}){const cfg=SBU_COLORS[code]||{bg:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",border:"rgba(255,255,255,0.2)"};return <span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>{full?sbuName(code):code}</span>;}
 const SLOTS = ["07:00","07:30","08:00","08:30","09:30","10:00","10:30","11:00","11:30","12:30","13:00","13:30"];
 const ADMIN_PWD = "Bapco@123456";
 const ADMIN_EMAIL = "janahifaisal2@gmail.com";
@@ -598,22 +600,22 @@ function ConfirmModal({ msg, sub, confirmLabel="Confirm", confirmColor="#059669"
 
 function StatusBadge({ status }) {
  const cfg = {
- pending: {bg:"#fef3c7",color:"#fcd34d",border:"#fcd34d",label:"⏳ Pending"},
- approved: {bg:"#d1fae5",color:"#065f46",border:"#6ee7b7",label:"✓ Approved"},
- rejected: {bg:"#fee2e2",color:"#991b1b",border:"#fca5a5",label:"✕ Rejected"},
- revision_required: {bg:"#ffedd5",color:"#9a3412",border:"#fed7aa",label:"↩️ Revision Required"},
- }[status];
+ pending: {bg:"rgba(245,158,11,0.2)",color:"#fcd34d",border:"rgba(245,158,11,0.4)",label:"⏳ Pending"},
+ approved: {bg:"rgba(16,185,129,0.2)",color:"#6ee7b7",border:"rgba(16,185,129,0.4)",label:"✓ Approved"},
+ rejected: {bg:"rgba(239,68,68,0.2)",color:"#fca5a5",border:"rgba(239,68,68,0.4)",label:"✕ Rejected"},
+ revision_required: {bg:"rgba(251,146,60,0.2)",color:"#fdba74",border:"rgba(251,146,60,0.4)",label:"↩️ Revision"},
+ }[status]||{bg:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",border:"rgba(255,255,255,0.2)",label:status||"Unknown"};
  return <span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,padding:"3px 10px",borderRadius:99,fontSize:11,fontWeight:700,whiteSpace:"nowrap"}}>{cfg.label}</span>;
 }
 
 function StoreBadge({ loc }) {
  const locs = toLocs(loc);
  if (!locs.length) return null;
- const cfg = {"Open Yard":{bg:"#e0f2fe",color:"#0369a1",border:"#bae6fd"},"Covered store":{bg:"#ede9fe",color:"#6d28d9",border:"#ddd6fe"}};
+ const cfg = {"Open Yard":{bg:"rgba(14,165,233,0.2)",color:"#7dd3fc",border:"rgba(14,165,233,0.4)"},"Covered store":{bg:"rgba(139,92,246,0.2)",color:"#c4b5fd",border:"rgba(139,92,246,0.4)"}};
  return (
  <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
  {locs.map(l => {
- const c = cfg[l]||{bg:"#f3f4f6",color:"#374151",border:"#d1d5db"};
+ const c = cfg[l]||{bg:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",border:"rgba(255,255,255,0.2)"};
  return <span key={l} style={{background:c.bg,color:c.color,border:`1px solid ${c.border}`,padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:600}}>{l}</span>;
  })}
  </div>
@@ -2204,7 +2206,7 @@ function AdminPanel({ appointments, onApprove, onReject, onView, loading, isMobi
  <div style={{padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
  <div>
  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
- <span style={{fontSize:10,background:a.deliveryTo==="BR"?"rgba(200,150,42,0.3)":a.deliveryTo==="BU"?"rgba(16,185,129,0.3)":a.deliveryTo==="BG"?"rgba(59,130,246,0.3)":"rgba(139,92,246,0.3)",color:"#fff",padding:"2px 8px",borderRadius:99,fontWeight:700}}>{a.deliveryTo}</span>
+ <SbuBadge code={a.deliveryTo} full={true}/>
  {a.priority==="emergency"&&<span style={{fontSize:9,background:"rgba(239,68,68,0.2)",color:"#fca5a5",padding:"1px 6px",borderRadius:99,fontWeight:700}}>🚨 Emergency</span>}
  </div>
  <div style={{fontWeight:700,fontSize:14,color:"#fff"}}>{a.supplierName}</div>
@@ -2335,20 +2337,21 @@ function CalendarView({ appointments, isMobile }) {
 
  function AptChip({ a, showTime }) {
  const statusIcon=a.deliveryStatus==="completed"?"✅":a.deliveryStatus==="failed"?"❌":a.priority==="emergency"?"🚨":"";
- const storageColor=Array.isArray(a.storageLocation)?a.storageLocation.includes("Covered store")&&a.storageLocation.includes("Open Yard")?"#a78bfa":a.storageLocation.includes("Covered store")?"#38bdf8":"#34d399":"#6b7280";
  return(
  <button onClick={()=>setSel(a)} style={{width:"100%",textAlign:"left",padding:isMobile?"4px 6px":"5px 8px",borderRadius:8,border:"1px solid rgba(99,102,241,0.4)",background:"rgba(99,102,241,0.15)",fontSize:isMobile?9:10,cursor:"pointer",marginBottom:2,overflow:"hidden",display:"block"}}>
- <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:isMobile?0:2}}>
+ <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
  {showTime&&<span style={{color:"#C8962A",fontWeight:800,fontSize:isMobile?8:9,flexShrink:0}}>{a.time}</span>}
  {statusIcon&&<span style={{fontSize:9,flexShrink:0}}>{statusIcon}</span>}
- <span style={{color:"#fff",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.supplierName}</span>
+ <span style={{color:"#fff",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{a.supplierName}</span>
  </div>
  {!isMobile&&(
- <div style={{display:"flex",gap:4,alignItems:"center",marginTop:2}}>
- <span style={{fontSize:8,color:storageColor,fontWeight:600,flexShrink:0}}>{Array.isArray(a.storageLocation)?a.storageLocation.map(l=>l==="Covered store"?"🏭 CS":l==="Open Yard"?"🌳 OY":l).join(" & "):a.storageLocation||""}</span>
- {a.totalOrders>0&&<span style={{fontSize:8,color:"rgba(255,255,255,0.4)"}}>{a.totalOrders} ord</span>}
- <span style={{fontSize:8,background:a.deliveryTo==="BR"?"rgba(200,150,42,0.3)":a.deliveryTo==="BU"?"rgba(16,185,129,0.3)":a.deliveryTo==="BG"?"rgba(59,130,246,0.3)":"rgba(139,92,246,0.3)",color:"#fff",padding:"0 4px",borderRadius:3,fontWeight:700,marginLeft:"auto"}}>{a.deliveryTo}</span>
+ <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap",marginTop:2}}>
+ <SbuBadge code={a.deliveryTo} full={true}/>
+ <StoreBadge loc={a.storageLocation}/>
  </div>
+ )}
+ {!isMobile&&a.poNumbers&&a.poNumbers.length>0&&(
+ <div style={{fontSize:8,color:"rgba(255,255,255,0.4)",marginTop:2}}>PO: {a.poNumbers.slice(0,2).join(", ")}{a.poNumbers.length>2?` +${a.poNumbers.length-2}`:""}</div>
  )}
  </button>
  );
@@ -2426,9 +2429,12 @@ function CalendarView({ appointments, isMobile }) {
  <div key={i} style={{padding:4,background:off?"rgba(255,255,255,0.01)":"rgba(255,255,255,0.03)",borderRight:"1px solid rgba(255,255,255,0.08)",overflow:"hidden",minWidth:0}}>
  {cellApts.map(a=>(
  <button key={a.id} onClick={()=>setSel(a)} style={{width:"100%",textAlign:"left",padding:"5px 7px",borderRadius:7,border:"1px solid rgba(99,102,241,0.4)",background:"rgba(99,102,241,0.15)",fontSize:10,cursor:"pointer",marginBottom:3,display:"block",overflow:"hidden",minWidth:0}}>
- <div style={{fontWeight:700,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.supplierName}</div>
- <div style={{fontSize:9,color:"rgba(255,255,255,0.5)",marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.time} · {Array.isArray(a.storageLocation)?a.storageLocation.map(l=>l==="Covered store"?"CS":"OY").join("+"):""} · {a.deliveryTo}</div>
- {a.totalOrders>0&&<div style={{fontSize:8,color:"#C8962A",marginTop:1}}>{a.totalOrders} orders · {a.totalLines} lines</div>}
+ <div style={{fontWeight:700,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:2}}>{a.supplierName}</div>
+ <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:2}}>
+ <SbuBadge code={a.deliveryTo} full={true}/>
+ <StoreBadge loc={a.storageLocation}/>
+ </div>
+ {a.poNumbers&&a.poNumbers.length>0&&<div style={{fontSize:8,color:"rgba(255,255,255,0.4)"}}>PO: {a.poNumbers.slice(0,2).join(", ")}{a.poNumbers.length>2?` +${a.poNumbers.length-2}`:""}</div>}
  </button>
  ))}
  </div>
@@ -2474,7 +2480,7 @@ function CalendarView({ appointments, isMobile }) {
  <span style={{fontWeight:800,fontSize:14,color:"#fff"}}>{a.supplierName}</span>
  <div style={{display:"flex",gap:6,alignItems:"center"}}>
  {a.priority==="emergency"&&<span style={{fontSize:10,background:"rgba(239,68,68,0.2)",color:"#fca5a5",padding:"1px 6px",borderRadius:99,fontWeight:700}}>🚨 Emergency</span>}
- <span style={{fontSize:10,background:a.deliveryTo==="BR"?"rgba(200,150,42,0.3)":a.deliveryTo==="BU"?"rgba(16,185,129,0.3)":a.deliveryTo==="BG"?"rgba(59,130,246,0.3)":"rgba(139,92,246,0.3)",color:"#fff",padding:"2px 8px",borderRadius:99,fontWeight:700}}>{a.deliveryTo}</span>
+ <SbuBadge code={a.deliveryTo} full={true}/>
  </div>
  </div>
  <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:4}}>
