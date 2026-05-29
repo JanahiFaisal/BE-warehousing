@@ -3227,6 +3227,8 @@ function StatisticsPanel({ appointments, isMobile, setView, setAdminFilter }) {
  )} disabled={appointments.length===0} style={{padding:"10px 16px",background:"#7c3aed",color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:700,cursor:appointments.length===0?"not-allowed":"pointer",opacity:appointments.length===0?0.5:1}}>
  📄 Export PDF
  </button>
+ </div>
+ </div>
  <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:14,padding:16,marginBottom:24,display:"flex",flexWrap:"wrap",gap:12,alignItems:"center"}}>
  <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="Search by any field — ID, name, email, date, PO, status…" style={{flex:1,minWidth:200,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none"}}/>
  <span style={{color:"rgba(255,255,255,0.5)",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>Date range</span>
