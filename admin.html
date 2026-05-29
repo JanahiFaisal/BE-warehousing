@@ -1755,6 +1755,8 @@ function Dashboard({ appointments, setView, setAdminFilter, onApprove, onViewId,
  const completed=filtered.filter(a=>a.deliveryStatus==="completed").length;
  const emergency=filtered.filter(a=>a.priority==="emergency").length;
  const awaiting=filtered.filter(a=>a.status==="approved"&&(a.deliveryStatus==="awaiting_delivery"||!a.deliveryStatus));
+ const overdue=awaiting.filter(a=>new Date(a.date+"T"+(a.time||"23:59"))<today);
+ const awaiting=filtered.filter(a=>a.status==="approved"&&(a.deliveryStatus==="awaiting_delivery"||!a.deliveryStatus));
  const overdue=awaiting.filter(a=>new Date(a.date+"T"+a.time)<today);
  const approvalRate=total>0?Math.round(approved/total*100):0;
  const completionRate=approved>0?Math.round(completed/approved*100):0;
@@ -2245,13 +2247,21 @@ function fmtBizHours(h){
 }
 
 // ─── KPI Panel ────────────────────────────────────────────────
-function KPIPanel({ appointments, isMobile }) {
+function KPIPanel({ appointments, transactions, isMobile }) {
  const [sbuFilter,setSbuFilter]=useState("all");
  const [dateFrom,setDateFrom]=useState("");
  const [dateTo,setDateTo]=useState("");
  const [sortKey,setSortKey]=useState("createdAt");
  const [sortAsc,setSortAsc]=useState(false);
  const SLA_HOURS=48;
+
+ // Build reviewer map from transactions (who approved/rejected each appointment)
+ const reviewerMap=useMemo(()=>(transactions||[]).reduce(function(m,t){
+  if((t.action==="approve"||t.action==="reject"||t.action==="return_for_revision")&&t.appointmentId&&t.actor){
+   m[t.appointmentId]=t.actor;
+  }
+  return m;
+ },{}),[transactions]);
 
  const actioned=appointments.filter(a=>{
   if(a.status==="pending") return false;
@@ -2261,7 +2271,8 @@ function KPIPanel({ appointments, isMobile }) {
   return true;
  }).map(a=>{
   var bh=businessHoursBetween(a.createdAt,a.updatedAt);
-  return {...a, bizHours:bh, slaOk:bh!==null&&bh<=SLA_HOURS};
+  var reviewer=reviewerMap[a.id]||"Unknown";
+  return {...a, bizHours:bh, slaOk:bh!==null&&bh<=SLA_HOURS, reviewer:reviewer};
  });
 
  const pending=appointments.filter(a=>{
@@ -2287,7 +2298,7 @@ function KPIPanel({ appointments, isMobile }) {
  });
 
  var actorStats=Object.values(actioned.reduce(function(m,a){
-  var actor=a.actor||"Unknown";
+  var actor=a.reviewer||"Unknown";
   if(!m[actor]) m[actor]={actor:actor,total:0,within:0,breached:0,totalHours:0};
   m[actor].total++;
   if(a.slaOk) m[actor].within++; else m[actor].breached++;
@@ -2453,6 +2464,7 @@ function KPIPanel({ appointments, isMobile }) {
        <Hdr k="createdAt" label="Submitted"/>
        <Hdr k="updatedAt" label="Actioned"/>
        <Hdr k="bizHours" label="Biz Hours"/>
+       <Hdr k="reviewer" label="Reviewer"/>
        <th style={{padding:"10px 12px",fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",background:"rgba(100,52,250,0.2)"}}>SLA</th>
       </tr></thead>
       <tbody>
@@ -2465,6 +2477,7 @@ function KPIPanel({ appointments, isMobile }) {
         <td style={{padding:"10px 12px",color:"rgba(255,255,255,0.6)",fontSize:11}}>{fmtTs(a.createdAt)}</td>
         <td style={{padding:"10px 12px",color:"rgba(255,255,255,0.6)",fontSize:11}}>{fmtTs(a.updatedAt)}</td>
         <td style={{padding:"10px 12px",textAlign:"center",fontWeight:700,color:a.slaOk?"#6ee7b7":"#fca5a5"}}>{fmtBizHours(a.bizHours)}</td>
+        <td style={{padding:"10px 12px",color:"rgba(255,255,255,0.7)",fontSize:11}}>{a.reviewer||"—"}</td>
         <td style={{padding:"10px 12px",textAlign:"center"}}>{a.slaOk?<span style={{color:"#6ee7b7",fontWeight:700}}>✅ Within</span>:<span style={{color:"#fca5a5",fontWeight:700}}>❌ Breached</span>}</td>
        </tr>
       );})}
@@ -5051,7 +5064,7 @@ function App() {
  showToast(`${targets.length} deliveries marked as completed`);
  }}/>}
  {view==="statistics" && <StatisticsPanel appointments={filteredAppts} isMobile={isMobile} setView={setView} setAdminFilter={setAdminFilter}/>}
- {view==="kpi" && <KPIPanel appointments={filteredAppts} isMobile={isMobile}/>}
+ {view==="kpi" && <KPIPanel appointments={filteredAppts} transactions={transactions} isMobile={isMobile}/>}
  {view==="calendar" && <CalendarView appointments={filteredAppts} isMobile={isMobile}/>}
  {view==="emails" && <EmailLog emailLog={orgFilter==="BE"?emailLog:emailLog.filter(e=>(e.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
  {view==="history" && <TransactionsHistory transactions={orgFilter==="BE"?transactions:transactions.filter(t=>(t.appointmentId||"").startsWith(orgFilter+"-"))} isMobile={isMobile}/>}
