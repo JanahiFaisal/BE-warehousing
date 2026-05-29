@@ -3941,13 +3941,13 @@ function App() {
  const viewApt = appts.find(a=>a.id===viewId);
  const overdueCount = appts.filter(a=>a.status==="approved"&&(a.deliveryStatus==="awaiting_delivery"||!a.deliveryStatus)&&new Date(a.date+"T"+a.time)<new Date()).length;
  const nav = [
- {id:"dashboard",label:"Dashboard",icon:"🏠",badge:appts.length||undefined},
- {id:"admin",label:"Admin Panel",badge:emergencyCount>0?`🚨${emergencyCount}`:pending.length||undefined,icon:"📋"},
- {id:"teamlead",label:"Team Lead",badge:overdueCount,icon:"👷"},
+ {id:"dashboard",label:"Dashboard",icon:"🏠"},
+ {id:"admin",label:"Admin Panel",icon:"📋"},
+ {id:"teamlead",label:"Team Lead",icon:"👷"},
  {id:"statistics",label:"Statistics",icon:"📈"},
  {id:"calendar",label:"Calendar",icon:"📅"},
- {id:"emails",label:"Email Log",badge:emailLog.length,icon:"✉️"},
- {id:"history",label:"History",badge:transactions.length,icon:"📜"},
+ {id:"emails",label:"Email Log",icon:"✉️"},
+ {id:"history",label:"History",icon:"📜"},
  {id:"settings",label:"Settings",icon:"⚙️"},
  {id:"help",label:"Help & Guide",icon:"❓"},
  ];
@@ -3962,7 +3962,7 @@ function App() {
  <span style={{color:"#fff",fontWeight:800,fontSize:13}}>BE – Warehouse Appointments</span>
  </div>
  <div style={{display:"flex",alignItems:"center",gap:10}}>
- {!isMobile && <span style={{color:"rgba(255,255,255,0.5)",fontSize:12}}>{adminEmail}</span>}
+ {!isMobile && <span style={{color:"rgba(255,255,255,0.6)",fontSize:12,fontWeight:600}}>👤 {getAdminCreds().nickname||adminEmail}</span>}
  <span style={{fontSize:11,fontWeight:600,padding:"4px 10px",borderRadius:99,background:syncStatus==="ok"?"rgba(16,185,129,0.2)":syncStatus==="error"?"rgba(239,68,68,0.2)":"rgba(200,150,42,0.2)",color:syncStatus==="ok"?"#6ee7b7":syncStatus==="error"?"#fca5a5":"#fcd34d",border:"1px solid rgba(255,255,255,0.1)"}}>{syncStatus==="ok"?"☁️ Synced":syncStatus==="error"?"⚠️ Sync Error":"⏳ Syncing…"}</span>
  <button onClick={()=>pullFromSupabase(false)} title="Refresh data" style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:8,padding:"4px 10px",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700}}>🔄</button>
  <button onClick={()=>setView("help")} style={{background:"rgba(200,150,42,0.15)",border:"1px solid rgba(200,150,42,0.3)",borderRadius:8,padding:"4px 10px",color:"#C8962A",fontSize:12,cursor:"pointer",fontWeight:700}}>❓ Guide</button>
@@ -3984,7 +3984,7 @@ function App() {
  style={{display:"flex",alignItems:"center",gap:10,padding:"12px 10px",borderRadius:10,border:"none",cursor:"pointer",background:view===item.id?A:"transparent",color:view===item.id?"#fff":"rgba(255,255,255,0.55)",fontWeight:500,fontSize:14,marginBottom:4,textAlign:"left"}}>
  <span style={{fontSize:16}}>{item.icon}</span>
  <span style={{flex:1}}>{item.label}</span>
- {item.badge>0 && <span style={{background:"rgba(255,255,255,0.2)",color:"#fff",fontSize:10,fontWeight:700,padding:"1px 6px",borderRadius:99}}>{item.badge}</span>}
+ 
  </button>
  ))}
  </div>
@@ -3999,8 +3999,7 @@ function App() {
  style={{display:"flex",alignItems:"center",gap:isTablet?0:10,padding:"11px",borderRadius:10,border:"none",cursor:"pointer",background:view===item.id?A:"transparent",color:view===item.id?"#fff":"rgba(255,255,255,0.45)",fontWeight:500,fontSize:13,justifyContent:isTablet?"center":"flex-start",position:"relative"}}>
  <span style={{fontSize:15}}>{item.icon}</span>
  {!isTablet && <span style={{flex:1,textAlign:"left"}}>{item.label}</span>}
- {!isTablet && item.badge>0 && <span style={{background:"rgba(255,255,255,0.2)",color:"#fff",fontSize:10,fontWeight:700,padding:"1px 6px",borderRadius:99}}>{item.badge}</span>}
- {isTablet && item.badge>0 && <span style={{position:"absolute",top:6,right:6,width:7,height:7,borderRadius:"50%",background:"#fbbf24"}}/>}
+ 
  </button>
  ))}
  </nav>
