@@ -160,27 +160,30 @@ function Logo({ large }) {
 
 function StatusBadge({ status }) {
  const cfg = {
- pending: {bg:"#fef3c7",color:"#92400e",border:"#fcd34d",label:"⏳ Pending"},
- approved: {bg:"#d1fae5",color:"#065f46",border:"#6ee7b7",label:"✓ Approved"},
- rejected: {bg:"#fee2e2",color:"#991b1b",border:"#fca5a5",label:"✕ Rejected"},
- revision_required: {bg:"#ffedd5",color:"#9a3412",border:"#fed7aa",label:"↩️ Revision Required"},
- }[status];
+ pending:{bg:"rgba(245,158,11,0.2)",color:"#fcd34d",border:"rgba(245,158,11,0.4)",label:"⏳ Pending"},
+ approved:{bg:"rgba(16,185,129,0.2)",color:"#6ee7b7",border:"rgba(16,185,129,0.4)",label:"✓ Approved"},
+ rejected:{bg:"rgba(239,68,68,0.2)",color:"#fca5a5",border:"rgba(239,68,68,0.4)",label:"✕ Rejected"},
+ revision_required:{bg:"rgba(251,146,60,0.2)",color:"#fdba74",border:"rgba(251,146,60,0.4)",label:"↩️ Revision"},
+ }[status]||{bg:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",border:"rgba(255,255,255,0.2)",label:status||"Unknown"};
  return <span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,padding:"3px 10px",borderRadius:99,fontSize:11,fontWeight:700,whiteSpace:"nowrap"}}>{cfg.label}</span>;
 }
 
 function StoreBadge({ loc }) {
  const locs = toLocs(loc);
  if (!locs.length) return null;
- const cfg = {"Open Yard":{bg:"#e0f2fe",color:"#0369a1",border:"#bae6fd"},"Covered store":{bg:"#ede9fe",color:"#6d28d9",border:"#ddd6fe"}};
+ const cfg = {"Open Yard":{bg:"rgba(14,165,233,0.2)",color:"#7dd3fc",border:"rgba(14,165,233,0.4)"},"Covered store":{bg:"rgba(139,92,246,0.2)",color:"#c4b5fd",border:"rgba(139,92,246,0.4)"}};
  return (
  <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
  {locs.map(l => {
- const c = cfg[l]||{bg:"#f3f4f6",color:"#374151",border:"#d1d5db"};
+ const c = cfg[l]||{bg:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",border:"rgba(255,255,255,0.2)"};
  return <span key={l} style={{background:c.bg,color:c.color,border:`1px solid ${c.border}`,padding:"2px 8px",borderRadius:8,fontSize:11,fontWeight:600}}>{l}</span>;
  })}
  </div>
  );
 }
+
+const SBU_COLORS={"BR":{bg:"rgba(200,150,42,0.25)",color:"#fcd34d",border:"rgba(200,150,42,0.5)"},"BU":{bg:"rgba(16,185,129,0.25)",color:"#6ee7b7",border:"rgba(16,185,129,0.5)"},"BG":{bg:"rgba(59,130,246,0.25)",color:"#93c5fd",border:"rgba(59,130,246,0.5)"},"BT":{bg:"rgba(139,92,246,0.25)",color:"#c4b5fd",border:"rgba(139,92,246,0.5)"}};
+function SbuBadge({code,full}){const cfg=SBU_COLORS[code]||{bg:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.6)",border:"rgba(255,255,255,0.2)"};return <span style={{background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>{full?sbuName(code):code}</span>;}
 
 const HELP_SUPPLIER={title:"Supplier Guide",icon:"📦",sections:[
  {title:"How to Submit a Request",steps:["Click 'Book a Delivery' on the home page","Select your SBU (BR / BU / BG / BT)","Choose a delivery date — weekends and holidays are blocked","Select a time slot — maximum 2 suppliers per slot per SBU","Add your PO numbers by typing each one and pressing Enter","Total Orders is calculated automatically from your PO tags","Select storage location and equipment requirements","Attach any supporting documents (optional)","Click Submit — you will receive a confirmation email with your Appointment ID and PIN"]},
